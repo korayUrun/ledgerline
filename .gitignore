@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# build & tool output
+dist/
+.next/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# eval run output (datasets are committed, reports are not)
+evals/reports/
+
+# environment & secrets — never commit real keys
+.env
+.env.*
+!.env.example
+
+# Claude Code personal overrides
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
