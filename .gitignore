@@ -23,3 +23,6 @@ evals/reports/
 .DS_Store
 .idea/
 .vscode/
+
+# generated Prisma client (rebuilt by `prisma generate` on install)
+packages/db/src/generated/

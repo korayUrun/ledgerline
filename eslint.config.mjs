@@ -16,7 +16,14 @@ const ENGINE_PURITY_MESSAGE =
   "settlement-engine is pure (SYSTEM.md §2): it may import only @ledgerline/schemas and relative files. No I/O, DB, network, clock or randomness.";
 
 export default defineConfig([
-  globalIgnores(["**/node_modules/", "**/dist/", "**/.turbo/", "**/coverage/", "**/.next/"]),
+  globalIgnores([
+    "**/node_modules/",
+    "**/dist/",
+    "**/.turbo/",
+    "**/coverage/",
+    "**/.next/",
+    "packages/db/src/generated/",
+  ]),
 
   js.configs.recommended,
   tseslint.configs.recommendedTypeChecked,

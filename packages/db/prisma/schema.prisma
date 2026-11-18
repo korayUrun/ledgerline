@@ -1,0 +1,251 @@
+// Ledgerline data model (docs/SYSTEM.md §4).
+//
+// Money rules:
+//   - Money is integer cents. A single input value (one ticket price, one expense)
+//     is capped at MAX_CENTS = 1e9 by Zod, so it fits Postgres `integer`
+//     (max ≈ 2.1e9). Columns that hold a SUM (settlement lines, the payout) can go
+//     above that, so they are `BigInt` (Postgres `bigint`).
+//   - Percentages live inside termsJson as basis points; there is no float column.
+//
+// Tables are added in the phase that first uses them: Contract (PDF) in Phase 3,
+// AgentRun/AgentStep in Phase 4, Payout/ProcessedWebhookEvent in Phase 5, ApiKey in Phase 6.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- Enums ------------------------------------------------------------------------
+// Each enum mirrors a Zod enum in packages/schemas. enums.test.ts fails if the two
+// lists drift apart, because the database and the engine must agree on every value.
+
+enum ExpenseCategory {
+  production
+  advertising
+  catering
+  security
+  staffing
+  equipment
+  office_supplies
+  other
+}
+
+enum ExpenseStatus {
+  pending
+  allowed
+  disallowed
+}
+
+// Phase 2 states only. approved/paying/paid/payment_failed arrive in Phase 5.
+enum SettlementStatus {
+  draft
+  computed
+  in_review
+  stale
+}
+
+enum SettlementLineKind {
+  gbor
+  ticket_tax
+  ticket_fees
+  nbor
+  expenses_submitted
+  expense_disallowed
+  expense_category_cap
+  expense_total_cap
+  allowed_expenses
+  guarantee
+  net_after_expenses
+  percentage_share
+  promoter_profit
+  split_point
+  overage
+  deal_payout
+  bonus
+  total_payout
+}
+
+// --- People and places --------------------------------------------------------------
+
+// A human who can confirm terms (and, from Phase 5, approve payouts).
+// Login comes later; for now the seed creates one demo user.
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  confirmedTerms ContractTerms[]
+}
+
+model Venue {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  shows Show[]
+}
+
+model Artist {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  shows Show[]
+}
+
+model Show {
+  id        String   @id @default(uuid())
+  name      String
+  showDate  DateTime @db.Date
+  venueId   String
+  artistId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  venue       Venue           @relation(fields: [venueId], references: [id])
+  artist      Artist          @relation(fields: [artistId], references: [id])
+  ticketSales TicketSale[]
+  expenses    Expense[]
+  terms       ContractTerms[]
+  settlement  Settlement?
+
+  @@index([venueId])
+  @@index([artistId])
+}
+
+// --- Inputs: what the engine reads ---------------------------------------------------
+
+// One row per ticket tier. Fields match TicketSaleSchema in packages/schemas.
+model TicketSale {
+  id         String   @id @default(uuid())
+  showId     String
+  tierName   String
+  qtySold    Int // paid tickets only
+  comps      Int // free tickets: counted, but bring in no money
+  priceCents Int // face value per ticket
+  taxCents   Int // tier total, contained in qtySold × priceCents
+  feeCents   Int // tier total, contained in qtySold × priceCents
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  show Show @relation(fields: [showId], references: [id])
+
+  // Two "VIP" rows for the same show would double-count that tier.
+  @@unique([showId, tierName])
+}
+
+model Expense {
+  id          String          @id @default(uuid())
+  showId      String
+  category    ExpenseCategory
+  description String
+  amountCents Int
+  status      ExpenseStatus   @default(pending)
+  // A storage key such as "receipts/<uuid>.pdf", not a full disk path, so the
+  // storage backend can change without touching the database.
+  receiptKey  String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  show Show @relation(fields: [showId], references: [id])
+
+  @@index([showId])
+}
+
+// Versioned and never overwritten: an edit creates version n + 1, so a settlement
+// always points to the exact terms it was computed from.
+//
+// Linked to the show, not to a Contract (SYSTEM.md §4 differs): in Phase 2 terms are
+// typed in by hand and there is no PDF yet. Phase 3 adds an optional contractId.
+model ContractTerms {
+  id            String   @id @default(uuid())
+  showId        String
+  version       Int
+  // The whole ContractTerms object, validated with ContractTermsSchema on every
+  // write and read. One JSON column instead of many columns, because the Zod schema
+  // is the single definition of the terms' shape (nested deal, caps, bonus tiers).
+  termsJson     Json
+  // Hand-entered terms are confirmed by the person who typed them. Phase 3 makes
+  // these nullable for AI-extracted terms that are not reviewed yet.
+  confirmedById String
+  confirmedAt   DateTime
+  createdAt     DateTime @default(now())
+
+  show        Show         @relation(fields: [showId], references: [id])
+  confirmedBy User         @relation(fields: [confirmedById], references: [id])
+  settlements Settlement[]
+
+  @@unique([showId, version])
+}
+
+// --- Result ----------------------------------------------------------------------
+
+model Settlement {
+  id            String           @id @default(uuid())
+  // One settlement per show: the unique index makes it impossible for two
+  // concurrent "create" requests to produce two settlements.
+  showId        String           @unique
+  status        SettlementStatus @default(draft)
+  // Increases by one on every compute. Used as an optimistic lock (a compute only
+  // saves if the version is still the one it started from) and, in Phase 5, as part
+  // of the payout idempotency key.
+  version       Int              @default(0)
+  // The fields below are null while the settlement is a draft. The state machine
+  // guarantees they are set once it has been computed.
+  termsId       String?
+  // Frozen copy of the exact SettlementInput given to the engine.
+  inputSnapshot Json?
+  // SHA-256 of the canonical JSON of inputSnapshot. Compared with the hash of the
+  // live inputs to detect changes, including ones made directly in the database.
+  inputsHash    String?
+  engineVersion String?
+  payoutCents   BigInt?
+  computedAt    DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  show  Show             @relation(fields: [showId], references: [id])
+  terms ContractTerms?   @relation(fields: [termsId], references: [id])
+  lines SettlementLine[]
+}
+
+model SettlementLine {
+  id           String             @id @default(uuid())
+  settlementId String
+  position     Int // worksheet order; a table has no order of its own
+  kind         SettlementLineKind
+  label        String
+  amountCents  BigInt // ≥ 0; sums such as the split point can exceed Int
+  clauseRef    String?
+  // [{ type: "ticket_sale" | "expense", id }]. JSON rather than foreign keys: a line
+  // describes the frozen inputSnapshot, and the live row may be edited or deleted later.
+  sourceRefs   Json
+
+  settlement Settlement @relation(fields: [settlementId], references: [id])
+
+  @@unique([settlementId, position])
+}
+
+// --- Audit (F12) ---------------------------------------------------------------------
+
+// Append-only: the code only ever inserts here.
+model AuditLog {
+  id       String   @id @default(uuid())
+  // "user:<id>" or "system"; later "agent:<runId>" and "api_key:<prefix>".
+  actor    String
+  action   String // e.g. "settlement.computed", "expense.updated"
+  entity   String // e.g. "settlement", "expense"
+  entityId String
+  before   Json?
+  after    Json?
+  at       DateTime @default(now())
+
+  @@index([entity, entityId, at])
+}
