@@ -1,0 +1,73 @@
+{
+  "terms": {
+    "deal": {
+      "type": "flat",
+      "guaranteeCents": 1000000,
+      "clauseRef": "§4"
+    },
+    "expensePolicy": {
+      "allowedCategories": ["production", "advertising", "catering", "security"],
+      "categoryCaps": [
+        {
+          "category": "advertising",
+          "capCents": 150000
+        }
+      ],
+      "totalCapCents": 600000,
+      "clauseRef": "§5"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-ga",
+      "tierName": "GA",
+      "qtySold": 250,
+      "comps": 30,
+      "priceCents": 3500,
+      "taxCents": 70000,
+      "feeCents": 25000
+    },
+    {
+      "id": "ts-vip",
+      "tierName": "VIP",
+      "qtySold": 60,
+      "comps": 10,
+      "priceCents": 7500,
+      "taxCents": 36000,
+      "feeCents": 6000
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-production",
+      "category": "production",
+      "amountCents": 280000,
+      "status": "allowed"
+    },
+    {
+      "id": "ex-advertising",
+      "category": "advertising",
+      "amountCents": 190000,
+      "status": "allowed"
+    },
+    {
+      "id": "ex-catering",
+      "category": "catering",
+      "amountCents": 90000,
+      "status": "allowed"
+    },
+    {
+      "id": "ex-security",
+      "category": "security",
+      "amountCents": 120000,
+      "status": "allowed"
+    },
+    {
+      "id": "ex-office",
+      "category": "office_supplies",
+      "amountCents": 30000,
+      "status": "allowed"
+    }
+  ]
+}

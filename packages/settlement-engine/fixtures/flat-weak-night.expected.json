@@ -1,0 +1,90 @@
+{
+  "payoutCents": 1000000,
+  "lines": [
+    {
+      "kind": "gbor",
+      "label": "Gross box office receipts (GBOR)",
+      "amountCents": 1325000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "ticket_tax",
+      "label": "Less: ticket taxes",
+      "amountCents": 106000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "ticket_fees",
+      "label": "Less: deductible ticketing fees",
+      "amountCents": 31000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "nbor",
+      "label": "Net box office receipts (NBOR)",
+      "amountCents": 1188000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "guarantee",
+      "label": "Guarantee",
+      "amountCents": 1000000,
+      "clauseRef": "§4",
+      "sourceRefs": []
+    },
+    {
+      "kind": "deal_payout",
+      "label": "Deal payout: flat guarantee",
+      "amountCents": 1000000,
+      "clauseRef": "§4",
+      "sourceRefs": []
+    },
+    {
+      "kind": "total_payout",
+      "label": "Total artist payout",
+      "amountCents": 1000000,
+      "clauseRef": null,
+      "sourceRefs": []
+    }
+  ]
+}

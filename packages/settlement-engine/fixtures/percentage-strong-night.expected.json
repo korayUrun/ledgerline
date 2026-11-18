@@ -1,0 +1,90 @@
+{
+  "payoutCents": 1156800,
+  "lines": [
+    {
+      "kind": "gbor",
+      "label": "Gross box office receipts (GBOR)",
+      "amountCents": 2150000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "ticket_tax",
+      "label": "Less: ticket taxes",
+      "amountCents": 172000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "ticket_fees",
+      "label": "Less: deductible ticketing fees",
+      "amountCents": 50000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "nbor",
+      "label": "Net box office receipts (NBOR)",
+      "amountCents": 1928000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "percentage_share",
+      "label": "Artist share of NBOR",
+      "amountCents": 1156800,
+      "clauseRef": "§4",
+      "sourceRefs": []
+    },
+    {
+      "kind": "deal_payout",
+      "label": "Deal payout: percentage of NBOR",
+      "amountCents": 1156800,
+      "clauseRef": "§4",
+      "sourceRefs": []
+    },
+    {
+      "kind": "total_payout",
+      "label": "Total artist payout",
+      "amountCents": 1156800,
+      "clauseRef": null,
+      "sourceRefs": []
+    }
+  ]
+}

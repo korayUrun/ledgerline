@@ -81,6 +81,27 @@ export default defineConfig([
       ],
     },
   },
+  {
+    // Tests and their helpers may also use fast-check (property tests). It is a
+    // devDependency, so it never ships with the engine itself.
+    files: [
+      "packages/settlement-engine/**/*.test.ts",
+      "packages/settlement-engine/src/test-helpers/**/*.ts",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "^(?!\\.{1,2}/|@ledgerline/schemas$|vitest$|fast-check$)",
+              message: ENGINE_PURITY_MESSAGE,
+            },
+          ],
+        },
+      ],
+    },
+  },
 
   // --- schemas: the leaf of the graph -----------------------------------------
   {

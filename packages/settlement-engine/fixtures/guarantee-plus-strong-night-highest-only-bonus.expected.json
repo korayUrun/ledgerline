@@ -1,0 +1,217 @@
+{
+  "payoutCents": 1149800,
+  "lines": [
+    {
+      "kind": "gbor",
+      "label": "Gross box office receipts (GBOR)",
+      "amountCents": 2150000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "ticket_tax",
+      "label": "Less: ticket taxes",
+      "amountCents": 172000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "ticket_fees",
+      "label": "Less: deductible ticketing fees",
+      "amountCents": 50000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "nbor",
+      "label": "Net box office receipts (NBOR)",
+      "amountCents": 1928000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "expenses_submitted",
+      "label": "Expenses submitted",
+      "amountCents": 710000,
+      "clauseRef": null,
+      "sourceRefs": [
+        {
+          "type": "expense",
+          "id": "ex-production"
+        },
+        {
+          "type": "expense",
+          "id": "ex-advertising"
+        },
+        {
+          "type": "expense",
+          "id": "ex-catering"
+        },
+        {
+          "type": "expense",
+          "id": "ex-security"
+        },
+        {
+          "type": "expense",
+          "id": "ex-office"
+        }
+      ]
+    },
+    {
+      "kind": "expense_disallowed",
+      "label": "Less: office_supplies is not an allowed category",
+      "amountCents": 30000,
+      "clauseRef": "§5",
+      "sourceRefs": [
+        {
+          "type": "expense",
+          "id": "ex-office"
+        }
+      ]
+    },
+    {
+      "kind": "expense_category_cap",
+      "label": "Less: advertising above its cap",
+      "amountCents": 40000,
+      "clauseRef": "§5",
+      "sourceRefs": [
+        {
+          "type": "expense",
+          "id": "ex-advertising"
+        }
+      ]
+    },
+    {
+      "kind": "expense_total_cap",
+      "label": "Less: expenses above the total cap",
+      "amountCents": 40000,
+      "clauseRef": "§5",
+      "sourceRefs": []
+    },
+    {
+      "kind": "allowed_expenses",
+      "label": "Allowed expenses",
+      "amountCents": 600000,
+      "clauseRef": "§5",
+      "sourceRefs": [
+        {
+          "type": "expense",
+          "id": "ex-production"
+        },
+        {
+          "type": "expense",
+          "id": "ex-advertising"
+        },
+        {
+          "type": "expense",
+          "id": "ex-catering"
+        },
+        {
+          "type": "expense",
+          "id": "ex-security"
+        }
+      ]
+    },
+    {
+      "kind": "guarantee",
+      "label": "Guarantee",
+      "amountCents": 1000000,
+      "clauseRef": "§4",
+      "sourceRefs": []
+    },
+    {
+      "kind": "promoter_profit",
+      "label": "Promoter profit on expenses and guarantee",
+      "amountCents": 240000,
+      "clauseRef": "§4",
+      "sourceRefs": []
+    },
+    {
+      "kind": "split_point",
+      "label": "Split point (expenses + guarantee + promoter profit)",
+      "amountCents": 1840000,
+      "clauseRef": "§4",
+      "sourceRefs": []
+    },
+    {
+      "kind": "overage",
+      "label": "NBOR above the split point",
+      "amountCents": 88000,
+      "clauseRef": "§4",
+      "sourceRefs": []
+    },
+    {
+      "kind": "percentage_share",
+      "label": "Artist share of the overage",
+      "amountCents": 74800,
+      "clauseRef": "§4",
+      "sourceRefs": []
+    },
+    {
+      "kind": "deal_payout",
+      "label": "Deal payout: guarantee plus share of the overage",
+      "amountCents": 1074800,
+      "clauseRef": "§4",
+      "sourceRefs": []
+    },
+    {
+      "kind": "bonus",
+      "label": "Bonus: 450+ paid tickets",
+      "amountCents": 75000,
+      "clauseRef": "§6",
+      "sourceRefs": [
+        {
+          "type": "ticket_sale",
+          "id": "ts-ga"
+        },
+        {
+          "type": "ticket_sale",
+          "id": "ts-vip"
+        }
+      ]
+    },
+    {
+      "kind": "total_payout",
+      "label": "Total artist payout",
+      "amountCents": 1149800,
+      "clauseRef": null,
+      "sourceRefs": []
+    }
+  ]
+}

@@ -41,13 +41,13 @@ Estimated total: ~4 weeks part-time.
 **Goal:** the money math is correct and proven before anything else exists.
 
 **Tasks**
-- [ ] Zod schemas in `packages/schemas`: `ContractTerms`, `TicketSale`, `Expense`, `SettlementInput`, `SettlementResult`, `SettlementLine`
-- [ ] Money helpers: integer cents, basis points, `roundHalfUp`, `applyBps`
-- [ ] Pipeline: GBOR → NBOR → allowed expenses (category caps + total cap) → deal formula → bonuses → lines
-- [ ] All four deal types + bonus tiers; every line carries `clauseRef` and `sourceRefs`
-- [ ] Unit tests: the hand-calculated examples from `domain.md`
-- [ ] Property tests (fast-check): payout ≥ 0; versus payout ≥ guarantee; lines reconcile to total; payout monotonic in tickets sold
-- [ ] Golden files: `fixtures/*.input.json` → `*.expected.json`
+- [x] Zod schemas in `packages/schemas`: `ContractTerms`, `TicketSale`, `Expense`, `SettlementInput`, `SettlementResult`, `SettlementLine`
+- [x] Money helpers: integer cents, basis points, `roundHalfUp`, `applyBps`
+- [x] Pipeline: GBOR → NBOR → allowed expenses (category caps + total cap) → deal formula → bonuses → lines
+- [x] All four deal types + bonus tiers; every line carries `clauseRef` and `sourceRefs`
+- [x] Unit tests: the hand-calculated examples from `domain.md`
+- [x] Property tests (fast-check): payout ≥ 0; versus payout ≥ guarantee; lines reconcile to total; payout monotonic in tickets sold
+- [x] Golden files: `fixtures/*.input.json` → `*.expected.json`
 
 **Done when:** 100% branch coverage on the engine; all property tests pass with 1,000+ runs; the engine has zero runtime dependencies besides `schemas`.
 
