@@ -94,6 +94,11 @@ API and worker are **the same NestJS codebase with two entry points**. They shar
 ```
 Venue 1─* Show *─1 Artist
 Show 1─* TicketSale        (tier, qtySold, priceCents, feeCents, taxCents, comps)
+                           qtySold    = paid tickets only; comps are a separate count
+                           priceCents = face value per ticket (what lands in the box office;
+                                        buyer-paid service fees on top are never included)
+                           taxCents, feeCents = tier totals of the tax and deductible fees
+                                        contained in that tier's gross (subtracted for NBOR)
 Show 1─* Expense           (category, amountCents, receiptKey, status: pending|allowed|disallowed)
 Show 1─* Contract          (fileKey, status)
 Contract 1─* ContractTerms (version, termsJson, evidenceJson, confirmedBy, confirmedAt)
@@ -143,8 +148,8 @@ Rules:
 **Signature:** `computeSettlement(input: SettlementInput): SettlementResult`. Pure and synchronous.
 
 **Pipeline:**
-1. `GBOR` (gross box office) = Σ(qtySold − comps) × price
-2. `NBOR` (net box office) = GBOR − taxes − ticketing fees
+1. `GBOR` (gross box office) = Σ qtySold × priceCents  (comps are not in `qtySold`, so they add nothing)
+2. `NBOR` (net box office) = GBOR − Σ taxCents − Σ feeCents
 3. `allowedExpenses` = expenses filtered by contract categories, each category capped, then the total expense cap applied
 4. Deal formula:
    - **Flat:** `payout = guarantee`

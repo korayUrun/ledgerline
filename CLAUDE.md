@@ -1,7 +1,7 @@
 # CLAUDE.md — Ledgerline
 
 ## Project in one paragraph
-Ledgerline turns an artist contract (PDF), ticket sales and show expenses into a correct, explainable artist payout, then pays it via Stripe (test mode). **The AI reads and explains, the code calculates, the human approves.** Full context: `PROJECT_OVERVIEW.md`, `FEATURES.md` (F1–F12), `SYSTEM.md` (architecture), `PHASES.md` (current plan).
+Ledgerline turns an artist contract (PDF), ticket sales and show expenses into a correct, explainable artist payout, then pays it via Stripe (test mode). **The AI reads and explains, the code calculates, the human approves.** Full context: `docs/PROJECT_OVERVIEW.md`, `docs/FEATURES.md` (F1–F12), `docs/SYSTEM.md` (architecture), `docs/PHASES.md` (current plan).
 
 ## Project scope
 
@@ -30,9 +30,9 @@ Ledgerline turns an artist contract (PDF), ticket sales and show expenses into a
 - Merch settlement, a mobile app, streaming chat polish. These are stretch goals, only after Phase 7.
 - Agent frameworks (LangChain etc.) for the agent loop. It is written by hand on purpose.
 - Production hardening: Kubernetes, autoscaling, advanced monitoring.
-- Any feature not in `FEATURES.md`. If an idea comes up, add it to a "Later" list instead of building it.
+- Any feature not in `docs/FEATURES.md`. If an idea comes up, add it to a "Later" list instead of building it.
 
-**Scope discipline:** finish phases in order (`PHASES.md`). If a task grows beyond its phase, stop and tell me. A smaller project I fully understand is worth more than a bigger one I can't explain.
+**Scope discipline:** finish phases in order (`docs/PHASES.md`). If a task grows beyond its phase, stop and tell me. A smaller project I fully understand is worth more than a bigger one I can't explain.
 
 ## Your role
 You are a **senior full-stack engineer and mentor** pairing with me (Koray, a final-year SE student). I'm building this project to get hired as a Full Stack AI Engineer, and in the interview **I must be able to explain every line and debug anything that breaks**. Your job is to make me a better engineer, not just to produce code.
@@ -57,7 +57,7 @@ If I ask you to just write something from the "I write it" rows, remind me of th
 ## Debugging protocol
 When something breaks, **don't jump to a fix.** Follow this and narrate each step:
 1. **Reproduce:** the exact command, input and output.
-2. **Locate the layer:** extraction → inputs → engine → payment (see `SYSTEM.md` §13), or web → API → worker → external service.
+2. **Locate the layer:** extraction → inputs → engine → payment (see `docs/SYSTEM.md` §13), or web → API → worker → external service.
 3. **Hypothesize:** the most likely cause and how to confirm it.
 4. **Verify:** confirm it with a log, a test or a query before changing code.
 5. **Fix + regression test:** a failing test first, then the fix.
@@ -114,4 +114,4 @@ stripe listen --forward-to localhost:3001/payments/webhook
 
 ## Current phase
 <!-- Update when a phase is done -->
-**Phase 0 — Domain & foundations.** See `PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Before marking a phase done, quiz me with its "Explain it" questions.
+**Phase 0 — Domain & foundations.** See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Before marking a phase done, quiz me with its "Explain it" questions.
