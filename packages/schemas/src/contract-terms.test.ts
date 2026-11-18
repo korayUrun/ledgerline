@@ -138,6 +138,25 @@ describe("ContractTermsSchema", () => {
       expect(ContractTermsSchema.safeParse(terms).success).toBe(false);
     });
 
+    it("a highest-only plan where a higher tier pays less", () => {
+      const terms = versusTerms();
+      terms.bonus = {
+        mode: "highest_only",
+        tiers: [
+          { minTicketsSold: 400, bonusCents: 75_000 },
+          { minTicketsSold: 450, bonusCents: 50_000 },
+        ],
+        clauseRef: "§6",
+      };
+      const result = ContractTermsSchema.safeParse(terms);
+      expect(result.success).toBe(false);
+      expect(result.error?.issues[0]?.message).toContain("pays less");
+
+      // The same tiers are fine when cumulative: each tier adds on top.
+      terms.bonus.mode = "cumulative";
+      expect(ContractTermsSchema.safeParse(terms).success).toBe(true);
+    });
+
     it("a bonus plan with no tiers", () => {
       const terms = versusTerms();
       if (terms.bonus) terms.bonus.tiers = [];
