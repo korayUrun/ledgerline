@@ -19,7 +19,7 @@ This document covers the technical side: the components, how they depend on each
 | MCP | `@modelcontextprotocol/sdk` | Official TypeScript SDK |
 | Testing | Vitest, fast-check, Testcontainers | Unit, property-based and real-Postgres integration tests |
 | Monorepo | pnpm workspaces + Turborepo | Shared packages, cached builds |
-| Local infra | Docker Compose + Stripe CLI | One command to run everything; Stripe CLI forwards webhooks to localhost |
+| Local infra | Docker Compose + Stripe CLI | Compose runs Postgres and Redis only; the apps run on the host with `pnpm dev` (hot reload, no image rebuilds). No app Dockerfiles: the project runs locally only. Stripe CLI forwards webhooks to localhost |
 
 ---
 
@@ -45,7 +45,7 @@ ledgerline/
 │  ├─ schemas/             Zod schemas: ContractTerms, SettlementResult, API DTOs
 │  ├─ db/                  Prisma schema, migrations, client
 │  └─ evals/               F11 — datasets, generators, runner, reports
-├─ docker-compose.yml      postgres, redis, api, worker, web, mcp
+├─ docker-compose.yml      postgres, redis only (apps run on the host via `pnpm dev`)
 └─ .github/workflows/      ci.yml (lint, test), evals.yml (F11 gate)
 ```
 

@@ -17,12 +17,12 @@ Estimated total: ~4 weeks part-time.
 **Goal:** understand settlements well enough to calculate one by hand, and have an empty but working monorepo.
 
 **Tasks**
-- [ ] Write `docs/domain.md`: deal types (flat, percentage, versus, guarantee plus), GBOR vs NBOR, expense caps, split point, promoter profit, bonus tiers. Work through one hand-calculated example of each type.
-- [ ] pnpm workspaces + Turborepo; `apps/web`, `apps/api`, `apps/mcp`, `packages/{settlement-engine,schemas,db,evals}` as empty shells
-- [ ] TypeScript strict mode, ESLint (including import-boundary rules from SYSTEM.md §2), Prettier, Vitest
-- [ ] `docker-compose.yml` with Postgres + Redis; `.env.example`
-- [ ] GitHub Actions `ci.yml`: install → lint → typecheck → test
-- [ ] Add `CLAUDE.md`, `PROJECT_OVERVIEW.md`, `FEATURES.md`, `SYSTEM.md`, `PHASES.md`, an empty `DEBUGGING.md`
+- [x] Write `docs/domain.md`: deal types (flat, percentage, versus, guarantee plus), GBOR vs NBOR, expense caps, split point, promoter profit, bonus tiers. Work through one hand-calculated example of each type.
+- [x] pnpm workspaces + Turborepo; `apps/web`, `apps/api`, `apps/mcp`, `packages/{settlement-engine,schemas,db,evals}` as empty shells
+- [x] TypeScript strict mode, ESLint (including import-boundary rules from SYSTEM.md §2), Prettier, Vitest
+- [x] `docker-compose.yml` with Postgres + Redis; `.env.example`
+- [x] GitHub Actions `ci.yml`: install → lint → typecheck → test
+- [x] Add `CLAUDE.md`, `PROJECT_OVERVIEW.md`, `FEATURES.md`, `SYSTEM.md`, `PHASES.md`, an empty `DEBUGGING.md`
 
 **Done when:** `docker compose up` starts the DB and Redis; `pnpm test` passes in CI; the hand-calculated examples in `domain.md` are written down.
 
@@ -31,6 +31,8 @@ Estimated total: ~4 weeks part-time.
 - Why does the monorepo forbid `settlement-engine` from importing `db`?
 
 **Break it:** add an `import` from `db` into `settlement-engine` and make sure lint fails.
+
+**Status:** done 2026-11-18 (PRs #1–#6, CI green on `main`). Design decisions in `domain.md` §3, §8, §9 kept as written. The Break it drill is deferred to the end of the project.
 
 ---
 
@@ -196,3 +198,14 @@ Estimated total: ~4 weeks part-time.
 **Done when:** a fresh clone runs with `docker compose up` + `pnpm dev` from the README; the demo video is linked; the eval badge/table is current.
 
 **Explain it:** pick any file at random and explain why it exists and what would break without it.
+
+---
+
+## Later
+
+Ideas and small follow-ups that came up while building. Not scheduled; pick them up only when a phase needs them.
+
+- Bind the compose ports to `127.0.0.1` so Postgres and Redis are not reachable from the local network.
+- Extend the `toFixed` / `parseFloat` lint ban from `settlement-engine` to `apps/api` once money flows through it (Phase 2).
+- Bump `pnpm/action-setup` when a release targets Node 24 (CI warns that v4 runs on deprecated Node 20).
+- `ubuntu-latest` moves to Ubuntu 26; pin the runner if CI breaks after the switch.

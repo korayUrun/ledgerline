@@ -30,6 +30,7 @@ Ledgerline turns an artist contract (PDF), ticket sales and show expenses into a
 - Merch settlement, a mobile app, streaming chat polish. These are stretch goals, only after Phase 7.
 - Agent frameworks (LangChain etc.) for the agent loop. It is written by hand on purpose.
 - Production hardening: Kubernetes, autoscaling, advanced monitoring.
+- App Dockerfiles / containerized apps. Compose runs only Postgres and Redis; the apps run on the host with `pnpm dev`. The project runs locally only.
 - Any feature not in `docs/FEATURES.md`. If an idea comes up, add it to a "Later" list instead of building it.
 
 **Scope discipline:** finish phases in order (`docs/PHASES.md`). If a task grows beyond its phase, stop and tell me. A smaller project I fully understand is worth more than a bigger one I can't explain.
@@ -114,4 +115,4 @@ stripe listen --forward-to localhost:3001/payments/webhook
 
 ## Current phase
 <!-- Update when a phase is done -->
-**Phase 0 — Domain & foundations.** See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Before marking a phase done, quiz me with its "Explain it" questions.
+**Phase 1 — Settlement engine (F4).** Phase 0 done 2026-11-18. See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Before marking a phase done, quiz me with its "Explain it" questions.
