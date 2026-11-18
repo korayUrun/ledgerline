@@ -93,14 +93,15 @@ Estimated total: ~4 weeks part-time.
 **Goal:** upload a PDF and get correct terms, and *measure* how correct they are from day one.
 
 **Tasks**
-- [ ] `packages/evals` generator: random `ContractTerms` → PDF via templates (varied wording, clause order, distractor clauses) + matching sales/expenses → expected payout via the engine
-- [ ] Generate 25 contracts; commit the dataset
-- [ ] `modules/llm`: Claude client wrapper (model from config, timeout, retry on 429/5xx, token + cost logging)
-- [ ] Extraction: PDF → Claude with the `ContractTerms` JSON Schema → Zod validation → on failure retry with the errors appended (max 2). Each field is `{ value, evidence }`; missing means `null`
-- [ ] BullMQ `contract-extraction` queue; separate `worker.ts` entry point
-- [ ] Contract state machine `uploaded → extracting → needs_review → confirmed | failed`
-- [ ] Review UI: PDF next to fields with their evidence quotes; edit → confirm → new `ContractTerms` version
-- [ ] Eval runner v1: field accuracy + payout exactness → markdown report
+- [x] `packages/evals` generator: random `ContractTerms` → PDF via templates (varied wording, clause order, distractor clauses) + matching sales/expenses → expected payout via the engine
+- [x] Generate 25 contracts; commit the dataset
+- [x] `modules/llm`: Claude client wrapper (model from config, timeout, retry on 429/5xx, token + cost logging)
+- [x] Extraction: PDF → Claude with the `ContractTerms` JSON Schema → Zod validation → on failure retry with the errors appended (max 2). Each field is `{ value, evidence }`; missing means `null`
+- [x] BullMQ `contract-extraction` queue; separate `worker.ts` entry point
+- [x] Contract state machine `uploaded → extracting → needs_review → confirmed | failed`
+- [x] Review UI: PDF next to fields with their evidence quotes; edit → confirm → new `ContractTerms` version
+- [x] Eval runner v1: field accuracy + payout exactness → markdown report
+- [ ] Live eval run on the 25 contracts; commit the baseline (`pnpm evals --save-baseline`)
 
 **Done when:** the full flow upload → extract → review → compute works in the UI; the eval report shows per-field accuracy and payout exactness, and the baseline is saved.
 
@@ -111,6 +112,8 @@ Estimated total: ~4 weeks part-time.
 - Why does extraction run in a worker and not in the HTTP request?
 
 **Break it:** make the prompt worse on purpose (remove the "return null" instruction). Run the evals. Which fields drop, and what does the model invent?
+
+**Status:** code complete 2026-11-19 (PRs #20–#25, CI green on `main`). Not done yet: the live eval baseline needs `ANTHROPIC_API_KEY`, which was not set. Everything else was verified with fake LLM clients: unit + integration tests, the eval pipeline with an oracle (100% on all 25 cases), and the full upload → extract → review → compute flow against the real local servers (payout equal to the generator's expected payout, to the cent). The Explain it questions and the Break it drill are in `SELF_CHECK.md` (deferred).
 
 ---
 
@@ -217,3 +220,9 @@ Ideas and small follow-ups that came up while building. Not scheduled; pick them
 - Switch `apps/web` back to Turbopack once it can resolve `./x.js` imports to `x.ts` in workspace packages (today `next dev --webpack` with `experimental.extensionAlias`).
 - `pg` prints "Calling client.query() when the client is already executing a query is deprecated" during tests. It comes from inside `@prisma/adapter-pg`; recheck when upgrading Prisma.
 - Prisma's `latest` npm tag points at 8.0.0-rc; we pin 7.10.1 (stable). Revisit when 8.0 is final.
+- Sweeper for contracts stuck in `uploaded` (Redis was down between the DB commit and the enqueue). Same idea as the Phase 5 payout sweeper.
+- Check that each evidence quote really appears in the PDF text (needs a PDF text extractor). Today a human checks the quote against the PDF.
+- Server-side refusal fallback for extraction (another model when Claude declines). Left off so the eval measures one model; a refusal fails the extraction and a human types the terms.
+- Delete or archive the stored PDF of a superseded contract upload (today every upload is kept).
+- `formatNanoUsd` exists twice (api and web) because web cannot import api code. Move it to `packages/schemas` next to `formatCents` if a third user appears.
+- Run the eval CI gate (`evals.yml`, Phase 7) against the committed baseline.

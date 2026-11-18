@@ -95,13 +95,15 @@ packages/evals               dataset generator + eval runner
 ```bash
 docker compose up -d          # postgres + redis
 pnpm install
-pnpm dev                      # web + api + worker
+pnpm dev                      # web + api + worker (LLM_CLIENT=fake pnpm dev runs without an API key)
 pnpm test                     # all unit/integration tests (api integration tests need Docker)
 pnpm --filter @ledgerline/api test:unit   # api unit tests only, no Docker
 pnpm --filter settlement-engine test
 pnpm db:migrate               # prisma migrate dev
 pnpm db:seed
-pnpm evals                    # run eval suite → evals/reports/
+pnpm evals                    # run eval suite → evals/reports/ (needs ANTHROPIC_API_KEY)
+pnpm evals --oracle           # same pipeline, no API calls: must score 100%
+pnpm --filter @ledgerline/evals generate   # regenerate the eval dataset (deterministic)
 stripe listen --forward-to localhost:3001/payments/webhook
 ```
 
@@ -116,4 +118,4 @@ stripe listen --forward-to localhost:3001/payments/webhook
 
 ## Current phase
 <!-- Update when a phase is done -->
-**Phase 3 — Eval data + contract extraction + review (F11, F2, F3, F8).** Phases 0–2 done (2026-11-18/19). See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Phase "Explain it" quizzes and "Break it" drills are deferred to the end of the project: when a phase is done, add its questions with answers to `docs/SELF_CHECK.md` instead of quizzing me.
+**Phase 3 — Eval data + contract extraction + review (F11, F2, F3, F8).** Phases 0–2 done (2026-11-18/19). Phase 3 is code complete (PRs #20–#25); the last step is the live eval baseline (`pnpm evals --save-baseline`, needs `ANTHROPIC_API_KEY`), then mark it done and move to Phase 4. See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Phase "Explain it" quizzes and "Break it" drills are deferred to the end of the project: when a phase is done, add its questions with answers to `docs/SELF_CHECK.md` instead of quizzing me.
