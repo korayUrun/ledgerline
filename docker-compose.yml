@@ -1,5 +1,5 @@
-# Local infrastructure only. App containers (api, worker, web, mcp) are added
-# in later phases, once those apps exist.
+# Local infrastructure only. The apps (api, worker, web, mcp) run on the host with
+# `pnpm dev`; app containers are out of scope (CLAUDE.md).
 services:
   postgres:
     image: postgres:17
