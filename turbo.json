@@ -11,6 +11,10 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {}
+    "lint": {},
+    "dev:worker": {
+      "cache": false,
+      "persistent": true
+    }
   }
 }

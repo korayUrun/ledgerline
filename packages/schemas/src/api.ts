@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ContractExtraction, TermsDraft } from "./contract-extraction.js";
 import {
   ContractTermsSchema,
   ExpenseCategorySchema,
@@ -22,6 +23,17 @@ import {
 // Phase 2 states. approved, paying, paid and payment_failed arrive in Phase 5.
 export const SettlementStatusSchema = z.enum(["draft", "computed", "in_review", "stale"]);
 export type SettlementStatus = z.infer<typeof SettlementStatusSchema>;
+
+// --- Contract status (docs/SYSTEM.md §5) ------------------------------------------------
+
+export const ContractStatusSchema = z.enum([
+  "uploaded",
+  "extracting",
+  "needs_review",
+  "confirmed",
+  "failed",
+]);
+export type ContractStatus = z.infer<typeof ContractStatusSchema>;
 
 // --- Request bodies --------------------------------------------------------------------
 
@@ -63,6 +75,10 @@ export type UpdateExpenseBody = z.infer<typeof UpdateExpenseBodySchema>;
 // Saving terms creates a new version; the body is the full terms object.
 export const SaveTermsBodySchema = ContractTermsSchema;
 
+// Confirming an extracted contract: the reviewed (and possibly edited) terms. The
+// same rules as hand-entered terms; the reviewer has filled every gap.
+export const ConfirmContractBodySchema = ContractTermsSchema;
+
 // --- Responses -------------------------------------------------------------------------
 // Dates are ISO strings, because that is what JSON.stringify makes of a Date.
 
@@ -95,6 +111,34 @@ export type TermsVersionSummaryDto = {
   version: number;
   confirmedByName: string;
   confirmedAt: string;
+  contractId: string | null; // set when confirmed from an extracted contract
+};
+
+export type ContractUsageDto = {
+  model: string;
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  costNanoUsd: number | null; // 1 USD = 1e9; null when the model has no known price
+};
+
+export type ContractDto = {
+  id: string;
+  showId: string;
+  fileName: string;
+  status: ContractStatus;
+  failureReason: string | null;
+  usage: ContractUsageDto | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ContractDetailDto = ContractDto & {
+  promptVersion: string | null;
+  // What Claude read, with evidence quotes. null until extraction succeeds.
+  extraction: ContractExtraction | null;
+  // The same, converted to cents and basis points for the review form.
+  draft: TermsDraft | null;
 };
 
 export type TermsDto = {

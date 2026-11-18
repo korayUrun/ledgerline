@@ -195,6 +195,7 @@ async function main(): Promise<void> {
     await tx.settlementLine.deleteMany();
     await tx.settlement.deleteMany();
     await tx.contractTerms.deleteMany();
+    await tx.contract.deleteMany();
     await tx.expense.deleteMany();
     await tx.ticketSale.deleteMany();
     await tx.show.deleteMany();

@@ -173,6 +173,9 @@ function correctionPrompt(issues: string[]): string {
 }
 
 function addUsage(total: ExtractionUsage, call: LlmCallUsage): void {
+  // The model the API says answered, not the one we asked for: the two can differ
+  // (an alias, or the offline fake), and the report must name what actually ran.
+  total.model = call.model;
   total.calls += 1;
   total.inputTokens += call.inputTokens;
   total.outputTokens += call.outputTokens;

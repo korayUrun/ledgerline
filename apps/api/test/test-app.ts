@@ -6,11 +6,13 @@ import { createPrismaClient, DEMO_USER_EMAIL, type PrismaClient } from "@ledgerl
 import type { ContractTerms } from "@ledgerline/schemas";
 import { inject } from "vitest";
 import { createApp } from "../src/app.js";
+import type { ApiConfig } from "../src/config.js";
 
 export type Result<T> = { status: number; body: T };
 
 export type TestApp = {
   nest: INestApplication; // to reach services directly (e.g. the state machine)
+  config: ApiConfig; // the worker in a test must share the same database, Redis and storage
   baseUrl: string;
   // Direct database access, for arranging data and for "break it" steps that
   // change rows behind the API's back.
@@ -20,7 +22,7 @@ export type TestApp = {
   upload: <T = unknown>(
     urlPath: string,
     fileName: string,
-    content: string,
+    content: string | Buffer,
     type: string,
   ) => Promise<Result<T>>;
   close: () => Promise<void>;
@@ -28,12 +30,17 @@ export type TestApp = {
 
 // Starts the real app (same createApp as main.ts) on a random free port.
 export async function startTestApp(): Promise<TestApp> {
-  const databaseUrl = inject("databaseUrl");
   const storageDir = await mkdtemp(path.join(tmpdir(), "ledgerline-test-"));
-  const app: INestApplication = await createApp({ databaseUrl, port: 0, storageDir }, ["error"]);
+  const config: ApiConfig = {
+    databaseUrl: inject("databaseUrl"),
+    redisUrl: inject("redisUrl"),
+    port: 0,
+    storageDir,
+  };
+  const app: INestApplication = await createApp(config, ["error"]);
   await app.listen(0);
   const baseUrl = await app.getUrl();
-  const prisma = createPrismaClient(databaseUrl);
+  const prisma = createPrismaClient(config.databaseUrl);
 
   async function toResult<T>(response: Response): Promise<Result<T>> {
     const text = await response.text();
@@ -42,6 +49,7 @@ export async function startTestApp(): Promise<TestApp> {
 
   return {
     nest: app,
+    config,
     baseUrl,
     prisma,
     request: async <T>(method: string, urlPath: string, body?: unknown) =>
@@ -52,9 +60,16 @@ export async function startTestApp(): Promise<TestApp> {
           body: body === undefined ? null : JSON.stringify(body),
         }),
       ),
-    upload: async <T>(urlPath: string, fileName: string, content: string, type: string) => {
+    upload: async <T>(
+      urlPath: string,
+      fileName: string,
+      content: string | Buffer,
+      type: string,
+    ) => {
       const form = new FormData();
-      form.append("file", new Blob([content], { type }), fileName);
+      // A Buffer is copied into a Uint8Array, which Blob accepts on every Node version.
+      const part = typeof content === "string" ? content : new Uint8Array(content);
+      form.append("file", new Blob([part], { type }), fileName);
       return toResult<T>(await fetch(`${baseUrl}${urlPath}`, { method: "POST", body: form }));
     },
     close: async () => {
@@ -69,8 +84,8 @@ export async function startTestApp(): Promise<TestApp> {
 // TRUNCATE … CASCADE is the fastest way and ignores foreign-key order.
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
   await prisma.$executeRawUnsafe(
-    `TRUNCATE "SettlementLine", "Settlement", "ContractTerms", "Expense", "TicketSale",
-              "Show", "Artist", "Venue", "AuditLog", "User" CASCADE`,
+    `TRUNCATE "SettlementLine", "Settlement", "ContractTerms", "Contract", "Expense",
+              "TicketSale", "Show", "Artist", "Venue", "AuditLog", "User" CASCADE`,
   );
   await prisma.user.create({ data: { email: DEMO_USER_EMAIL, name: "Demo Manager" } });
 }

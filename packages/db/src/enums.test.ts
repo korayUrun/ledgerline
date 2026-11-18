@@ -1,4 +1,5 @@
 import {
+  ContractStatusSchema,
   ExpenseCategorySchema,
   ExpenseStatusSchema,
   LineKindSchema,
@@ -6,6 +7,7 @@ import {
 } from "@ledgerline/schemas";
 import { describe, expect, it } from "vitest";
 import {
+  ContractStatus,
   ExpenseCategory,
   ExpenseStatus,
   SettlementLineKind,
@@ -26,6 +28,10 @@ describe("Prisma enums match the Zod enums", () => {
 
   it("settlement line kinds", () => {
     expect(Object.values(SettlementLineKind)).toEqual(LineKindSchema.options);
+  });
+
+  it("contract statuses", () => {
+    expect(Object.values(ContractStatus)).toEqual(ContractStatusSchema.options);
   });
 
   it("settlement statuses", () => {

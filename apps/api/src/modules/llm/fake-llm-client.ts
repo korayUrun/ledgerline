@@ -32,7 +32,12 @@ export class FakeLlmClient implements LlmClient {
 // A minimal Message with one text block, as the API returns for structured output.
 export function fakeTextMessage(
   text: string,
-  options: { stopReason?: Anthropic.StopReason; model?: string } = {},
+  options: {
+    stopReason?: Anthropic.StopReason;
+    model?: string;
+    inputTokens?: number;
+    outputTokens?: number;
+  } = {},
 ): Anthropic.Message {
   return {
     id: "msg_fake",
@@ -46,8 +51,8 @@ export function fakeTextMessage(
     container: null,
     diagnostics: null,
     usage: {
-      input_tokens: 5_000,
-      output_tokens: 800,
+      input_tokens: options.inputTokens ?? 5_000,
+      output_tokens: options.outputTokens ?? 800,
       cache_creation: null,
       cache_creation_input_tokens: null,
       cache_read_input_tokens: null,
