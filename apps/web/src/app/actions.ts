@@ -9,16 +9,15 @@ import {
   ExpenseCategorySchema,
   ExpenseStatusSchema,
   parseDollarsToCents,
-  parsePercentToBps,
-  type ContractTerms,
+  type ApiErrorDto,
   type CreateExpenseBody,
   type CreateShowBody,
-  type ExpenseCategory,
   type UpdateExpenseBody,
 } from "@ledgerline/schemas";
 import { redirect } from "next/navigation";
 import { api, ApiError } from "../lib/api";
 import { withError } from "../lib/flash";
+import { termsFromForm } from "../lib/terms-form";
 
 // Runs the API call and returns where to go next. redirect() works by throwing,
 // so it must be called outside any try/catch; that is why this returns a path.
@@ -132,116 +131,52 @@ export async function uploadReceipt(
   );
 }
 
-// --- Terms ------------------------------------------------------------------------------
+// --- Terms and contracts ------------------------------------------------------------
+
+function formProblems(problems: string[]): ApiErrorDto {
+  return {
+    statusCode: 400,
+    message: "Some fields need fixing",
+    issues: problems.map((message) => ({ path: "", message })),
+  };
+}
 
 export async function saveTerms(showId: string, form: FormData): Promise<void> {
   const returnPath = `/shows/${showId}/terms`;
-  const problems: string[] = [];
-
-  // Text → cents / bps. A blank optional field means "not in the contract" (null);
-  // a filled-in field that does not parse is an error, never silently dropped.
-  function dollars(name: string, label: string): number {
-    const cents = parseDollarsToCents(text(form, name));
-    if (cents === null) problems.push(`${label}: enter a dollar amount like 5000.00`);
-    return cents ?? 0;
-  }
-  function optionalDollars(name: string, label: string): number | null {
-    return text(form, name) === "" ? null : dollars(name, label);
-  }
-  function percent(name: string, label: string): number {
-    const bps = parsePercentToBps(text(form, name));
-    if (bps === null) problems.push(`${label}: enter a percentage like 85 or 12.5`);
-    return bps ?? 0;
-  }
-
-  const dealType = text(form, "dealType");
-  const dealClause = text(form, "dealClause");
-  let deal: ContractTerms["deal"];
-  switch (dealType) {
-    case "flat":
-      deal = {
-        type: "flat",
-        guaranteeCents: dollars("guarantee", "Guarantee"),
-        clauseRef: dealClause,
-      };
-      break;
-    case "percentage":
-      deal = {
-        type: "percentage",
-        artistShareBps: percent("artistShare", "Artist share"),
-        clauseRef: dealClause,
-      };
-      break;
-    case "versus":
-      deal = {
-        type: "versus",
-        guaranteeCents: dollars("guarantee", "Guarantee"),
-        artistShareBps: percent("artistShare", "Artist share"),
-        clauseRef: dealClause,
-      };
-      break;
-    case "guarantee_plus":
-      deal = {
-        type: "guarantee_plus",
-        guaranteeCents: dollars("guarantee", "Guarantee"),
-        artistShareBps: percent("artistShare", "Artist share"),
-        promoterProfitBps: percent("promoterProfit", "Promoter profit"),
-        clauseRef: dealClause,
-      };
-      break;
-    default:
-      redirect(withError(returnPath, "Choose a deal type."));
-  }
-
-  const allowedCategories: ExpenseCategory[] = ExpenseCategorySchema.options.filter(
-    (category) => form.get(`allow_${category}`) === "on",
-  );
-  const categoryCaps = allowedCategories.flatMap((category) => {
-    const capCents = optionalDollars(`cap_${category}`, `Cap for ${category}`);
-    return capCents === null ? [] : [{ category, capCents }];
-  });
-
-  const bonusMode = text(form, "bonusMode");
-  const tiers = [0, 1, 2].flatMap((index) => {
-    const minTickets = text(form, `tierTickets_${index}`);
-    if (minTickets === "" && text(form, `tierBonus_${index}`) === "") return [];
-    if (!/^\d+$/.test(minTickets)) {
-      problems.push(`Bonus tier ${index + 1}: tickets must be a whole number`);
-    }
-    return [
-      {
-        minTicketsSold: Number(minTickets),
-        bonusCents: dollars(`tierBonus_${index}`, `Bonus tier ${index + 1}`),
-      },
-    ];
-  });
-
-  const terms: ContractTerms = {
-    deal,
-    expensePolicy: {
-      allowedCategories,
-      categoryCaps,
-      totalCapCents: optionalDollars("totalCap", "Total expense cap"),
-      clauseRef: text(form, "expenseClause"),
-    },
-    bonus:
-      bonusMode === "cumulative" || bonusMode === "highest_only"
-        ? { mode: bonusMode, tiers, clauseRef: text(form, "bonusClause") }
-        : null,
-  };
-
-  if (problems.length > 0) {
-    redirect(
-      withError(returnPath, {
-        statusCode: 400,
-        message: "Some fields need fixing",
-        issues: problems.map((message) => ({ path: "", message })),
-      }),
-    );
+  const { terms, problems } = termsFromForm(form);
+  if (!terms) {
+    redirect(withError(returnPath, formProblems(problems)));
   }
   // The API validates the whole object with ContractTermsSchema and answers 400
   // with the exact field paths if anything breaks a rule.
   redirect(await callApi(returnPath, () => api.post(`/shows/${showId}/terms`, terms)));
+}
+
+export async function uploadContract(showId: string, form: FormData): Promise<void> {
+  const returnPath = `/shows/${showId}/contract`;
+  const file = form.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    redirect(withError(returnPath, "Choose a PDF file first."));
+  }
+  const upload = new FormData();
+  upload.append("file", file);
+  redirect(await callApi(returnPath, () => api.post(`/shows/${showId}/contracts`, upload)));
+}
+
+// The reviewer's confirmation (F3): the form's terms become a new terms version.
+// On success, go to the terms page, which now shows that version.
+export async function confirmContract(
+  showId: string,
+  contractId: string,
+  form: FormData,
+): Promise<void> {
+  const returnPath = `/shows/${showId}/contract/${contractId}`;
+  const { terms, problems } = termsFromForm(form);
+  if (!terms) {
+    redirect(withError(returnPath, formProblems(problems)));
+  }
+  const path = await callApi(returnPath, () => api.post(`/contracts/${contractId}/confirm`, terms));
+  redirect(path === returnPath ? `/shows/${showId}/terms` : path);
 }
 
 // --- Settlement ---------------------------------------------------------------------------
