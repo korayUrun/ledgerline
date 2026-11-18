@@ -183,7 +183,7 @@ The split point is the same on both nights because expenses and guarantee are th
 **Rules**
 - Tiers are based on **paid tickets sold** (`Σ qtySold`, comps excluded). A tier is reached when tickets sold ≥ its threshold.
 - **Cumulative:** the artist gets every tier reached, added together.
-- **Highest-only:** the artist gets only the highest tier reached.
+- **Highest-only:** the artist gets only the highest tier reached. A higher tier must not pay less than a lower one; otherwise selling one more ticket could lower the payout, so the schema rejects such a plan.
 - The bonus is added **on top of** the deal payout as its own line.
 
 **Terms**
@@ -301,5 +301,5 @@ Work these out by hand before opening the answers. Unless an exercise says other
 | R4 | Percentages: `roundHalfUp(amount × bps / 10000)`, once per line, on amounts clamped to ≥ 0. |
 | R5 | Versus: max(guarantee, pct of max(0, NBOR − expenses)). |
 | R6 | Guarantee plus: promoter profit on (expenses + guarantee); split point = expenses + guarantee + promoter profit; payout = guarantee + pct of max(0, NBOR − split point). |
-| R7 | Bonus tiers are based on paid tickets, a tier is reached at ≥ threshold, cumulative or highest-only as the contract says, and the bonus is added on top as its own line. |
+| R7 | Bonus tiers are based on paid tickets, a tier is reached at ≥ threshold, cumulative or highest-only as the contract says (in highest-only, a higher tier never pays less), and the bonus is added on top as its own line. |
 | R8 | Every number above is a separate worksheet line with its clause and source rows. |

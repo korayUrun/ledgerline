@@ -127,6 +127,23 @@ export const BonusPlanSchema = z
         message: `more than one tier at ${threshold} tickets`,
       });
     }
+
+    // Highest-only pays one tier, so a higher tier that pays less would make
+    // selling one more ticket lower the payout. Found by the engine's property test.
+    if (plan.mode === "highest_only") {
+      const sortedTiers = [...plan.tiers].sort((a, b) => a.minTicketsSold - b.minTicketsSold);
+      for (let index = 1; index < sortedTiers.length; index++) {
+        const lower = sortedTiers[index - 1]!;
+        const higher = sortedTiers[index]!;
+        if (higher.bonusCents < lower.bonusCents) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["tiers"],
+            message: `highest-only: the ${higher.minTicketsSold}-ticket tier pays less than the ${lower.minTicketsSold}-ticket tier`,
+          });
+        }
+      }
+    }
   });
 export type BonusPlan = z.infer<typeof BonusPlanSchema>;
 
