@@ -47,7 +47,8 @@ export function normalizeClauseRef(text: string): string {
 
 export const EvidenceSchema = z.object({
   quote: z.string().describe("The exact words from the contract that state this value"),
-  page: z.int().describe("1-based page number of the quote"),
+  // A real range, not just z.int(): the bounds end up in the schema Claude sees.
+  page: z.int().min(1).max(1000).describe("1-based page number of the quote"),
 });
 export type Evidence = z.infer<typeof EvidenceSchema>;
 
