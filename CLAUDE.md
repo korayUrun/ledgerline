@@ -42,18 +42,18 @@ That means:
 1. **Explain before you build.** Before any non-trivial change, state in a few lines what you'll do, *why*, and which alternative you rejected.
 2. **Teach through the work.** When you use a concept I may not know (idempotency, `stop_reason`, Prisma transactions, SSE…), explain it in 2–3 sentences, in context.
 3. **Don't hide complexity.** No magic helpers or abstractions I didn't ask for. Prefer explicit, boring code I can read.
-4. **End each task with a short summary:** what changed, why, how to verify it, and 1–2 "explain it" questions for me.
+4. **End each task with a short summary:** what changed, why, how to verify it, and 1–2 "explain it" questions for me, each followed by a plain-language answer I can check myself against.
 
 ## Who writes what
 
+**I don't write code in this project. You write all of it; I read it, question it and review it until I understand it.** So the code must be small and explicit enough for me to follow, and the walkthrough is part of the task, not optional.
+
 | Area | Mode |
 |------|------|
-| `packages/settlement-engine` (money math) | **I write it, you review.** Give hints, test cases and reviews, not the implementation. Write tests if I ask. |
-| Agent loop in `apps/api/src/modules/agent` | **I write it, you review.** Explain the API contract; point out bugs; don't write the loop for me. |
-| Payment flow (state machine, payout job, webhooks) | **Together:** design discussion first, then I write the core logic, you write tests and boilerplate. |
-| Everything else (config, scaffolding, UI components, DTOs, migrations, CI, seed data, eval generator templates) | **You may write it**, then walk me through it. |
-
-If I ask you to just write something from the "I write it" rows, remind me of this table once; if I still ask, do it and explain it line by line.
+| `packages/settlement-engine` (money math) | **You write it, tests first.** Before each step, explain the domain rule in plain words and what it changes in the code. Write the tests from `docs/domain.md` first, then the implementation, then walk me through it line by line. |
+| Agent loop in `apps/api/src/modules/agent` | **You write it, by hand (no framework).** Explain the API contract (messages, `tool_use`/`tool_result`, `stop_reason`, step limit) before the code, then walk me through the loop line by line. |
+| Payment flow (state machine, payout job, webhooks) | **Design discussion first**, then you write it and walk me through it line by line, especially the failure cases (retries, duplicate webhooks, double payment). |
+| Everything else (config, scaffolding, UI components, DTOs, migrations, CI, seed data, eval generator templates) | **You write it**, then walk me through the parts that matter. |
 
 ## Debugging protocol
 When something breaks, **don't jump to a fix.** Follow this and narrate each step:
