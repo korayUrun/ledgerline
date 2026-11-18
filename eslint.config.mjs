@@ -12,6 +12,9 @@ import tseslint from "typescript-eslint";
 // "anything that is NOT one of these is an error". An allow-list stays correct
 // when someone installs a new package; a deny-list would not.
 
+const MONEY_FLOAT_MESSAGE =
+  "Money is integer cents (CLAUDE.md). Never parse money as a float; use parseDollarsToCents from @ledgerline/schemas.";
+
 const ENGINE_PURITY_MESSAGE =
   "settlement-engine is pure (SYSTEM.md §2): it may import only @ledgerline/schemas and relative files. No I/O, DB, network, clock or randomness.";
 
@@ -105,6 +108,29 @@ export default defineConfig([
               message: ENGINE_PURITY_MESSAGE,
             },
           ],
+        },
+      ],
+    },
+  },
+
+  // --- api and web: money flows through them too ------------------------------
+  // The engine block above bans more (I/O, clock…); here only the float traps.
+  // Money arrives as integer cents from the API, and text is converted with
+  // parseDollarsToCents / formatCents from @ledgerline/schemas.
+  {
+    files: ["apps/api/**/*.ts", "apps/web/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-globals": ["error", { name: "parseFloat", message: MONEY_FLOAT_MESSAGE }],
+      "no-restricted-properties": [
+        "error",
+        { object: "Number", property: "parseFloat", message: MONEY_FLOAT_MESSAGE },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name='toFixed']",
+          message:
+            "toFixed rounds floats. Format money with formatCents from @ledgerline/schemas (CLAUDE.md).",
         },
       ],
     },

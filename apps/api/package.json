@@ -7,13 +7,28 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "dev": "tsx watch src/main.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit"
   },
   "dependencies": {
-    "@ledgerline/settlement-engine": "workspace:*",
+    "@ledgerline/db": "workspace:*",
     "@ledgerline/schemas": "workspace:*",
-    "@ledgerline/db": "workspace:*"
+    "@ledgerline/settlement-engine": "workspace:*",
+    "@nestjs/common": "12.5.1",
+    "@nestjs/core": "12.5.1",
+    "@nestjs/platform-express": "12.5.1",
+    "csv-parse": "7.0.3",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "12.2.1",
+    "@types/multer": "2.3.0",
+    "testcontainers": "12.2.1",
+    "tsx": "4.23.15"
   }
 }

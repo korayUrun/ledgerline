@@ -1,7 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node", "multer"],
+    // NestJS uses TypeScript's (legacy) decorators: @Controller, @Get, @Inject…
+    // We do NOT turn on emitDecoratorMetadata: every constructor parameter names its
+    // dependency with an explicit @Inject(...), so the code works the same under tsx,
+    // Vitest and tsc without a special compiler plugin.
+    "experimentalDecorators": true
   },
-  "include": ["src"]
+  "include": ["src", "test", "vitest.config.ts"]
 }
