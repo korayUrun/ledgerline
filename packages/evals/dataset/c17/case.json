@@ -1,0 +1,95 @@
+{
+  "id": "c17",
+  "seed": 1016,
+  "dealType": "flat",
+  "tags": [
+    "deposit_distractor",
+    "merch_percent_distractor",
+    "money_in_words",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Northern Rivers",
+    "venueName": "The Granary",
+    "promoterName": "Lantern Hill Productions LLC",
+    "showDate": "2026-12-28"
+  },
+  "terms": {
+    "deal": {
+      "type": "flat",
+      "guaranteeCents": 2825000,
+      "clauseRef": "§4.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§2"
+    },
+    "bonus": {
+      "mode": "cumulative",
+      "tiers": [
+        {
+          "minTicketsSold": 650,
+          "bonusCents": 75000
+        },
+        {
+          "minTicketsSold": 850,
+          "bonusCents": 100000
+        },
+        {
+          "minTicketsSold": 1000,
+          "bonusCents": 200000
+        }
+      ],
+      "clauseRef": "§6"
+    }
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 850,
+      "comps": 21,
+      "priceCents": 5000,
+      "taxCents": 0,
+      "feeCents": 127500
+    },
+    {
+      "id": "ts-2",
+      "tierName": "VIP",
+      "qtySold": 98,
+      "comps": 7,
+      "priceCents": 7500,
+      "taxCents": 0,
+      "feeCents": 14700
+    },
+    {
+      "id": "ts-3",
+      "tierName": "Balcony",
+      "qtySold": 102,
+      "comps": 29,
+      "priceCents": 5000,
+      "taxCents": 0,
+      "feeCents": 15300
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "advertising",
+      "description": "Social media ads",
+      "amountCents": 265000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 253000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 3200000
+}

@@ -1,0 +1,133 @@
+{
+  "id": "c23",
+  "seed": 1022,
+  "dealType": "versus",
+  "tags": [
+    "deposit_distractor",
+    "money_in_words",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Midnight Pines",
+    "venueName": "The Foundry",
+    "promoterName": "Bluebird Presents Inc.",
+    "showDate": "2026-11-11"
+  },
+  "terms": {
+    "deal": {
+      "type": "versus",
+      "guaranteeCents": 1600000,
+      "artistShareBps": 8250,
+      "clauseRef": "§4.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "production",
+        "advertising",
+        "catering",
+        "security",
+        "staffing",
+        "equipment"
+      ],
+      "categoryCaps": [
+        {
+          "category": "production",
+          "capCents": 150000
+        },
+        {
+          "category": "security",
+          "capCents": 125000
+        }
+      ],
+      "totalCapCents": 700000,
+      "clauseRef": "§6"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 722,
+      "comps": 16,
+      "priceCents": 5000,
+      "taxCents": 361000,
+      "feeCents": 144400
+    },
+    {
+      "id": "ts-2",
+      "tierName": "Balcony",
+      "qtySold": 137,
+      "comps": 27,
+      "priceCents": 5000,
+      "taxCents": 68500,
+      "feeCents": 27400
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 170000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "advertising",
+      "description": "Radio spots",
+      "amountCents": 130000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "catering",
+      "description": "Crew meals",
+      "amountCents": 248000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "security",
+      "description": "Barricade security staff",
+      "amountCents": 180000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-5",
+      "category": "staffing",
+      "description": "Box office and ushers",
+      "amountCents": 400000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-6",
+      "category": "equipment",
+      "description": "Video wall rental",
+      "amountCents": 340000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-7",
+      "category": "office_supplies",
+      "description": "Printer paper and toner",
+      "amountCents": 45000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-1",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-4",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-7",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 2469803
+}

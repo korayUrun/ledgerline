@@ -1,0 +1,59 @@
+{
+  "id": "c01",
+  "seed": 1000,
+  "dealType": "flat",
+  "tags": [
+    "deposit_distractor",
+    "merch_percent_distractor",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Midnight Pines",
+    "venueName": "Hall 9",
+    "promoterName": "Bluebird Presents Inc.",
+    "showDate": "2026-10-24"
+  },
+  "terms": {
+    "deal": {
+      "type": "flat",
+      "guaranteeCents": 2050000,
+      "clauseRef": "§7.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§3"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 233,
+      "comps": 26,
+      "priceCents": 3500,
+      "taxCents": 65240,
+      "feeCents": 23300
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "advertising",
+      "description": "Poster printing",
+      "amountCents": 183000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "catering",
+      "description": "Band dinner and green room",
+      "amountCents": 100000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 2050000
+}

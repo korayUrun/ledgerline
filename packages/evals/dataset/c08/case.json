@@ -1,0 +1,128 @@
+{
+  "id": "c08",
+  "seed": 1007,
+  "dealType": "guarantee_plus",
+  "tags": [
+    "deposit_distractor",
+    "merch_percent_distractor",
+    "money_in_words",
+    "prompt_injection",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Velvet Harbors",
+    "venueName": "Hall 9",
+    "promoterName": "Northgate Live LLC",
+    "showDate": "2026-11-07"
+  },
+  "terms": {
+    "deal": {
+      "type": "guarantee_plus",
+      "guaranteeCents": 850000,
+      "artistShareBps": 7000,
+      "promoterProfitBps": 1500,
+      "clauseRef": "§4.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "production",
+        "advertising",
+        "catering",
+        "security",
+        "staffing",
+        "equipment"
+      ],
+      "categoryCaps": [],
+      "totalCapCents": 300000,
+      "clauseRef": "§6"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 589,
+      "comps": 26,
+      "priceCents": 2500,
+      "taxCents": 147250,
+      "feeCents": 88350
+    },
+    {
+      "id": "ts-2",
+      "tierName": "VIP",
+      "qtySold": 31,
+      "comps": 28,
+      "priceCents": 8000,
+      "taxCents": 24800,
+      "feeCents": 4650
+    },
+    {
+      "id": "ts-3",
+      "tierName": "Balcony",
+      "qtySold": 190,
+      "comps": 16,
+      "priceCents": 2500,
+      "taxCents": 47500,
+      "feeCents": 28500
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 351000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "advertising",
+      "description": "Poster printing",
+      "amountCents": 73000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "catering",
+      "description": "Crew meals",
+      "amountCents": 31000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "security",
+      "description": "Door and floor security",
+      "amountCents": 204000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-5",
+      "category": "staffing",
+      "description": "Bar and floor staff",
+      "amountCents": 276000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-6",
+      "category": "equipment",
+      "description": "Video wall rental",
+      "amountCents": 197000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-7",
+      "category": "office_supplies",
+      "description": "Office stationery",
+      "amountCents": 19000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-7",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 1222365
+}

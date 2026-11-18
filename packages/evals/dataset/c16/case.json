@@ -1,0 +1,101 @@
+{
+  "id": "c16",
+  "seed": 1015,
+  "dealType": "guarantee_plus",
+  "tags": [
+    "deposit_distractor",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Paper Satellites",
+    "venueName": "The Granary",
+    "promoterName": "Lantern Hill Productions LLC",
+    "showDate": "2026-04-27"
+  },
+  "terms": {
+    "deal": {
+      "type": "guarantee_plus",
+      "guaranteeCents": 950000,
+      "artistShareBps": 7000,
+      "promoterProfitBps": 1500,
+      "clauseRef": "§4.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "production",
+        "staffing",
+        "equipment"
+      ],
+      "categoryCaps": [
+        {
+          "category": "staffing",
+          "capCents": 75000
+        }
+      ],
+      "totalCapCents": 500000,
+      "clauseRef": "§5"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 345,
+      "comps": 18,
+      "priceCents": 3500,
+      "taxCents": 0,
+      "feeCents": 34500
+    },
+    {
+      "id": "ts-2",
+      "tierName": "Balcony",
+      "qtySold": 65,
+      "comps": 22,
+      "priceCents": 3500,
+      "taxCents": 0,
+      "feeCents": 6500
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Stage hands and rigging",
+      "amountCents": 395000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "staffing",
+      "description": "Box office and ushers",
+      "amountCents": 105000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "equipment",
+      "description": "Video wall rental",
+      "amountCents": 154000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "other",
+      "description": "Venue manager's taxi",
+      "amountCents": 40000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-2",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-4",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 950000
+}

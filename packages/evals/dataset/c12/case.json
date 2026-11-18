@@ -1,0 +1,111 @@
+{
+  "id": "c12",
+  "seed": 1011,
+  "dealType": "guarantee_plus",
+  "tags": [
+    "deposit_distractor",
+    "merch_percent_distractor",
+    "money_in_words",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Golden Satellites",
+    "venueName": "The Granary",
+    "promoterName": "Bluebird Presents Inc.",
+    "showDate": "2026-12-19"
+  },
+  "terms": {
+    "deal": {
+      "type": "guarantee_plus",
+      "guaranteeCents": 725000,
+      "artistShareBps": 8000,
+      "promoterProfitBps": 2000,
+      "clauseRef": "§4.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "advertising",
+        "security",
+        "staffing"
+      ],
+      "categoryCaps": [
+        {
+          "category": "advertising",
+          "capCents": 125000
+        },
+        {
+          "category": "security",
+          "capCents": 50000
+        }
+      ],
+      "totalCapCents": 1150000,
+      "clauseRef": "§6"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 160,
+      "comps": 24,
+      "priceCents": 3000,
+      "taxCents": 38400,
+      "feeCents": 16000
+    },
+    {
+      "id": "ts-2",
+      "tierName": "VIP",
+      "qtySold": 80,
+      "comps": 10,
+      "priceCents": 8500,
+      "taxCents": 54400,
+      "feeCents": 8000
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "advertising",
+      "description": "Poster printing",
+      "amountCents": 200000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "security",
+      "description": "Barricade security staff",
+      "amountCents": 120000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "staffing",
+      "description": "Bar and floor staff",
+      "amountCents": 314000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "office_supplies",
+      "description": "Office stationery",
+      "amountCents": 24000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-1",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-2",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-4",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 725000
+}

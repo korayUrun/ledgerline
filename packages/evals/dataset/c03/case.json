@@ -1,0 +1,110 @@
+{
+  "id": "c03",
+  "seed": 1002,
+  "dealType": "versus",
+  "tags": [
+    "deposit_distractor",
+    "merch_percent_distractor",
+    "money_in_words",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Paper Harbors",
+    "venueName": "Riverside Ballroom",
+    "promoterName": "Bluebird Presents Inc.",
+    "showDate": "2026-06-15"
+  },
+  "terms": {
+    "deal": {
+      "type": "versus",
+      "guaranteeCents": 550000,
+      "artistShareBps": 7000,
+      "clauseRef": "§2.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "catering",
+        "security",
+        "staffing",
+        "equipment"
+      ],
+      "categoryCaps": [
+        {
+          "category": "equipment",
+          "capCents": 175000
+        }
+      ],
+      "totalCapCents": 1100000,
+      "clauseRef": "§3"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 290,
+      "comps": 25,
+      "priceCents": 3500,
+      "taxCents": 50750,
+      "feeCents": 29000
+    },
+    {
+      "id": "ts-2",
+      "tierName": "Balcony",
+      "qtySold": 172,
+      "comps": 9,
+      "priceCents": 3500,
+      "taxCents": 30100,
+      "feeCents": 17200
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "catering",
+      "description": "Crew meals",
+      "amountCents": 166000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "security",
+      "description": "Barricade security staff",
+      "amountCents": 198000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "staffing",
+      "description": "Bar and floor staff",
+      "amountCents": 139000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "equipment",
+      "description": "Video wall rental",
+      "amountCents": 250000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-5",
+      "category": "office_supplies",
+      "description": "Printer paper and toner",
+      "amountCents": 35000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-4",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-5",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 568365
+}

@@ -1,0 +1,67 @@
+{
+  "id": "c25",
+  "seed": 1024,
+  "dealType": "flat",
+  "tags": [
+    "deposit_distractor",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Hollow Harbors",
+    "venueName": "The Foundry",
+    "promoterName": "Northgate Live LLC",
+    "showDate": "2026-05-09"
+  },
+  "terms": {
+    "deal": {
+      "type": "flat",
+      "guaranteeCents": 1725000,
+      "clauseRef": "§6.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§5"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 732,
+      "comps": 29,
+      "priceCents": 4000,
+      "taxCents": 0,
+      "feeCents": 73200
+    },
+    {
+      "id": "ts-2",
+      "tierName": "Balcony",
+      "qtySold": 118,
+      "comps": 15,
+      "priceCents": 4000,
+      "taxCents": 0,
+      "feeCents": 11800
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "advertising",
+      "description": "Poster printing",
+      "amountCents": 206000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "catering",
+      "description": "Band dinner and green room",
+      "amountCents": 218000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 1725000
+}

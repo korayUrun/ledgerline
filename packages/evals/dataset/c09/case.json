@@ -1,0 +1,71 @@
+{
+  "id": "c09",
+  "seed": 1008,
+  "dealType": "flat",
+  "tags": [
+    "money_in_words",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Silver Satellites",
+    "venueName": "Riverside Ballroom",
+    "promoterName": "Bluebird Presents Inc.",
+    "showDate": "2026-10-21"
+  },
+  "terms": {
+    "deal": {
+      "type": "flat",
+      "guaranteeCents": 250000,
+      "clauseRef": "§6.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§5"
+    },
+    "bonus": {
+      "mode": "highest_only",
+      "tiers": [
+        {
+          "minTicketsSold": 350,
+          "bonusCents": 75000
+        },
+        {
+          "minTicketsSold": 450,
+          "bonusCents": 100000
+        }
+      ],
+      "clauseRef": "§6.2"
+    }
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 435,
+      "comps": 7,
+      "priceCents": 3000,
+      "taxCents": 104400,
+      "feeCents": 87000
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "catering",
+      "description": "Crew meals",
+      "amountCents": 188000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "advertising",
+      "description": "Social media ads",
+      "amountCents": 42000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 325000
+}

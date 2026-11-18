@@ -1,0 +1,79 @@
+{
+  "id": "c18",
+  "seed": 1017,
+  "dealType": "percentage",
+  "tags": [
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Velvet Pines",
+    "venueName": "Riverside Ballroom",
+    "promoterName": "Lantern Hill Productions LLC",
+    "showDate": "2026-03-06"
+  },
+  "terms": {
+    "deal": {
+      "type": "percentage",
+      "artistShareBps": 5000,
+      "clauseRef": "§3.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§5"
+    },
+    "bonus": {
+      "mode": "highest_only",
+      "tiers": [
+        {
+          "minTicketsSold": 550,
+          "bonusCents": 75000
+        },
+        {
+          "minTicketsSold": 850,
+          "bonusCents": 125000
+        }
+      ],
+      "clauseRef": "§3.2"
+    }
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 832,
+      "comps": 16,
+      "priceCents": 4000,
+      "taxCents": 266240,
+      "feeCents": 83200
+    },
+    {
+      "id": "ts-2",
+      "tierName": "VIP",
+      "qtySold": 24,
+      "comps": 1,
+      "priceCents": 10000,
+      "taxCents": 19200,
+      "feeCents": 2400
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "advertising",
+      "description": "Poster printing",
+      "amountCents": 82000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 137000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 1723480
+}

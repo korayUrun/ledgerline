@@ -1,0 +1,147 @@
+{
+  "id": "c15",
+  "seed": 1014,
+  "dealType": "versus",
+  "tags": [
+    "cents_in_guarantee",
+    "deposit_distractor",
+    "merch_percent_distractor",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Golden Pines",
+    "venueName": "The Foundry",
+    "promoterName": "Lantern Hill Productions LLC",
+    "showDate": "2026-02-23"
+  },
+  "terms": {
+    "deal": {
+      "type": "versus",
+      "guaranteeCents": 1000013,
+      "artistShareBps": 9000,
+      "clauseRef": "§6.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "production",
+        "advertising",
+        "catering",
+        "security",
+        "staffing",
+        "equipment"
+      ],
+      "categoryCaps": [
+        {
+          "category": "advertising",
+          "capCents": 150000
+        },
+        {
+          "category": "catering",
+          "capCents": 125000
+        }
+      ],
+      "totalCapCents": 700000,
+      "clauseRef": "§2"
+    },
+    "bonus": {
+      "mode": "cumulative",
+      "tiers": [
+        {
+          "minTicketsSold": 500,
+          "bonusCents": 50000
+        },
+        {
+          "minTicketsSold": 650,
+          "bonusCents": 150000
+        }
+      ],
+      "clauseRef": "§6.2"
+    }
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 561,
+      "comps": 15,
+      "priceCents": 3500,
+      "taxCents": 196350,
+      "feeCents": 112200
+    },
+    {
+      "id": "ts-2",
+      "tierName": "VIP",
+      "qtySold": 23,
+      "comps": 14,
+      "priceCents": 8000,
+      "taxCents": 18400,
+      "feeCents": 4600
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 335000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "advertising",
+      "description": "Social media ads",
+      "amountCents": 250000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "catering",
+      "description": "Band dinner and green room",
+      "amountCents": 215000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "security",
+      "description": "Door and floor security",
+      "amountCents": 332000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-5",
+      "category": "staffing",
+      "description": "Bar and floor staff",
+      "amountCents": 119000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-6",
+      "category": "equipment",
+      "description": "Generator rental",
+      "amountCents": 293000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-7",
+      "category": "other",
+      "description": "Promoter's parking",
+      "amountCents": 60000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-2",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-3",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-7",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 1054355
+}

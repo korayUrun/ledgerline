@@ -1,0 +1,66 @@
+{
+  "id": "c14",
+  "seed": 1013,
+  "dealType": "percentage",
+  "tags": [
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Midnight Satellites",
+    "venueName": "Hall 9",
+    "promoterName": "Lantern Hill Productions LLC",
+    "showDate": "2026-01-06"
+  },
+  "terms": {
+    "deal": {
+      "type": "percentage",
+      "artistShareBps": 7250,
+      "clauseRef": "§3.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§4"
+    },
+    "bonus": {
+      "mode": "cumulative",
+      "tiers": [
+        {
+          "minTicketsSold": 450,
+          "bonusCents": 25000
+        }
+      ],
+      "clauseRef": "§3.2"
+    }
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 586,
+      "comps": 8,
+      "priceCents": 4000,
+      "taxCents": 187520,
+      "feeCents": 117200
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 209000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "catering",
+      "description": "Band dinner and green room",
+      "amountCents": 291000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 1503478
+}

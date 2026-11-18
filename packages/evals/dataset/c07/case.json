@@ -1,0 +1,133 @@
+{
+  "id": "c07",
+  "seed": 1006,
+  "dealType": "versus",
+  "tags": [
+    "deposit_distractor",
+    "merch_percent_distractor",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Golden Pines",
+    "venueName": "Union Stage",
+    "promoterName": "Lantern Hill Productions LLC",
+    "showDate": "2026-05-07"
+  },
+  "terms": {
+    "deal": {
+      "type": "versus",
+      "guaranteeCents": 400000,
+      "artistShareBps": 7250,
+      "clauseRef": "§3.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "production",
+        "advertising",
+        "catering",
+        "security",
+        "staffing",
+        "equipment"
+      ],
+      "categoryCaps": [
+        {
+          "category": "catering",
+          "capCents": 50000
+        },
+        {
+          "category": "staffing",
+          "capCents": 275000
+        }
+      ],
+      "totalCapCents": 1000000,
+      "clauseRef": "§4"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 446,
+      "comps": 30,
+      "priceCents": 3000,
+      "taxCents": 0,
+      "feeCents": 89200
+    },
+    {
+      "id": "ts-2",
+      "tierName": "VIP",
+      "qtySold": 67,
+      "comps": 18,
+      "priceCents": 6000,
+      "taxCents": 0,
+      "feeCents": 13400
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 123000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "advertising",
+      "description": "Poster printing",
+      "amountCents": 345000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "catering",
+      "description": "Crew meals",
+      "amountCents": 145000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "security",
+      "description": "Door and floor security",
+      "amountCents": 254000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-5",
+      "category": "staffing",
+      "description": "Bar and floor staff",
+      "amountCents": 370000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-6",
+      "category": "equipment",
+      "description": "Video wall rental",
+      "amountCents": 108000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-7",
+      "category": "office_supplies",
+      "description": "Office stationery",
+      "amountCents": 9000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-3",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-5",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-7",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 462115
+}
