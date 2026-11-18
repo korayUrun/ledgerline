@@ -58,6 +58,8 @@ Estimated total: ~4 weeks part-time.
 
 **Break it:** switch one calculation to floats or move a rounding step. Which tests fail, and why?
 
+**Status:** done 2026-11-18 (PRs #8, #10–#12, CI green on `main`). 100% branch coverage, property tests at 1,000 runs, golden files in place. Handed to Phase 2: turning the engine's `ZodError` into an HTTP error, and deciding how `pending` expenses are handled at compute time. The Break it drill is deferred to the end of the project.
+
 ---
 
 ## Phase 2 — Data model, core API & basic UI (F1, F5, F12 audit) (4–5 days)

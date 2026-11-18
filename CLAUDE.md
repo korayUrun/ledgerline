@@ -115,4 +115,4 @@ stripe listen --forward-to localhost:3001/payments/webhook
 
 ## Current phase
 <!-- Update when a phase is done -->
-**Phase 1 — Settlement engine (F4).** Phase 0 done 2026-11-18. See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Before marking a phase done, quiz me with its "Explain it" questions.
+**Phase 2 — Data model, core API & basic UI (F1, F5, F12 audit).** Phases 0 and 1 done 2026-11-18. See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Before marking a phase done, quiz me with its "Explain it" questions.
