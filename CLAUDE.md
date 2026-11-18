@@ -116,4 +116,4 @@ stripe listen --forward-to localhost:3001/payments/webhook
 
 ## Current phase
 <!-- Update when a phase is done -->
-**Phase 2 — Data model, core API & basic UI (F1, F5, F12 audit).** Phases 0 and 1 done 2026-11-18. See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Before marking a phase done, quiz me with its "Explain it" questions.
+**Phase 3 — Eval data + contract extraction + review (F11, F2, F3, F8).** Phases 0–2 done (2026-11-18/19). See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Phase "Explain it" quizzes and "Break it" drills are deferred to the end of the project: when a phase is done, add its questions with answers to `docs/SELF_CHECK.md` instead of quizzing me.

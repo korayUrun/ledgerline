@@ -84,6 +84,8 @@ Estimated total: ~4 weeks part-time.
 
 **Break it:** change an expense amount directly in the DB after compute. Does the system notice? How?
 
+**Status:** done 2026-11-19 (PRs #14–#18, CI green on `main`). The Explain it quiz and the Break it drill are deferred to the end of the project; questions and answers are in `SELF_CHECK.md` (the Break it scenario is also an automated integration test).
+
 ---
 
 ## Phase 3 — Eval data + contract extraction + review (F11, F2, F3, F8) (5–6 days)
