@@ -9,9 +9,13 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --coverage.enabled --coverage.include=src/**/*.ts --coverage.exclude=src/test-helpers/** --coverage.thresholds.100"
   },
   "dependencies": {
     "@ledgerline/schemas": "workspace:*"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "5.1.0",
+    "fast-check": "4.10.2"
   }
 }

@@ -1,0 +1,91 @@
+{
+  "terms": {
+    "deal": {
+      "type": "versus",
+      "guaranteeCents": 1000000,
+      "artistShareBps": 8500,
+      "clauseRef": "§4"
+    },
+    "expensePolicy": {
+      "allowedCategories": ["production", "advertising", "catering", "security"],
+      "categoryCaps": [
+        {
+          "category": "advertising",
+          "capCents": 150000
+        }
+      ],
+      "totalCapCents": 600000,
+      "clauseRef": "§5"
+    },
+    "bonus": {
+      "mode": "cumulative",
+      "tiers": [
+        {
+          "minTicketsSold": 400,
+          "bonusCents": 50000
+        },
+        {
+          "minTicketsSold": 450,
+          "bonusCents": 75000
+        },
+        {
+          "minTicketsSold": 550,
+          "bonusCents": 100000
+        }
+      ],
+      "clauseRef": "§6"
+    }
+  },
+  "ticketSales": [
+    {
+      "id": "ts-ga",
+      "tierName": "GA",
+      "qtySold": 400,
+      "comps": 20,
+      "priceCents": 3500,
+      "taxCents": 112000,
+      "feeCents": 40000
+    },
+    {
+      "id": "ts-vip",
+      "tierName": "VIP",
+      "qtySold": 100,
+      "comps": 5,
+      "priceCents": 7500,
+      "taxCents": 60000,
+      "feeCents": 10000
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-production",
+      "category": "production",
+      "amountCents": 280000,
+      "status": "allowed"
+    },
+    {
+      "id": "ex-advertising",
+      "category": "advertising",
+      "amountCents": 190000,
+      "status": "allowed"
+    },
+    {
+      "id": "ex-catering",
+      "category": "catering",
+      "amountCents": 90000,
+      "status": "allowed"
+    },
+    {
+      "id": "ex-security",
+      "category": "security",
+      "amountCents": 120000,
+      "status": "allowed"
+    },
+    {
+      "id": "ex-office",
+      "category": "office_supplies",
+      "amountCents": 30000,
+      "status": "allowed"
+    }
+  ]
+}
