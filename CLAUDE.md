@@ -96,7 +96,8 @@ packages/evals               dataset generator + eval runner
 docker compose up -d          # postgres + redis
 pnpm install
 pnpm dev                      # web + api + worker
-pnpm test                     # all unit/integration tests
+pnpm test                     # all unit/integration tests (api integration tests need Docker)
+pnpm --filter @ledgerline/api test:unit   # api unit tests only, no Docker
 pnpm --filter settlement-engine test
 pnpm db:migrate               # prisma migrate dev
 pnpm db:seed
