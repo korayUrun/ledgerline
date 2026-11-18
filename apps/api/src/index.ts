@@ -1,5 +1,5 @@
-// NestJS HTTP API. Entry points: src/main.ts (HTTP); src/worker.ts (BullMQ) arrives
-// with the contract-extraction queue.
+// NestJS app with two entry points: src/main.ts (HTTP API) and src/worker.ts
+// (BullMQ worker).
 //
 // The exports below are plain functions and classes (no Nest), for the eval runner
 // in packages/evals: it must run exactly the extraction code production runs.

@@ -71,6 +71,16 @@ enum SettlementLineKind {
   total_payout
 }
 
+// uploaded → extracting → needs_review → confirmed, or extracting → failed.
+// A failed contract is not retried in place: the user uploads the PDF again.
+enum ContractStatus {
+  uploaded
+  extracting
+  needs_review
+  confirmed
+  failed
+}
+
 // --- People and places --------------------------------------------------------------
 
 // A human who can confirm terms (and, from Phase 5, approve payouts).
@@ -113,6 +123,7 @@ model Show {
   artist      Artist          @relation(fields: [artistId], references: [id])
   ticketSales TicketSale[]
   expenses    Expense[]
+  contracts   Contract[]
   terms       ContractTerms[]
   settlement  Settlement?
 
@@ -159,11 +170,37 @@ model Expense {
   @@index([showId])
 }
 
+// An uploaded contract PDF and what Claude read from it (F2). The extraction is a
+// proposal only: it becomes ContractTerms when a person confirms it (F3), so the
+// engine can never compute from terms nobody has checked.
+model Contract {
+  id             String         @id @default(uuid())
+  showId         String
+  // A storage key such as "contracts/<uuid>.pdf", like Expense.receiptKey.
+  fileKey        String
+  fileName       String // as uploaded, for display only (never used as a path)
+  status         ContractStatus @default(uploaded)
+  // ContractExtraction (packages/schemas), validated with Zod before it is stored
+  // and again when it is read. Null until extraction succeeds.
+  extractionJson Json?
+  promptVersion  String?
+  // { model, calls, inputTokens, outputTokens, costNanoUsd } over all attempts.
+  llmUsage       Json?
+  failureReason  String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  show  Show            @relation(fields: [showId], references: [id])
+  terms ContractTerms[]
+
+  @@index([showId])
+}
+
 // Versioned and never overwritten: an edit creates version n + 1, so a settlement
 // always points to the exact terms it was computed from.
 //
-// Linked to the show, not to a Contract (SYSTEM.md §4 differs): in Phase 2 terms are
-// typed in by hand and there is no PDF yet. Phase 3 adds an optional contractId.
+// Belongs to the show. contractId is set when the version was confirmed from an
+// extracted contract, and null when the terms were typed in by hand.
 model ContractTerms {
   id            String   @id @default(uuid())
   showId        String
@@ -172,14 +209,16 @@ model ContractTerms {
   // write and read. One JSON column instead of many columns, because the Zod schema
   // is the single definition of the terms' shape (nested deal, caps, bonus tiers).
   termsJson     Json
-  // Hand-entered terms are confirmed by the person who typed them. Phase 3 makes
-  // these nullable for AI-extracted terms that are not reviewed yet.
+  // Every version is confirmed by a person: the one who typed the terms in, or the
+  // reviewer who checked an extraction. Unreviewed extractions live on Contract.
   confirmedById String
   confirmedAt   DateTime
+  contractId    String?
   createdAt     DateTime @default(now())
 
   show        Show         @relation(fields: [showId], references: [id])
   confirmedBy User         @relation(fields: [confirmedById], references: [id])
+  contract    Contract?    @relation(fields: [contractId], references: [id])
   settlements Settlement[]
 
   @@unique([showId, version])

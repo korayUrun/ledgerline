@@ -1,20 +1,30 @@
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
+import { GenericContainer, Wait } from "testcontainers";
 import type { TestProject } from "vitest/node";
 
 declare module "vitest" {
   export interface ProvidedContext {
     databaseUrl: string;
+    redisUrl: string;
   }
 }
 
-// Runs once before all integration tests: start a throwaway Postgres in Docker,
-// apply the real migrations to it, and hand its URL to the tests. The same image
-// as docker-compose.yml, so tests and development use the same database version.
+// Runs once before all integration tests: start a throwaway Postgres and Redis in
+// Docker, apply the real migrations, and hand both URLs to the tests. The same
+// images as docker-compose.yml, so tests and development use the same versions.
 export default async function setup(project: TestProject): Promise<() => Promise<void>> {
-  const container = await new PostgreSqlContainer("postgres:17").start();
+  const [container, redis] = await Promise.all([
+    new PostgreSqlContainer("postgres:17").start(),
+    // A plain container: Redis needs no setup beyond "accepting connections".
+    new GenericContainer("redis:7")
+      .withExposedPorts(6379)
+      .withWaitStrategy(Wait.forLogMessage("Ready to accept connections"))
+      .start(),
+  ]);
   const databaseUrl = container.getConnectionUri();
+  const redisUrl = `redis://${redis.getHost()}:${redis.getMappedPort(6379)}`;
 
   // `migrate deploy` applies the committed migration files as they are (unlike
   // `migrate dev`, it never generates new ones), exactly as a deploy would.
@@ -25,8 +35,9 @@ export default async function setup(project: TestProject): Promise<() => Promise
   });
 
   project.provide("databaseUrl", databaseUrl);
+  project.provide("redisUrl", redisUrl);
 
   return async () => {
-    await container.stop();
+    await Promise.all([container.stop(), redis.stop()]);
   };
 }

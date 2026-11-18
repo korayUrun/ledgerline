@@ -5,6 +5,9 @@ allowBuilds:
   "@prisma/engines": true
   cpu-features: false
   esbuild: true
+  # Optional native speed-up for msgpackr (BullMQ). Prebuilt binaries come as
+  # separate @msgpackr-extract/* packages, and msgpackr falls back to plain JS.
+  msgpackr-extract: false
   prisma: true
   protobufjs: false
   ssh2: false
