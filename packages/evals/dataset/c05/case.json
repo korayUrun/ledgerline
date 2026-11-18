@@ -1,0 +1,77 @@
+{
+  "id": "c05",
+  "seed": 1004,
+  "dealType": "flat",
+  "tags": [
+    "deposit_distractor",
+    "merch_percent_distractor",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Paper Foxes",
+    "venueName": "Riverside Ballroom",
+    "promoterName": "Northgate Live LLC",
+    "showDate": "2026-03-08"
+  },
+  "terms": {
+    "deal": {
+      "type": "flat",
+      "guaranteeCents": 850000,
+      "clauseRef": "§6.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§4"
+    },
+    "bonus": {
+      "mode": "highest_only",
+      "tiers": [
+        {
+          "minTicketsSold": 600,
+          "bonusCents": 50000
+        }
+      ],
+      "clauseRef": "§6.2"
+    }
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 628,
+      "comps": 21,
+      "priceCents": 4500,
+      "taxCents": 0,
+      "feeCents": 62800
+    },
+    {
+      "id": "ts-2",
+      "tierName": "VIP",
+      "qtySold": 53,
+      "comps": 2,
+      "priceCents": 10000,
+      "taxCents": 0,
+      "feeCents": 5300
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "catering",
+      "description": "Crew meals",
+      "amountCents": 192000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "advertising",
+      "description": "Poster printing",
+      "amountCents": 214000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 900000
+}

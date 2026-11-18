@@ -1,0 +1,118 @@
+{
+  "id": "c24",
+  "seed": 1023,
+  "dealType": "guarantee_plus",
+  "tags": [
+    "deposit_distractor",
+    "money_in_words",
+    "no_total_cap",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Copper Harbors",
+    "venueName": "The Foundry",
+    "promoterName": "Lantern Hill Productions LLC",
+    "showDate": "2026-07-27"
+  },
+  "terms": {
+    "deal": {
+      "type": "guarantee_plus",
+      "guaranteeCents": 600000,
+      "artistShareBps": 8000,
+      "promoterProfitBps": 1000,
+      "clauseRef": "§3.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "production",
+        "advertising",
+        "catering",
+        "security",
+        "staffing",
+        "equipment"
+      ],
+      "categoryCaps": [
+        {
+          "category": "security",
+          "capCents": 125000
+        }
+      ],
+      "totalCapCents": null,
+      "clauseRef": "§4"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 503,
+      "comps": 24,
+      "priceCents": 3000,
+      "taxCents": 0,
+      "feeCents": 100600
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 210000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "advertising",
+      "description": "Social media ads",
+      "amountCents": 245000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "catering",
+      "description": "Band dinner and green room",
+      "amountCents": 137000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "security",
+      "description": "Door and floor security",
+      "amountCents": 210000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-5",
+      "category": "staffing",
+      "description": "Box office and ushers",
+      "amountCents": 303000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-6",
+      "category": "equipment",
+      "description": "Video wall rental",
+      "amountCents": 292000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-7",
+      "category": "office_supplies",
+      "description": "Printer paper and toner",
+      "amountCents": 32000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-4",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-7",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 600000
+}

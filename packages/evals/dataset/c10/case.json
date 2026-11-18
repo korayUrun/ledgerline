@@ -1,0 +1,89 @@
+{
+  "id": "c10",
+  "seed": 1009,
+  "dealType": "percentage",
+  "tags": [
+    "merch_percent_distractor",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Paper Harbors",
+    "venueName": "The Foundry",
+    "promoterName": "Northgate Live LLC",
+    "showDate": "2026-09-18"
+  },
+  "terms": {
+    "deal": {
+      "type": "percentage",
+      "artistShareBps": 8000,
+      "clauseRef": "§7.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§4"
+    },
+    "bonus": {
+      "mode": "highest_only",
+      "tiers": [
+        {
+          "minTicketsSold": 700,
+          "bonusCents": 50000
+        },
+        {
+          "minTicketsSold": 750,
+          "bonusCents": 100000
+        }
+      ],
+      "clauseRef": "§7.2"
+    }
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 423,
+      "comps": 22,
+      "priceCents": 5000,
+      "taxCents": 105750,
+      "feeCents": 42300
+    },
+    {
+      "id": "ts-2",
+      "tierName": "VIP",
+      "qtySold": 142,
+      "comps": 19,
+      "priceCents": 8000,
+      "taxCents": 56800,
+      "feeCents": 14200
+    },
+    {
+      "id": "ts-3",
+      "tierName": "Balcony",
+      "qtySold": 153,
+      "comps": 5,
+      "priceCents": 5000,
+      "taxCents": 38250,
+      "feeCents": 15300
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "advertising",
+      "description": "Poster printing",
+      "amountCents": 188000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 122000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 3044720
+}

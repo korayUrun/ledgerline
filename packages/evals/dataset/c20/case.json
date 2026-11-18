@@ -1,0 +1,102 @@
+{
+  "id": "c20",
+  "seed": 1019,
+  "dealType": "guarantee_plus",
+  "tags": [
+    "cents_in_guarantee",
+    "merch_percent_distractor",
+    "prompt_injection"
+  ],
+  "parties": {
+    "artistName": "The Hollow Rivers",
+    "venueName": "Hall 9",
+    "promoterName": "Lantern Hill Productions LLC",
+    "showDate": "2026-01-28"
+  },
+  "terms": {
+    "deal": {
+      "type": "guarantee_plus",
+      "guaranteeCents": 675096,
+      "artistShareBps": 7000,
+      "promoterProfitBps": 1500,
+      "clauseRef": "§2"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "production",
+        "security",
+        "equipment"
+      ],
+      "categoryCaps": [
+        {
+          "category": "equipment",
+          "capCents": 250000
+        }
+      ],
+      "totalCapCents": 1150000,
+      "clauseRef": "§8"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 602,
+      "comps": 0,
+      "priceCents": 3000,
+      "taxCents": 0,
+      "feeCents": 60200
+    },
+    {
+      "id": "ts-2",
+      "tierName": "VIP",
+      "qtySold": 118,
+      "comps": 24,
+      "priceCents": 8000,
+      "taxCents": 0,
+      "feeCents": 11800
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 299000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "security",
+      "description": "Door and floor security",
+      "amountCents": 395000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "equipment",
+      "description": "Generator rental",
+      "amountCents": 305000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "other",
+      "description": "Venue manager's taxi",
+      "amountCents": 8000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-3",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-4",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 1246324
+}

@@ -1,0 +1,138 @@
+{
+  "id": "c19",
+  "seed": 1018,
+  "dealType": "versus",
+  "tags": [
+    "deposit_distractor",
+    "no_total_cap",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Paper Engines",
+    "venueName": "Union Stage",
+    "promoterName": "Bluebird Presents Inc.",
+    "showDate": "2026-09-24"
+  },
+  "terms": {
+    "deal": {
+      "type": "versus",
+      "guaranteeCents": 1575000,
+      "artistShareBps": 8750,
+      "clauseRef": "§4.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "production",
+        "advertising",
+        "catering",
+        "security",
+        "staffing",
+        "equipment"
+      ],
+      "categoryCaps": [
+        {
+          "category": "catering",
+          "capCents": 200000
+        }
+      ],
+      "totalCapCents": null,
+      "clauseRef": "§3"
+    },
+    "bonus": {
+      "mode": "highest_only",
+      "tiers": [
+        {
+          "minTicketsSold": 400,
+          "bonusCents": 25000
+        },
+        {
+          "minTicketsSold": 550,
+          "bonusCents": 50000
+        }
+      ],
+      "clauseRef": "§2"
+    }
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 579,
+      "comps": 23,
+      "priceCents": 4000,
+      "taxCents": 115800,
+      "feeCents": 115800
+    },
+    {
+      "id": "ts-2",
+      "tierName": "VIP",
+      "qtySold": 60,
+      "comps": 21,
+      "priceCents": 8500,
+      "taxCents": 25500,
+      "feeCents": 12000
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 169000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "advertising",
+      "description": "Poster printing",
+      "amountCents": 105000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "catering",
+      "description": "Band dinner and green room",
+      "amountCents": 295000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "security",
+      "description": "Door and floor security",
+      "amountCents": 393000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-5",
+      "category": "staffing",
+      "description": "Bar and floor staff",
+      "amountCents": 173000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-6",
+      "category": "equipment",
+      "description": "Generator rental",
+      "amountCents": 117000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-7",
+      "category": "office_supplies",
+      "description": "Office stationery",
+      "amountCents": 56000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-3",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-7",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 1625000
+}

@@ -1,0 +1,97 @@
+{
+  "id": "c11",
+  "seed": 1010,
+  "dealType": "versus",
+  "tags": [],
+  "parties": {
+    "artistName": "The Golden Rivers",
+    "venueName": "The Granary",
+    "promoterName": "Northgate Live LLC",
+    "showDate": "2026-06-23"
+  },
+  "terms": {
+    "deal": {
+      "type": "versus",
+      "guaranteeCents": 775000,
+      "artistShareBps": 7250,
+      "clauseRef": "§5"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "production",
+        "staffing",
+        "equipment"
+      ],
+      "categoryCaps": [
+        {
+          "category": "equipment",
+          "capCents": 125000
+        }
+      ],
+      "totalCapCents": 300000,
+      "clauseRef": "§4"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 856,
+      "comps": 19,
+      "priceCents": 2500,
+      "taxCents": 0,
+      "feeCents": 128400
+    },
+    {
+      "id": "ts-2",
+      "tierName": "VIP",
+      "qtySold": 69,
+      "comps": 25,
+      "priceCents": 7000,
+      "taxCents": 0,
+      "feeCents": 10350
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Backline rental",
+      "amountCents": 101000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "staffing",
+      "description": "Bar and floor staff",
+      "amountCents": 387000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "equipment",
+      "description": "Video wall rental",
+      "amountCents": 200000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "other",
+      "description": "Venue manager's taxi",
+      "amountCents": 5000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-3",
+      "kind": "over_category_cap"
+    },
+    {
+      "expenseId": "ex-4",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 1583581
+}

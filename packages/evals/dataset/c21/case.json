@@ -1,0 +1,57 @@
+{
+  "id": "c21",
+  "seed": 1020,
+  "dealType": "flat",
+  "tags": [
+    "merch_percent_distractor"
+  ],
+  "parties": {
+    "artistName": "The Silver Owls",
+    "venueName": "Hall 9",
+    "promoterName": "Lantern Hill Productions LLC",
+    "showDate": "2026-02-27"
+  },
+  "terms": {
+    "deal": {
+      "type": "flat",
+      "guaranteeCents": 3050000,
+      "clauseRef": "§4"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§3"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 807,
+      "comps": 17,
+      "priceCents": 2500,
+      "taxCents": 161400,
+      "feeCents": 161400
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Sound and lighting rental",
+      "amountCents": 252000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "catering",
+      "description": "Band dinner and green room",
+      "amountCents": 42000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 3050000
+}

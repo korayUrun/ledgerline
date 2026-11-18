@@ -1,0 +1,57 @@
+{
+  "id": "c22",
+  "seed": 1021,
+  "dealType": "percentage",
+  "tags": [
+    "merch_percent_distractor"
+  ],
+  "parties": {
+    "artistName": "The Northern Satellites",
+    "venueName": "Union Stage",
+    "promoterName": "Lantern Hill Productions LLC",
+    "showDate": "2026-12-25"
+  },
+  "terms": {
+    "deal": {
+      "type": "percentage",
+      "artistShareBps": 8250,
+      "clauseRef": "§6"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§4"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 520,
+      "comps": 28,
+      "priceCents": 5000,
+      "taxCents": 130000,
+      "feeCents": 52000
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "catering",
+      "description": "Crew meals",
+      "amountCents": 193000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "advertising",
+      "description": "Social media ads",
+      "amountCents": 181000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 1994850
+}

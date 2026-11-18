@@ -9,10 +9,17 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "generate": "tsx src/scripts/generate-dataset.ts"
   },
   "dependencies": {
+    "@ledgerline/schemas": "workspace:*",
     "@ledgerline/settlement-engine": "workspace:*",
-    "@ledgerline/schemas": "workspace:*"
+    "pdfkit": "0.20.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/pdfkit": "0.17.7",
+    "tsx": "4.23.15"
   }
 }

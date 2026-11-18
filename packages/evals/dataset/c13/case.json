@@ -1,0 +1,69 @@
+{
+  "id": "c13",
+  "seed": 1012,
+  "dealType": "flat",
+  "tags": [
+    "cents_in_guarantee",
+    "deposit_distractor",
+    "merch_percent_distractor",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Paper Foxes",
+    "venueName": "Union Stage",
+    "promoterName": "Bluebird Presents Inc.",
+    "showDate": "2026-04-16"
+  },
+  "terms": {
+    "deal": {
+      "type": "flat",
+      "guaranteeCents": 3950068,
+      "clauseRef": "§2.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§4"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 260,
+      "comps": 0,
+      "priceCents": 3500,
+      "taxCents": 91000,
+      "feeCents": 39000
+    },
+    {
+      "id": "ts-2",
+      "tierName": "Balcony",
+      "qtySold": 125,
+      "comps": 2,
+      "priceCents": 3500,
+      "taxCents": 43750,
+      "feeCents": 18750
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Stage hands and rigging",
+      "amountCents": 59000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "catering",
+      "description": "Band dinner and green room",
+      "amountCents": 298000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 3950068
+}

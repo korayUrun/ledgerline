@@ -1,0 +1,66 @@
+{
+  "id": "c06",
+  "seed": 1005,
+  "dealType": "percentage",
+  "tags": [
+    "merch_percent_distractor"
+  ],
+  "parties": {
+    "artistName": "The Silver Engines",
+    "venueName": "The Foundry",
+    "promoterName": "Northgate Live LLC",
+    "showDate": "2026-06-20"
+  },
+  "terms": {
+    "deal": {
+      "type": "percentage",
+      "artistShareBps": 5250,
+      "clauseRef": "§3"
+    },
+    "expensePolicy": {
+      "allowedCategories": [],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§2"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 238,
+      "comps": 10,
+      "priceCents": 3000,
+      "taxCents": 0,
+      "feeCents": 47600
+    },
+    {
+      "id": "ts-2",
+      "tierName": "Balcony",
+      "qtySold": 173,
+      "comps": 29,
+      "priceCents": 3000,
+      "taxCents": 0,
+      "feeCents": 34600
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "catering",
+      "description": "Crew meals",
+      "amountCents": 182000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "production",
+      "description": "Sound and lighting rental",
+      "amountCents": 101000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [],
+  "expectedPayoutCents": 604170
+}

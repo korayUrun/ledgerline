@@ -1,0 +1,101 @@
+{
+  "id": "c04",
+  "seed": 1003,
+  "dealType": "guarantee_plus",
+  "tags": [
+    "deposit_distractor",
+    "no_total_cap",
+    "sub_clauses"
+  ],
+  "parties": {
+    "artistName": "The Golden Pines",
+    "venueName": "Riverside Ballroom",
+    "promoterName": "Lantern Hill Productions LLC",
+    "showDate": "2026-05-07"
+  },
+  "terms": {
+    "deal": {
+      "type": "guarantee_plus",
+      "guaranteeCents": 2350000,
+      "artistShareBps": 7500,
+      "promoterProfitBps": 1000,
+      "clauseRef": "§5.1"
+    },
+    "expensePolicy": {
+      "allowedCategories": [
+        "production",
+        "catering",
+        "security",
+        "equipment"
+      ],
+      "categoryCaps": [],
+      "totalCapCents": null,
+      "clauseRef": "§4"
+    },
+    "bonus": null
+  },
+  "ticketSales": [
+    {
+      "id": "ts-1",
+      "tierName": "GA",
+      "qtySold": 890,
+      "comps": 4,
+      "priceCents": 4000,
+      "taxCents": 356000,
+      "feeCents": 133500
+    },
+    {
+      "id": "ts-2",
+      "tierName": "Balcony",
+      "qtySold": 84,
+      "comps": 30,
+      "priceCents": 4000,
+      "taxCents": 33600,
+      "feeCents": 12600
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-1",
+      "category": "production",
+      "description": "Stage hands and rigging",
+      "amountCents": 395000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-2",
+      "category": "catering",
+      "description": "Crew meals",
+      "amountCents": 137000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-3",
+      "category": "security",
+      "description": "Barricade security staff",
+      "amountCents": 195000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-4",
+      "category": "equipment",
+      "description": "Generator rental",
+      "amountCents": 164000,
+      "status": "pending"
+    },
+    {
+      "id": "ex-5",
+      "category": "office_supplies",
+      "description": "Office stationery",
+      "amountCents": 7000,
+      "status": "pending"
+    }
+  ],
+  "plantedViolations": [
+    {
+      "expenseId": "ex-5",
+      "kind": "category_not_allowed"
+    }
+  ],
+  "expectedPayoutCents": 2350000
+}
