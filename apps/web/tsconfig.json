@@ -1,7 +1,17 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    // Next.js compiles the code itself (with its bundler), so TypeScript only
+    // type-checks: bundler-style resolution and JSX handled by React.
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "allowJs": false,
+    "incremental": true,
+    "types": ["node"],
+    "plugins": [{ "name": "next" }]
   },
-  "include": ["src"]
+  "include": ["next-env.d.ts", "src", "next.config.ts", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }
