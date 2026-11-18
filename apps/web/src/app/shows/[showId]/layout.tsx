@@ -41,6 +41,7 @@ export default async function ShowLayout({
       <nav className="tabs">
         <Link href={`/shows/${showId}`}>Sales &amp; expenses</Link>
         <Link href={`/shows/${showId}/import`}>Import sales</Link>
+        <Link href={`/shows/${showId}/contract`}>Contract</Link>
         <Link href={`/shows/${showId}/terms`}>Deal terms</Link>
         <Link href={`/shows/${showId}/settlement`}>Settlement worksheet</Link>
       </nav>
