@@ -29,3 +29,6 @@ packages/db/src/generated/
 
 # local receipt uploads (synthetic data only)
 var/
+
+# Next.js generates this on dev/build/typegen
+next-env.d.ts

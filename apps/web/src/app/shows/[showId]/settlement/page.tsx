@@ -1,0 +1,276 @@
+import {
+  formatCents,
+  type AuditEntryDto,
+  type SettlementInput,
+  type SettlementViewDto,
+  type SourceRef,
+} from "@ledgerline/schemas";
+import Link from "next/link";
+import { api } from "../../../../lib/api";
+import type { SearchParams } from "../../../../lib/flash";
+import { formatDateTime, humanize } from "../../../../lib/format";
+import { computeSettlement, submitForReview } from "../../../actions";
+import { ErrorBanner, StatusBadge } from "../../../components";
+
+// F5: the worksheet. Every line shows the contract clause it applies and the
+// input rows it was computed from. Those rows come from the settlement's frozen
+// inputSnapshot, not the live tables, so the worksheet always explains exactly
+// the numbers that were computed, even after the inputs change.
+export default async function SettlementPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ showId: string }>;
+  searchParams: Promise<SearchParams>;
+}) {
+  const { showId } = await params;
+  const view = await api.get<SettlementViewDto>(`/shows/${showId}/settlement`);
+  const settlement = view.settlement;
+  const history = settlement
+    ? await api.get<AuditEntryDto[]>(`/audit?entity=settlement&entityId=${settlement.id}`)
+    : [];
+  const canSubmit = settlement?.status === "computed" && view.pendingExpenseCount === 0;
+
+  return (
+    <>
+      <ErrorBanner searchParams={await searchParams} />
+
+      {settlement?.status === "stale" && (
+        <div className="banner banner-warn">
+          <strong>Stale:</strong> the inputs changed after this was computed. The numbers below are
+          the old result. Recompute to update them.
+        </div>
+      )}
+      {view.pendingExpenseCount > 0 && (
+        <div className="banner banner-warn">
+          {view.pendingExpenseCount} expense(s) are still pending. They are included in the math as
+          a preview, but the settlement cannot go to review until each one is allowed or disallowed
+          on the <Link href={`/shows/${showId}`}>expenses tab</Link>.
+        </div>
+      )}
+      {settlement?.status === "in_review" && (
+        <div className="banner banner-info">In review. Approval and payment arrive in Phase 5.</div>
+      )}
+
+      <div className="row" style={{ margin: "16px 0" }}>
+        <form action={computeSettlement.bind(null, showId)}>
+          <button type="submit">
+            {settlement && settlement.status !== "draft" ? "Recompute" : "Compute settlement"}
+          </button>
+        </form>
+        <form action={submitForReview.bind(null, showId)}>
+          <button type="submit" className="secondary" disabled={!canSubmit}>
+            Submit for review
+          </button>
+        </form>
+      </div>
+
+      {!settlement || settlement.status === "draft" ? (
+        <p className="muted">
+          Not computed yet. Make sure the show has ticket sales and deal terms, then compute.
+        </p>
+      ) : (
+        <>
+          <div className="card summary">
+            <div>
+              <span className="muted">Artist payout</span>
+              <strong>
+                {settlement.payoutCents === null ? "—" : formatCents(settlement.payoutCents)}
+              </strong>
+            </div>
+            <div>
+              <span className="muted">Status</span>
+              <span>
+                <StatusBadge status={settlement.status} />
+              </span>
+            </div>
+            <div>
+              <span className="muted">Version · terms</span>
+              <span>
+                v{settlement.version} · terms v{settlement.termsVersion}
+              </span>
+            </div>
+            <div>
+              <span className="muted">Computed</span>
+              <span>{settlement.computedAt ? formatDateTime(settlement.computedAt) : "—"}</span>
+            </div>
+            <div>
+              <span className="muted">Engine · inputs hash</span>
+              <span>
+                {settlement.engineVersion} ·{" "}
+                <code title={settlement.inputsHash ?? ""}>
+                  {settlement.inputsHash?.slice(0, 12)}
+                </code>
+              </span>
+            </div>
+          </div>
+
+          <h2>Worksheet</h2>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Step</th>
+                  <th className="num">Amount</th>
+                  <th>Clause</th>
+                  <th>Computed from</th>
+                </tr>
+              </thead>
+              <tbody>
+                {settlement.lines.map((line, index) => (
+                  <tr key={index} className={lineClass(line.kind)}>
+                    <td>{line.label}</td>
+                    <td className="num">{formatCents(line.amountCents)}</td>
+                    <td>{line.clauseRef ?? <span className="muted">data</span>}</td>
+                    <td>
+                      {line.sourceRefs.length === 0 && <span className="muted">lines above</span>}
+                      {line.sourceRefs.map((ref) => (
+                        <div key={`${ref.type}-${ref.id}`}>
+                          <a href={`#src-${ref.id}`}>
+                            {describeSource(ref, settlement.inputSnapshot)}
+                          </a>
+                        </div>
+                      ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {settlement.inputSnapshot && <SnapshotTables snapshot={settlement.inputSnapshot} />}
+        </>
+      )}
+
+      {history.length > 0 && (
+        <>
+          <h2>History</h2>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Who</th>
+                  <th>What</th>
+                  <th>Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{formatDateTime(entry.at)}</td>
+                    <td>
+                      <code>{entry.actor.startsWith("user:") ? "user" : entry.actor}</code>
+                    </td>
+                    <td>{humanize(entry.action.replace("settlement.", ""))}</td>
+                    <td>{describeChange(entry)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function lineClass(kind: string): string {
+  if (kind === "total_payout") return "total";
+  if (kind === "nbor" || kind === "allowed_expenses" || kind === "deal_payout") return "subtotal";
+  return "";
+}
+
+function describeSource(ref: SourceRef, snapshot: SettlementInput | null): string {
+  if (ref.type === "ticket_sale") {
+    const sale = snapshot?.ticketSales.find((row) => row.id === ref.id);
+    return sale
+      ? `${sale.tierName}: ${sale.qtySold} × ${formatCents(sale.priceCents)}`
+      : `ticket sale ${ref.id}`;
+  }
+  const expense = snapshot?.expenses.find((row) => row.id === ref.id);
+  return expense
+    ? `${humanize(expense.category)} ${formatCents(expense.amountCents)} (${expense.status})`
+    : `expense ${ref.id}`;
+}
+
+function describeChange(entry: AuditEntryDto): string {
+  const before = entry.before as { status?: string; payoutCents?: number | null } | null;
+  const after = entry.after as {
+    status?: string;
+    payoutCents?: number | null;
+    reason?: string;
+  } | null;
+  const parts: string[] = [];
+  if (before?.status !== after?.status)
+    parts.push(`${before?.status ?? "—"} → ${after?.status ?? "—"}`);
+  if (
+    after?.payoutCents !== undefined &&
+    after.payoutCents !== null &&
+    before?.payoutCents !== after.payoutCents
+  ) {
+    parts.push(`payout ${formatCents(after.payoutCents)}`);
+  }
+  if (after?.reason) parts.push(after.reason);
+  return parts.join(" · ");
+}
+
+// The frozen inputs. Worksheet links jump here (#src-<id>), so a reader can check
+// each number against the exact row the engine saw.
+function SnapshotTables({ snapshot }: { snapshot: SettlementInput }) {
+  return (
+    <>
+      <h2>Inputs used (frozen snapshot)</h2>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket tier</th>
+              <th className="num">Paid</th>
+              <th className="num">Price</th>
+              <th className="num">Tax</th>
+              <th className="num">Fees</th>
+            </tr>
+          </thead>
+          <tbody>
+            {snapshot.ticketSales.map((sale) => (
+              <tr key={sale.id} id={`src-${sale.id}`} className="target">
+                <td>{sale.tierName}</td>
+                <td className="num">{sale.qtySold}</td>
+                <td className="num">{formatCents(sale.priceCents)}</td>
+                <td className="num">{formatCents(sale.taxCents)}</td>
+                <td className="num">{formatCents(sale.feeCents)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="table-wrap" style={{ marginTop: 12 }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Expense</th>
+              <th className="num">Amount</th>
+              <th>Status</th>
+              <th>Id</th>
+            </tr>
+          </thead>
+          <tbody>
+            {snapshot.expenses.map((expense) => (
+              <tr key={expense.id} id={`src-${expense.id}`} className="target">
+                <td>{humanize(expense.category)}</td>
+                <td className="num">{formatCents(expense.amountCents)}</td>
+                <td>
+                  <StatusBadge status={expense.status} />
+                </td>
+                <td>
+                  <code>{expense.id.slice(0, 8)}</code>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
