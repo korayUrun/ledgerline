@@ -67,13 +67,13 @@ Estimated total: ~4 weeks part-time.
 **Goal:** create a show, import data, enter terms by hand, compute and view a settlement. No AI yet.
 
 **Tasks**
-- [ ] Prisma schema (SYSTEM.md §4) + migrations + seed script with 3 demo shows
-- [ ] NestJS modules: `shows`, `settlements`, `audit`; CSV import for ticket sales; expense CRUD with receipt upload (local disk)
-- [ ] `SettlementStateMachine` service: `draft → computed → in_review` (later states come in Phase 5); every transition writes `AuditLog` in the same transaction
-- [ ] Compute endpoint: builds `inputSnapshot`, `inputsHash`, calls the engine, stores the result + lines
-- [ ] Stale detection: an input change after compute → `stale`
-- [ ] Next.js: show list, show detail, import screen, manual terms form, settlement worksheet with line provenance
-- [ ] Integration tests with Testcontainers Postgres
+- [x] Prisma schema (SYSTEM.md §4) + migrations + seed script with 3 demo shows
+- [x] NestJS modules: `shows`, `settlements`, `audit`; CSV import for ticket sales; expense CRUD with receipt upload (local disk)
+- [x] `SettlementStateMachine` service: `draft → computed → in_review` (later states come in Phase 5); every transition writes `AuditLog` in the same transaction
+- [x] Compute endpoint: builds `inputSnapshot`, `inputsHash`, calls the engine, stores the result + lines
+- [x] Stale detection: an input change after compute → `stale`
+- [x] Next.js: show list, show detail, import screen, manual terms form, settlement worksheet with line provenance
+- [x] Integration tests with Testcontainers Postgres
 
 **Done when:** for a seeded show I can enter terms → compute → see a worksheet where every line points to its source; editing an expense marks the settlement stale.
 
@@ -141,6 +141,7 @@ Estimated total: ~4 weeks part-time.
 **Goal:** an approved settlement is paid exactly once, even with crashes and duplicate webhooks.
 
 **Tasks**
+- [ ] Simple login, so approval is tied to a real person (replaces the demo user in `ActorService`, added in Phase 2)
 - [ ] State machine extended: `in_review → approved → paying → paid`, `payment_failed → paying`; human-only approval; no edits from `paying` onwards
 - [ ] Stripe test mode: Express connected accounts for seeded artists; fund the test platform balance
 - [ ] Approval transaction: status change + `Payout(pending, idempotencyKey)` + `AuditLog` together
@@ -208,6 +209,9 @@ Estimated total: ~4 weeks part-time.
 Ideas and small follow-ups that came up while building. Not scheduled; pick them up only when a phase needs them.
 
 - Bind the compose ports to `127.0.0.1` so Postgres and Redis are not reachable from the local network.
-- Extend the `toFixed` / `parseFloat` lint ban from `settlement-engine` to `apps/api` once money flows through it (Phase 2).
+- ~~Extend the `toFixed` / `parseFloat` lint ban from `settlement-engine` to `apps/api`~~ Done in Phase 2 (also covers `apps/web`).
 - Bump `pnpm/action-setup` when a release targets Node 24 (CI warns that v4 runs on deprecated Node 20).
 - `ubuntu-latest` moves to Ubuntu 26; pin the runner if CI breaks after the switch.
+- Switch `apps/web` back to Turbopack once it can resolve `./x.js` imports to `x.ts` in workspace packages (today `next dev --webpack` with `experimental.extensionAlias`).
+- `pg` prints "Calling client.query() when the client is already executing a query is deprecated" during tests. It comes from inside `@prisma/adapter-pg`; recheck when upgrading Prisma.
+- Prisma's `latest` npm tag points at 8.0.0-rc; we pin 7.10.1 (stable). Revisit when 8.0 is final.

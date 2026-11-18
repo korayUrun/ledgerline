@@ -113,11 +113,18 @@ ApiKey                     (hashedKey, prefix, lastUsedAt)
 ```
 
 Key decisions:
-- **Money = integer cents** (`BigInt` or `Int`). **Percentages = basis points** (8500 = 85.00%). No floats anywhere in money paths.
+- **Money = integer cents.** A single input value (one price, one expense) is capped at `MAX_CENTS` = 1e9 by Zod and stored as `Int`. Columns that hold a *sum* (`SettlementLine.amountCents`, `Settlement.payoutCents`) can exceed Postgres `integer` (≈ 2.1e9), so they are `BigInt` and are converted back to `number` with a safe-integer check at the API edge. **Percentages = basis points** (8500 = 85.00%). No floats anywhere in money paths.
 - **ContractTerms are versioned, never overwritten.** A settlement points to the exact terms version it used.
 - **`inputSnapshot` + `inputsHash` on Settlement.** The snapshot is a frozen copy of the terms, sales and expenses that went into the engine. Any settlement can be recomputed bit-for-bit later. If live inputs change, the hash no longer matches and the settlement is marked stale.
 - **`Payout.idempotencyKey` is UNIQUE** (`payout:{settlementId}:v{version}`). The database itself makes double payment impossible.
 - **`ProcessedWebhookEvent.stripeEventId` is UNIQUE.** Stripe can deliver the same webhook more than once, and this table makes processing it a no-op the second time.
+
+As built in Phase 2 (deliberate differences from the sketch above):
+- **Tables arrive in the phase that uses them.** Phase 2 has `User`, `Venue`, `Artist`, `Show`, `TicketSale`, `Expense`, `ContractTerms`, `Settlement`, `SettlementLine`, `AuditLog`. `Contract` comes in Phase 3, `AgentRun`/`AgentStep` in Phase 4, `Payout`/`ProcessedWebhookEvent` in Phase 5, `ApiKey` in Phase 6.
+- **`ContractTerms` belongs to `Show`**, not to `Contract`: Phase 2 terms are typed in by hand and there is no PDF. Phase 3 adds an optional `contractId`.
+- **One settlement per show** (`Settlement.showId` is UNIQUE). `version` counts computes and doubles as the optimistic lock.
+- **`User`** exists from Phase 2 so that `AuditLog.actor` and `ContractTerms.confirmedBy` point to a person. Until login exists, the API acts as the seeded demo user.
+- **`SettlementLine.sourceRefs` is JSON**, not foreign keys: a line describes the frozen `inputSnapshot`, and live rows may be edited or deleted later.
 
 ---
 
@@ -133,6 +140,12 @@ draft → computed → in_review → approved → paying → paid
 ```
 
 **Payout:** `pending → processing → succeeded | failed`
+
+Phase 2 implements `draft → computed → in_review` and `→ stale` (`apps/api/src/modules/settlements/settlement-state-machine.ts`). `computed → computed` (recompute with unchanged inputs) is allowed; `in_review` must go `stale` before it can be recomputed.
+
+Stale detection has two layers. (1) Every service that changes an input (ticket sales, expenses, terms) calls `markStaleIfComputed` in the same transaction. (2) Reading a settlement re-hashes the live inputs and compares with `inputsHash`, which also catches changes made around the API (manual SQL, bugs).
+
+Pending expenses are included in the math (a preview) but block `computed → in_review` until each one is allowed or disallowed.
 
 Rules:
 - Transitions happen only through one `SettlementStateMachine` service, never via ad-hoc `UPDATE status`. Each transition writes an `AuditLog` row **in the same DB transaction**.
