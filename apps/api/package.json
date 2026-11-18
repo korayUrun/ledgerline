@@ -14,6 +14,7 @@
     "test:unit": "vitest run --project unit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.10.0",
     "@ledgerline/db": "workspace:*",
     "@ledgerline/schemas": "workspace:*",
     "@ledgerline/settlement-engine": "workspace:*",
