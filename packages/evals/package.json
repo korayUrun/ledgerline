@@ -10,9 +10,11 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "generate": "tsx src/scripts/generate-dataset.ts"
+    "generate": "tsx src/scripts/generate-dataset.ts",
+    "evals": "tsx src/scripts/run-evals.ts"
   },
   "dependencies": {
+    "@ledgerline/api": "workspace:*",
     "@ledgerline/schemas": "workspace:*",
     "@ledgerline/settlement-engine": "workspace:*",
     "pdfkit": "0.20.2",
