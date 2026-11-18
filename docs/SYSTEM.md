@@ -126,11 +126,18 @@ As built in Phase 2 (deliberate differences from the sketch above):
 - **`User`** exists from Phase 2 so that `AuditLog.actor` and `ContractTerms.confirmedBy` point to a person. Until login exists, the API acts as the seeded demo user.
 - **`SettlementLine.sourceRefs` is JSON**, not foreign keys: a line describes the frozen `inputSnapshot`, and live rows may be edited or deleted later.
 
+As built in Phase 3:
+- **`Contract`** (`fileKey`, `fileName`, `status`, `extractionJson`, `promptVersion`, `llmUsage`, `failureReason`). The extraction is a *proposal* stored on the contract; it only becomes a `ContractTerms` row when a person confirms it. So every `ContractTerms` version is confirmed by a person, and compute (which reads the latest version) can never use unreviewed terms.
+- **`ContractTerms.contractId`** (nullable) links a version to the contract it was confirmed from; `null` means typed in by hand. Evidence quotes stay on `Contract.extractionJson` (there is no `evidenceJson` column).
+- **`llmUsage`** holds `{ model, calls, inputTokens, outputTokens, costNanoUsd }`. Cost is integer nano-dollars (1 USD = 10⁹), for the same reason money is integer cents.
+
 ---
 
 ## 5. State machines
 
 **Contract:** `uploaded → extracting → needs_review → confirmed` (`extracting → failed` on repeated errors)
+
+As built (`apps/api/src/modules/contracts/contract-state-machine.ts`): `confirmed` and `failed` are final. A failed or wrong extraction is not retried in place; the user uploads the PDF again (a new `Contract` row), so every attempt stays in the history. Transitions use the same pattern as settlements: a guarded table, a compare-and-set `UPDATE … WHERE status = <expected>`, and the `AuditLog` row in the same transaction. Audit actions: `contract.uploaded`, `contract.extraction_started`, `contract.extracted`, `contract.extraction_failed`, `contract.confirmed` (with `reviewerEdited`: did the person change what Claude proposed?).
 
 **Settlement:**
 ```
@@ -194,6 +201,12 @@ All Claude calls go through `modules/llm`, which handles:
 - timeouts, retries with backoff on 429/5xx,
 - logging tokens and cost per call (feeds into F12).
 
+As built (`apps/api/src/modules/llm/`):
+- `LlmClient` is a one-method interface (`createMessage`). `AnthropicLlmClient` uses the official SDK; `FakeLlmClient` is scripted for tests and offline runs.
+- The model comes from config (`EXTRACTION_MODEL`, default `claude-opus-5-5`). Retries on 408/409/429/5xx and dropped connections are the SDK's own (`maxRetries`, exponential backoff, honours `Retry-After`); we configure them instead of writing a second retry loop. Timeout `LLM_TIMEOUT_MS` (120 s).
+- Every call logs task, model, stop reason, tokens, cost and duration. Prompt and reply text are never logged.
+- Only the worker reads `ANTHROPIC_API_KEY`; the HTTP API never calls Claude. `LLM_CLIENT=fake` runs the worker without a key (every field comes back missing, so a person types the terms).
+
 ### 7.1 Contract extraction (F2)
 
 ```
@@ -207,6 +220,15 @@ PDF ──▶ Claude (document input + ContractTerms schema)
 - Runs as a BullMQ job (`contract-extraction`), because it takes seconds and can fail.
 
 **Why the re-validation and retry:** the schema prevents most malformed output, but business validation (e.g., a percentage between 0 and 10000 bps, a guarantee present for a versus deal) needs code. Feeding the errors back gives the model a precise chance to fix itself.
+
+As built (`apps/api/src/modules/contracts/extraction/`, `packages/schemas/src/contract-extraction.ts`):
+- The output schema is `ContractExtractionSchema`, not `ContractTermsSchema`: each field is `{ value, evidence: { quote, page } | null }`, and **amounts and percentages are copied as text** (`"$12,500.00"`, `"85%"`). Code converts them with `parseDollarsToCents` / `parsePercentToBps`, so the model does no arithmetic at all, not even ×100.
+- It is sent as `output_config.format` (JSON Schema built from Zod by the SDK's `zodOutputFormat`), with adaptive thinking at effort `medium`. The PDF is a base64 `document` block.
+- Zod then checks what JSON Schema cannot: a value without an evidence quote, a figure that does not parse, a percentage above 100%, a term the deal type does not use, a cap on a category that is not allowed, highest-only tiers that pay less as the threshold rises. Only these are retried (the reply and the exact issues are appended to the conversation; max 2 retries).
+- **A missing required term is not retried.** Retrying would push the model to guess. It reaches the review screen as "Not found in the contract" (the "guarantee present for a versus deal" check above moved to `draftToContractTerms` and the human review).
+- `stop_reason` is checked before the content: `refusal` and `max_tokens` fail at once (no retry, the same request would give the same answer). No server-side refusal fallback: the eval must measure one model.
+- Prompt-injection defense: the rules live in the system prompt, which says the document is data and never instructions; the contract is only in the user turn; the model has no tools and can only answer in our schema; and nothing counts until a person confirms it. Two eval contracts contain an injection sentence.
+- The prompt is versioned (`EXTRACTION_PROMPT_VERSION`, stored on the contract).
 
 ### 7.2 Audit agent (F6): hand-written loop
 
@@ -289,6 +311,12 @@ sequenceDiagram
 
 Every job handler starts by **re-reading state from the DB** and exiting if the work is already done. Jobs carry IDs, not data, so they never act on stale copies.
 
+As built for `contract-extraction` (Phase 3):
+- The API enqueues **after** the DB commit (the worker can never get a job for a row it cannot see yet), with `jobId = contractId`, so a second add for the same contract is ignored. If Redis is down at that moment, the contract stays `uploaded` and the client gets a 503 (a sweeper is on the Later list).
+- The worker (`src/worker.ts`, a Nest application context with no HTTP) re-reads the contract and exits unless it is `uploaded` or `extracting`; `extracting` is a valid start, because a crash during the Claude call leaves it there.
+- An extraction that the extractor gave up on (invalid output after its own retries, refusal, truncation) is **final**: the job does not retry, because that would repeat the bill for the same answer. Other errors (network after the SDK's retries, DB, missing file) are rethrown so BullMQ retries them; on the last attempt (`job.attemptsStarted >= attempts`) the contract is marked `failed` first.
+- `pnpm dev` runs `turbo run dev dev:worker`: the API and the worker are separate processes.
+
 ---
 
 ## 10. Public API (F9) & MCP server (F10)
@@ -323,6 +351,12 @@ Every job handler starts by **re-reading state from the DB** and exiting if the 
 **CI:** `evals.yml` runs on PRs that touch prompts, schemas or the llm module. It posts a results table as a PR comment and fails if field accuracy or payout exactness drops below the last baseline. Results are stored per run, so accuracy is tracked across releases.
 
 **Why generate PDFs from JSON instead of labeling by hand:** labels are free and always correct, and it's easy to add hard cases on purpose.
+
+As built (`packages/evals/`):
+- **Dataset:** 25 cases in `dataset/cNN/` (`case.json` ground truth, `contract.pdf`, `contract.txt`), generated from fixed seeds by `pnpm --filter @ledgerline/evals generate`. Output is byte-for-byte deterministic (pdfkit with a fixed creation date), and a test fails if the committed dataset no longer matches the generator. Deal types rotate (7/6/6/6). Hard features are tagged per case: `deposit_distractor`, `merch_percent_distractor`, `money_in_words`, `cents_in_guarantee`, `sub_clauses`, `no_total_cap`, `prompt_injection` (2 cases). Versus and guarantee-plus guarantees are sized from the show's net box office, so the percentage side decides about half of those payouts; otherwise a wrong percentage would still give the "exact" payout.
+- **Runner:** `pnpm evals` calls the production `extractContractTerms` on every case (4 at a time). 12 fields are scored, each as `correct`, `wrong`, `missed` (contract has it, extraction returned null) or `invented` (a value the contract does not have). Payout exactness runs the extracted terms through the real engine with the case's sales and expenses.
+- **Oracle:** `pnpm evals --oracle` answers with the ground truth instead of calling Claude. It must score 100%; it tests the pipeline (scoring, text ↔ cents, dataset), not the model.
+- **Reports** go to `evals/reports/` (gitignored); `--save-baseline` writes `packages/evals/baselines/extraction.{json,md}` (committed). The CI gate comes in Phase 7.
 
 ---
 
