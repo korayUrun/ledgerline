@@ -26,3 +26,6 @@ evals/reports/
 
 # generated Prisma client (rebuilt by `prisma generate` on install)
 packages/db/src/generated/
+
+# local receipt uploads (synthetic data only)
+var/
