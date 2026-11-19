@@ -239,7 +239,15 @@ export type TermsDraft = {
   } | null;
 };
 
+// Category enum order, the order the review form lists them in.
+const categoryOrder = (category: ExpenseCategory) =>
+  ExpenseCategorySchema.options.indexOf(category);
+
 // Expects an extraction that passed ContractExtractionSchema, so every text parses.
+//
+// Lists come out in a fixed order (categories in enum order, tiers by threshold),
+// not in the order Claude wrote them. The review form sends them back in that same
+// order, so "the reviewer changed nothing" really compares equal.
 export function extractionToDraft(extraction: ContractExtraction): TermsDraft {
   const { deal, expensePolicy, bonus } = extraction;
   const cents = (text: string | null) => (text === null ? null : moneyTextToCents(text));
@@ -251,19 +259,24 @@ export function extractionToDraft(extraction: ContractExtraction): TermsDraft {
     artistShareBps: bps(deal.artistShare.value),
     promoterProfitBps: bps(deal.promoterProfit.value),
     dealClauseRef: ref(deal.clauseRef.value),
-    allowedCategories: expensePolicy.allowedCategories.value,
-    categoryCaps: expensePolicy.categoryCaps.map((cap) => ({
-      category: cap.category,
-      capCents: moneyTextToCents(cap.cap)!,
-    })),
+    allowedCategories:
+      expensePolicy.allowedCategories.value &&
+      [...expensePolicy.allowedCategories.value].sort(
+        (a, b) => categoryOrder(a) - categoryOrder(b),
+      ),
+    categoryCaps: expensePolicy.categoryCaps
+      .map((cap) => ({ category: cap.category, capCents: moneyTextToCents(cap.cap)! }))
+      .sort((a, b) => categoryOrder(a.category) - categoryOrder(b.category)),
     totalCapCents: cents(expensePolicy.totalCap.value),
     expenseClauseRef: ref(expensePolicy.clauseRef.value),
     bonus: bonus && {
       mode: bonus.mode.value,
-      tiers: bonus.tiers.map((tier) => ({
-        minTicketsSold: tier.minTicketsSold,
-        bonusCents: moneyTextToCents(tier.bonus)!,
-      })),
+      tiers: bonus.tiers
+        .map((tier) => ({
+          minTicketsSold: tier.minTicketsSold,
+          bonusCents: moneyTextToCents(tier.bonus)!,
+        }))
+        .sort((a, b) => a.minTicketsSold - b.minTicketsSold),
       clauseRef: ref(bonus.clauseRef.value),
     },
   };

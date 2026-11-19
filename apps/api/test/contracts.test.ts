@@ -276,6 +276,31 @@ describe("confirm", () => {
     expect(view.body.settlement?.payoutCents).toBe(1_000_000);
   });
 
+  it("does not count a different list order as a reviewer edit (regression)", async () => {
+    // Claude lists categories in contract order; the review form always sends
+    // them in enum order. Same terms, so reviewerEdited must be false.
+    const versus = structuredClone(FLAT_EXTRACTION);
+    versus.deal.type.value = "versus";
+    versus.deal.artistShare = { value: "80%", evidence: quote("80% of net receipts") };
+    versus.expensePolicy.allowedCategories = {
+      value: ["security", "production"],
+      evidence: quote("security and production"),
+    };
+    const contract = await uploadContract();
+    await (await processor(answering(versus))).process(contract.id, { isLastAttempt: false });
+
+    await t.request("POST", `/contracts/${contract.id}/confirm`, {
+      ...FLAT_TERMS,
+      deal: { type: "versus", guaranteeCents: 1_000_000, artistShareBps: 8000, clauseRef: "§3" },
+      expensePolicy: { ...FLAT_TERMS.expensePolicy, allowedCategories: ["production", "security"] },
+    });
+
+    const confirmed = await t.prisma.auditLog.findFirstOrThrow({
+      where: { action: "contract.confirmed" },
+    });
+    expect(confirmed.after).toMatchObject({ reviewerEdited: false });
+  });
+
   it("records when the reviewer changed what Claude extracted", async () => {
     const contractId = await contractInReview();
     const edited = structuredClone(FLAT_TERMS);
