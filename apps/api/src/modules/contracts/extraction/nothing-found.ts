@@ -1,9 +1,9 @@
-import type { ContractExtraction } from "@ledgerline/schemas";
+import { NO_EVIDENCE, type ContractExtraction } from "@ledgerline/schemas";
 
 // An extraction where the contract stated nothing: every value null. What the
 // offline fake LLM returns, so the review screen opens with every field "missing".
 export function nothingFoundExtraction(): ContractExtraction {
-  const missing = { value: null, evidence: null };
+  const missing = { value: null, evidence: NO_EVIDENCE };
   return {
     deal: {
       type: missing,

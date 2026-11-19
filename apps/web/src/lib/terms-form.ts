@@ -1,5 +1,6 @@
 import {
   ExpenseCategorySchema,
+  hasEvidence,
   parseDollarsToCents,
   parsePercentToBps,
   type ContractExtraction,
@@ -133,14 +134,16 @@ export function termsFromForm(form: FormData): {
 }
 
 // Form field name → what the contract says about it. "missing" = Claude found
-// no value; the reviewer must check the PDF and fill it in if it applies.
+// nothing at all; the reviewer must check the PDF and fill it in if it applies.
+// A quote under an empty field means the contract says there is none (e.g. "There
+// is no overall limit on Allowable Expenses"), which is not "missing".
 export type FieldEvidence = Evidence | "missing";
 export type EvidenceMap = Record<string, FieldEvidence>;
 
 export function evidenceFromExtraction(extraction: ContractExtraction): EvidenceMap {
   const { deal, expensePolicy, bonus } = extraction;
-  const of = (field: { value: unknown; evidence: Evidence | null }): FieldEvidence =>
-    field.value === null || field.evidence === null ? "missing" : field.evidence;
+  const of = (field: { value: unknown; evidence: Evidence }): FieldEvidence =>
+    hasEvidence(field.evidence) ? field.evidence : "missing";
   const map: EvidenceMap = {
     dealType: of(deal.type),
     guarantee: of(deal.guarantee),

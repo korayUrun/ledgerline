@@ -24,7 +24,7 @@ export const MAX_EXTRACTION_RETRIES = 2;
 // The JSON Schema Claude must follow, built once from the Zod schema. The SDK
 // helper also moves constraints the API does not support (minimum, maximum…) into
 // the descriptions; Zod checks them again on our side.
-const OUTPUT_FORMAT = zodOutputFormat(ContractExtractionSchema);
+export const OUTPUT_FORMAT = zodOutputFormat(ContractExtractionSchema);
 
 export type ExtractionUsage = {
   model: string;

@@ -1,16 +1,18 @@
 import type { INestApplicationContext } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
-import type {
-  ContractDetailDto,
-  ContractDto,
-  ContractExtraction,
-  ContractTerms,
-  SettlementViewDto,
-  ShowDto,
-  TermsDto,
+import {
+  NO_EVIDENCE,
+  type ContractDetailDto,
+  type ContractDto,
+  type ContractExtraction,
+  type ContractTerms,
+  type SettlementViewDto,
+  type ShowDto,
+  type TermsDto,
 } from "@ledgerline/schemas";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { ExtractionProcessor } from "../src/modules/contracts/extraction/extraction-processor.js";
+import { EXTRACTION_PROMPT_VERSION } from "../src/modules/contracts/extraction/extraction-prompt.js";
 import { ExtractionQueue } from "../src/modules/contracts/extraction/extraction-queue.js";
 import { FakeLlmClient, fakeTextMessage } from "../src/modules/llm/fake-llm-client.js";
 import type { LlmClient } from "../src/modules/llm/llm-client.js";
@@ -27,7 +29,7 @@ let worker: INestApplicationContext | null = null;
 
 const PDF = Buffer.from("%PDF-1.7\n% synthetic test contract\n");
 const quote = (text: string) => ({ quote: text, page: 1 });
-const missing = { value: null, evidence: null };
+const missing = { value: null, evidence: NO_EVIDENCE };
 
 // Claude's (fake) reading of a flat $10,000 contract.
 const FLAT_EXTRACTION: ContractExtraction = {
@@ -168,7 +170,7 @@ describe("extraction job", () => {
     const detail = await getContract(contract.id);
     expect(detail).toMatchObject({
       status: "needs_review",
-      promptVersion: "extract-v1",
+      promptVersion: EXTRACTION_PROMPT_VERSION,
       extraction: FLAT_EXTRACTION,
       draft: { dealType: "flat", guaranteeCents: 1_000_000, dealClauseRef: "§3" },
       usage: { model: "claude-opus-5-5", calls: 1, inputTokens: 5_000, outputTokens: 800 },
@@ -196,7 +198,7 @@ describe("extraction job", () => {
   it("marks the contract failed when Claude's answer stays invalid after the retries", async () => {
     const contract = await uploadContract();
     const invalid = structuredClone(FLAT_EXTRACTION);
-    invalid.deal.guarantee.evidence = null;
+    invalid.deal.guarantee.evidence = NO_EVIDENCE;
     const llm = answering(invalid);
 
     const outcome = await (await processor(llm)).process(contract.id, { isLastAttempt: false });
@@ -205,7 +207,7 @@ describe("extraction job", () => {
     expect(llm.requests).toHaveLength(3); // 1 try + 2 retries
     const detail = await getContract(contract.id);
     expect(detail.status).toBe("failed");
-    expect(detail.failureReason).toMatch(/^invalid_output; deal\.guarantee\.evidence: /);
+    expect(detail.failureReason).toMatch(/^invalid_output; deal\.guarantee\.evidence\.quote: /);
     expect(detail.usage).toMatchObject({ calls: 3 });
   });
 
