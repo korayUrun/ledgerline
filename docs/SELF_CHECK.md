@@ -75,6 +75,37 @@ error…" in `apps/api/test/contracts.test.ts`.
 
 </details>
 
+**3. All unit and integration tests passed, yet the first live call failed with "compiled grammar is too large". Why could the tests not catch it, and what guards it now?**
+
+<details><summary>Answer</summary>
+
+The tests use a fake LLM client: it never sends our JSON Schema to the real API, so it
+cannot know the API's limits. The API turns the schema into a grammar before the model
+runs and refuses one with too many "X or null" (union) fields; ours had 21, because both
+`value` and `evidence` were nullable on every field. The fix makes `evidence` always an
+object (an empty quote means "no evidence"), which halves the unions. The guard is a unit
+test that counts the unions in the schema we send and fails above 16, without calling the
+API. The lesson: a fake proves our logic, but only a real call proves the contract with an
+external service, which is why the live eval run belongs in the phase.
+
+Code: `EvidenceSchema` in `packages/schemas/src/contract-extraction.ts`; test:
+`apps/api/src/modules/contracts/extraction/output-format.test.ts` (PR #28).
+
+</details>
+
+**4. The baseline is 100% fields and 100% payouts. Is that good news?**
+
+<details><summary>Answer</summary>
+
+Partly. It shows the pipeline works and the model reads these contracts reliably,
+including the injection and deposit traps. But an eval that is already at 100% cannot
+show a prompt getting better, and can only show one getting worse. The synthetic
+contracts are cleaner than real ones, so the next step is harder cases (tables, amendments,
+gross vs net, truly missing terms, scanned pages) until the eval separates good from
+better again. A perfect score measures the dataset as much as the model.
+
+</details>
+
 ---
 
 # Deferred phase quizzes (after the last phase)

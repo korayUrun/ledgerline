@@ -101,7 +101,7 @@ Estimated total: ~4 weeks part-time.
 - [x] Contract state machine `uploaded → extracting → needs_review → confirmed | failed`
 - [x] Review UI: PDF next to fields with their evidence quotes; edit → confirm → new `ContractTerms` version
 - [x] Eval runner v1: field accuracy + payout exactness → markdown report
-- [ ] Live eval run on the 25 contracts; commit the baseline (`pnpm evals --save-baseline`)
+- [x] Live eval run on the 25 contracts; commit the baseline (`pnpm evals --save-baseline`)
 
 **Done when:** the full flow upload → extract → review → compute works in the UI; the eval report shows per-field accuracy and payout exactness, and the baseline is saved.
 
@@ -113,7 +113,7 @@ Estimated total: ~4 weeks part-time.
 
 **Break it:** make the prompt worse on purpose (remove the "return null" instruction). Run the evals. Which fields drop, and what does the model invent?
 
-**Status:** code complete 2026-11-19 (PRs #20–#25, CI green on `main`). Not done yet: the live eval baseline needs `ANTHROPIC_API_KEY`, which was not set. Everything else was verified with fake LLM clients: unit + integration tests, the eval pipeline with an oracle (100% on all 25 cases), and the full upload → extract → review → compute flow against the real local servers (payout equal to the generator's expected payout, to the cent). The Explain it questions and the Break it drill are in `SELF_CHECK.md` (deferred).
+**Status:** done 2026-11-19 (PRs #20–#29, CI green on `main`). Baseline (`packages/evals/baselines/extraction.md`, `claude-opus-5-5`, prompt `extract-v2`): field accuracy 100% (300/300), payout exactness 100% (25/25), 0 failures, 0 retries, 181,836 input / 16,041 output tokens, $1.05 total ($0.042 per contract), 5.8 s per contract. The first live run found two bugs the fakes could not: the output schema had too many nullable fields for the API (#28), and a different list order was logged as a reviewer edit (#29). Upload → extract → review → compute was run end to end with real Claude on case c08 (prompt injection, deposit, amount in words): the extraction ignored the injection and the deposit, and the payout matched to the cent. A perfect score means the dataset is now too easy to tell prompts apart; harder templates are on the Later list. The Explain it questions and the Break it drill are in `SELF_CHECK.md` (deferred).
 
 ---
 
@@ -226,3 +226,4 @@ Ideas and small follow-ups that came up while building. Not scheduled; pick them
 - Delete or archive the stored PDF of a superseded contract upload (today every upload is kept).
 - `formatNanoUsd` exists twice (api and web) because web cannot import api code. Move it to `packages/schemas` next to `formatCents` if a third user appears.
 - Run the eval CI gate (`evals.yml`, Phase 7) against the committed baseline.
+- Harder eval contracts: the baseline is 100%, so the eval can no longer show a prompt getting better. Ideas: terms in a table, an amendment that overrides an earlier clause, a percentage of gross instead of net, a term that is truly missing, scanned (image-only) pages.

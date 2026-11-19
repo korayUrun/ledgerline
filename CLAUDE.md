@@ -119,4 +119,4 @@ stripe listen --forward-to localhost:3001/payments/webhook
 
 ## Current phase
 <!-- Update when a phase is done -->
-**Phase 3 — Eval data + contract extraction + review (F11, F2, F3, F8).** Phases 0–2 done (2026-11-18/19). Phase 3 is code complete (PRs #20–#25); the last step is the live eval baseline (`pnpm evals --save-baseline`, needs `ANTHROPIC_API_KEY`), then mark it done and move to Phase 4. See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Phase "Explain it" quizzes and "Break it" drills are deferred to the end of the project: when a phase is done, add its questions with answers to `docs/SELF_CHECK.md` instead of quizzing me.
+**Phase 4 — Audit agent (F12 traces, F6).** Phases 0–3 done (2026-11-18/19); the Phase 3 extraction baseline is in `packages/evals/baselines/`. See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Phase "Explain it" quizzes and "Break it" drills are deferred to the end of the project: when a phase is done, add its questions with answers to `docs/SELF_CHECK.md` instead of quizzing me.

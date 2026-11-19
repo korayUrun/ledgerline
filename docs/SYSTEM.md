@@ -222,13 +222,15 @@ PDF ──▶ Claude (document input + ContractTerms schema)
 **Why the re-validation and retry:** the schema prevents most malformed output, but business validation (e.g., a percentage between 0 and 10000 bps, a guarantee present for a versus deal) needs code. Feeding the errors back gives the model a precise chance to fix itself.
 
 As built (`apps/api/src/modules/contracts/extraction/`, `packages/schemas/src/contract-extraction.ts`):
-- The output schema is `ContractExtractionSchema`, not `ContractTermsSchema`: each field is `{ value, evidence: { quote, page } | null }`, and **amounts and percentages are copied as text** (`"$12,500.00"`, `"85%"`). Code converts them with `parseDollarsToCents` / `parsePercentToBps`, so the model does no arithmetic at all, not even ×100.
+- The output schema is `ContractExtractionSchema`, not `ContractTermsSchema`: each field is `{ value, evidence: { quote, page } }` (`value` may be null; a missing quote is `""` with page 0), and **amounts and percentages are copied as text** (`"$12,500.00"`, `"85%"`). Code converts them with `parseDollarsToCents` / `parsePercentToBps`, so the model does no arithmetic at all, not even ×100.
 - It is sent as `output_config.format` (JSON Schema built from Zod by the SDK's `zodOutputFormat`), with adaptive thinking at effort `medium`. The PDF is a base64 `document` block.
 - Zod then checks what JSON Schema cannot: a value without an evidence quote, a figure that does not parse, a percentage above 100%, a term the deal type does not use, a cap on a category that is not allowed, highest-only tiers that pay less as the threshold rises. Only these are retried (the reply and the exact issues are appended to the conversation; max 2 retries).
 - **A missing required term is not retried.** Retrying would push the model to guess. It reaches the review screen as "Not found in the contract" (the "guarantee present for a versus deal" check above moved to `draftToContractTerms` and the human review).
 - `stop_reason` is checked before the content: `refusal` and `max_tokens` fail at once (no retry, the same request would give the same answer). No server-side refusal fallback: the eval must measure one model.
 - Prompt-injection defense: the rules live in the system prompt, which says the document is data and never instructions; the contract is only in the user turn; the model has no tools and can only answer in our schema; and nothing counts until a person confirms it. Two eval contracts contain an injection sentence.
-- The prompt is versioned (`EXTRACTION_PROMPT_VERSION`, stored on the contract).
+- The prompt is versioned (`EXTRACTION_PROMPT_VERSION`, stored on the contract; `extract-v2` since the evidence change).
+- **API limit on unions:** the API compiles the schema into a grammar and rejects one with too many "X or null" fields (21 gave a 400). That is why `evidence` is never null and only values are. `output-format.test.ts` counts the unions without calling the API and fails above 16.
+- `extractionToDraft` returns lists in a fixed order (categories in enum order, tiers by threshold), the order the review form sends back, so an unchanged review is not logged as `reviewerEdited`.
 
 ### 7.2 Audit agent (F6): hand-written loop
 
@@ -357,6 +359,7 @@ As built (`packages/evals/`):
 - **Runner:** `pnpm evals` calls the production `extractContractTerms` on every case (4 at a time). 12 fields are scored, each as `correct`, `wrong`, `missed` (contract has it, extraction returned null) or `invented` (a value the contract does not have). Payout exactness runs the extracted terms through the real engine with the case's sales and expenses.
 - **Oracle:** `pnpm evals --oracle` answers with the ground truth instead of calling Claude. It must score 100%; it tests the pipeline (scoring, text ↔ cents, dataset), not the model.
 - **Reports** go to `evals/reports/` (gitignored); `--save-baseline` writes `packages/evals/baselines/extraction.{json,md}` (committed). The CI gate comes in Phase 7.
+- **Baseline (2026-11-19, `claude-opus-5-5`, `extract-v2`):** 300/300 fields, 25/25 payouts exact, 0 retries, $1.05 for 25 contracts ($0.042 each), 5.8 s each. The dataset is now too easy to separate good prompts from better ones; harder templates are on the Later list.
 
 ---
 
