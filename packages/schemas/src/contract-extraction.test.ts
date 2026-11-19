@@ -4,13 +4,14 @@ import {
   draftToContractTerms,
   extractionToDraft,
   moneyTextToCents,
+  NO_EVIDENCE,
   normalizeClauseRef,
   percentTextToBps,
   type ContractExtraction,
 } from "./contract-extraction.js";
 
 const quote = (text: string, page = 1) => ({ quote: text, page });
-const missing = { value: null, evidence: null };
+const missing = { value: null, evidence: NO_EVIDENCE };
 
 // The Lanterns at Hall 9 versus deal (docs/domain.md §6, §8), as the model would
 // return it: amounts copied as text, each value with the words it came from.
@@ -66,9 +67,28 @@ describe("ContractExtractionSchema", () => {
 
   it("rejects a value without an evidence quote", () => {
     const extraction = versusExtraction();
-    extraction.deal.guarantee = { value: "$10,000.00", evidence: null };
+    extraction.deal.guarantee = { value: "$10,000.00", evidence: NO_EVIDENCE };
     expect(issuesOf(extraction)).toEqual([
-      expect.stringMatching(/^deal\.guarantee\.evidence: .*quote/),
+      expect.stringMatching(/^deal\.guarantee\.evidence\.quote: .*quote/),
+    ]);
+  });
+
+  it("accepts a null value with a quote: the contract states there is none", () => {
+    const extraction = versusExtraction();
+    extraction.expensePolicy.totalCap = {
+      value: null,
+      evidence: quote("There is no overall limit on Allowable Expenses."),
+    };
+    expect(issuesOf(extraction)).toEqual([]);
+  });
+
+  it("rejects a quote without its page, and a cap or tier without a quote", () => {
+    const extraction = versusExtraction();
+    extraction.deal.guarantee.evidence = { quote: "a guarantee of $10,000.00", page: 0 };
+    extraction.expensePolicy.categoryCaps[0]!.evidence = NO_EVIDENCE;
+    expect(issuesOf(extraction)).toEqual([
+      expect.stringMatching(/^deal\.guarantee\.evidence\.page: /),
+      expect.stringMatching(/^expensePolicy\.categoryCaps\.0\.evidence: /),
     ]);
   });
 

@@ -45,12 +45,47 @@ export function normalizeClauseRef(text: string): string {
 
 // --- Schema ------------------------------------------------------------------------------
 
-export const EvidenceSchema = z.object({
-  quote: z.string().describe("The exact words from the contract that state this value"),
-  // A real range, not just z.int(): the bounds end up in the schema Claude sees.
-  page: z.int().min(1).max(1000).describe("1-based page number of the quote"),
-});
+// Always an object, never null. A missing quote is the empty string. Why not
+// `evidence: Evidence | null`? The API compiles the schema into a grammar and
+// refuses too many "X or null" fields (found by the first live eval run: 21 unions
+// gave a 400). A nullable evidence on every field doubled that count; this keeps
+// only the values nullable. See output-format.test.ts in apps/api.
+export const EvidenceSchema = z
+  .object({
+    quote: z
+      .string()
+      .describe(
+        "The exact words from the contract that state this value, or that state the contract has none. Empty string when the contract says nothing about it.",
+      ),
+    // A real range, not just z.int(): the bounds end up in the schema Claude sees.
+    page: z
+      .int()
+      .min(0)
+      .max(1000)
+      .describe("1-based page number of the quote; 0 when the quote is empty"),
+  })
+  .superRefine((evidence, ctx) => {
+    if (hasEvidence(evidence) && evidence.page < 1) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["page"],
+        message: "a quote needs its page number (1 or more)",
+      });
+    }
+  });
 export type Evidence = z.infer<typeof EvidenceSchema>;
+
+export const NO_EVIDENCE: Evidence = { quote: "", page: 0 };
+
+export function hasEvidence(evidence: Evidence): boolean {
+  return evidence.quote.trim() !== "";
+}
+
+// For list items (a category cap, a bonus tier): they only exist because the
+// contract states them, so they always need their quote.
+const RequiredEvidenceSchema = EvidenceSchema.refine(hasEvidence, {
+  message: "every cap and bonus tier needs the exact words it came from",
+});
 
 const MoneyTextSchema = z
   .string()
@@ -67,18 +102,19 @@ const PercentTextSchema = z
   });
 
 // { value, evidence }. A value without evidence is rejected: if the model cannot
-// point to the words, it must say null instead.
+// point to the words, it must say null instead. A null value may still carry a
+// quote, e.g. "There is no overall limit on Allowable Expenses" for the total cap.
 function field<T extends z.ZodType>(value: T) {
   return z
-    .object({ value: value.nullable(), evidence: EvidenceSchema.nullable() })
+    .object({ value: value.nullable(), evidence: EvidenceSchema })
     .superRefine((parsed, ctx) => {
       // Inside a generic, TypeScript cannot resolve the type of `value` (it depends
       // on T), so it drops the key. The schema above guarantees both keys exist.
-      const extracted = parsed as { value: unknown; evidence: Evidence | null };
-      if (extracted.value !== null && extracted.evidence === null) {
+      const extracted = parsed as { value: unknown; evidence: Evidence };
+      if (extracted.value !== null && !hasEvidence(extracted.evidence)) {
         ctx.addIssue({
           code: "custom",
-          path: ["evidence"],
+          path: ["evidence", "quote"],
           message:
             "a value was given without an evidence quote; quote the exact words, or set value to null",
         });
@@ -127,7 +163,7 @@ export const ContractExtractionSchema = z.object({
         z.object({
           category: ExpenseCategorySchema,
           cap: MoneyTextSchema,
-          evidence: EvidenceSchema,
+          evidence: RequiredEvidenceSchema,
         }),
       ),
       totalCap: field(MoneyTextSchema),
@@ -160,7 +196,7 @@ export const ContractExtractionSchema = z.object({
         z.object({
           minTicketsSold: TicketCountSchema.describe("Paid tickets needed to reach this tier"),
           bonus: MoneyTextSchema,
-          evidence: EvidenceSchema,
+          evidence: RequiredEvidenceSchema,
         }),
       ),
       clauseRef: field(z.string()),

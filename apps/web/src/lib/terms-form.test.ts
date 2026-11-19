@@ -1,4 +1,4 @@
-import type { ContractExtraction, ContractTerms } from "@ledgerline/schemas";
+import { NO_EVIDENCE, type ContractExtraction, type ContractTerms } from "@ledgerline/schemas";
 import { describe, expect, it } from "vitest";
 import { bpsToInput, centsToInput } from "./format";
 import { evidenceFromExtraction, termsFromForm, termsToDraft } from "./terms-form";
@@ -87,7 +87,7 @@ describe("termsFromForm", () => {
 describe("evidenceFromExtraction", () => {
   it("maps each extracted field to its quote, and missing values to 'missing'", () => {
     const quote = (text: string) => ({ quote: text, page: 2 });
-    const missing = { value: null, evidence: null };
+    const missing = { value: null, evidence: NO_EVIDENCE };
     const extraction: ContractExtraction = {
       deal: {
         type: { value: "flat", evidence: quote("a flat guarantee") },

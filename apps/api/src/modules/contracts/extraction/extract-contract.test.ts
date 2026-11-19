@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import type { ContractExtraction } from "@ledgerline/schemas";
+import { NO_EVIDENCE, type ContractExtraction } from "@ledgerline/schemas";
 import { describe, expect, it } from "vitest";
 import { FakeLlmClient, fakeTextMessage } from "../../llm/fake-llm-client.js";
 import { ExtractionFailedError, extractContractTerms } from "./extract-contract.js";
@@ -8,7 +8,7 @@ const PDF = Buffer.from("%PDF-1.7 fake contract");
 const MODEL = "claude-opus-5-5";
 
 const quote = (text: string) => ({ quote: text, page: 1 });
-const missing = { value: null, evidence: null };
+const missing = { value: null, evidence: NO_EVIDENCE };
 
 function validExtraction(): ContractExtraction {
   return {
@@ -70,7 +70,7 @@ describe("extractContractTerms", () => {
 
   it("retries with the validation errors appended, then succeeds", async () => {
     const invalid = validExtraction();
-    invalid.deal.guarantee.evidence = null; // a value without a quote
+    invalid.deal.guarantee.evidence = NO_EVIDENCE; // a value without a quote
     const llm = scripted(json(invalid), json(validExtraction()));
 
     const result = await extractContractTerms(llm, { pdf: PDF, model: MODEL });

@@ -2,6 +2,7 @@ import { FakeLlmClient, fakeTextMessage, type LlmClient } from "@ledgerline/api"
 import {
   formatBps,
   formatCents,
+  NO_EVIDENCE,
   type ContractExtraction,
   type ContractTerms,
 } from "@ledgerline/schemas";
@@ -25,7 +26,7 @@ export function oracleClient(truth: ContractTerms): LlmClient {
 export function termsToExtraction(terms: ContractTerms): ContractExtraction {
   const evidence = { quote: "(oracle: ground truth)", page: 1 };
   const found = <T>(value: T) => ({ value, evidence });
-  const missing = { value: null, evidence: null };
+  const missing = { value: null, evidence: NO_EVIDENCE };
   const { deal, expensePolicy, bonus } = terms;
   return {
     deal: {
