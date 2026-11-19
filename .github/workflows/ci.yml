@@ -33,6 +33,15 @@ jobs:
       # instead of silently resolving new versions in CI.
       - run: pnpm install --frozen-lockfile
 
+      # Second line of defense behind .githooks/pre-commit (which can be skipped
+      # with --no-verify). Prints only file names, never the matching text.
+      - name: No secrets in the repository
+        run: |
+          if git grep -lE 'sk-ant-[A-Za-z0-9_-]{20,}|(sk|rk)_(test|live)_[A-Za-z0-9]{20,}|whsec_[A-Za-z0-9]{20,}'; then
+            echo "::error::The files above contain what looks like an API key."
+            exit 1
+          fi
+
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
