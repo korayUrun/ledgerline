@@ -95,6 +95,7 @@ packages/evals               dataset generator + eval runner
 ```bash
 docker compose up -d          # postgres + redis
 pnpm install
+pnpm run prepare              # once per clone: enables .githooks/pre-commit (blocks committed keys)
 pnpm dev                      # web + api + worker (LLM_CLIENT=fake pnpm dev runs without an API key)
 pnpm test                     # all unit/integration tests (api integration tests need Docker)
 pnpm --filter @ledgerline/api test:unit   # api unit tests only, no Docker

@@ -1,0 +1,22 @@
+#!/bin/sh
+# Refuses a commit that would put a secret in git (CLAUDE.md: never commit keys).
+# Enabled by `pnpm install` (the root "prepare" script sets core.hooksPath).
+# CI runs the same pattern over the whole tree, in case this hook is skipped.
+#
+# The matching line is never printed: printing it would leak the key into the
+# terminal, a log or a screen recording.
+
+# Real keys are long; placeholders like sk_test_replace_me are not.
+PATTERN='sk-ant-[A-Za-z0-9_-]{20,}|(sk|rk)_(test|live)_[A-Za-z0-9]{20,}|whsec_[A-Za-z0-9]{20,}'
+
+if git diff --cached --no-color -U0 | grep '^+' | grep -qE "$PATTERN"; then
+  echo "pre-commit: this commit adds something that looks like an API key." >&2
+  echo "Keys belong in .env (gitignored). Remove it from the staged files and try again." >&2
+  exit 1
+fi
+
+# No .env file may be committed, except the empty template.
+if git diff --cached --name-only --diff-filter=AM | grep -E '(^|/)\.env' | grep -qvE '(^|/)\.env\.example$'; then
+  echo "pre-commit: a .env file is staged. Only .env.example belongs in git." >&2
+  exit 1
+fi
