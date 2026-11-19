@@ -162,6 +162,22 @@ describe("text → cents / bps (code converts, the model only copies)", () => {
 });
 
 describe("extractionToDraft / draftToContractTerms", () => {
+  it("puts lists in a fixed order, whatever order the contract (and Claude) used", () => {
+    const extraction = versusExtraction();
+    extraction.expensePolicy.allowedCategories.value = [
+      "security",
+      "advertising",
+      "production",
+      "catering",
+    ];
+    extraction.bonus!.tiers.reverse();
+    const draft = extractionToDraft(ContractExtractionSchema.parse(extraction));
+    // The review form lists categories in this order too, so an unchanged form
+    // gives exactly the draft back.
+    expect(draft.allowedCategories).toEqual(["production", "advertising", "catering", "security"]);
+    expect(draft.bonus?.tiers.map((tier) => tier.minTicketsSold)).toEqual([400, 450]);
+  });
+
   it("converts a complete extraction into engine-ready terms", () => {
     const draft = extractionToDraft(ContractExtractionSchema.parse(versusExtraction()));
     expect(draftToContractTerms(draft)).toEqual({
