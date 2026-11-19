@@ -1,0 +1,158 @@
+{
+  "generatedAt": "2026-11-19T13:17:48.174Z",
+  "mode": "live",
+  "model": "claude-opus-5-5",
+  "promptVersion": "extract-v2",
+  "cases": 25,
+  "fieldAccuracy": {
+    "correct": 300,
+    "total": 300
+  },
+  "payoutExactness": {
+    "exact": 25,
+    "total": 25
+  },
+  "perField": [
+    {
+      "field": "deal.type",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    },
+    {
+      "field": "deal.guaranteeCents",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    },
+    {
+      "field": "deal.artistShareBps",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    },
+    {
+      "field": "deal.promoterProfitBps",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    },
+    {
+      "field": "deal.clauseRef",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    },
+    {
+      "field": "expensePolicy.allowedCategories",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    },
+    {
+      "field": "expensePolicy.categoryCaps",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    },
+    {
+      "field": "expensePolicy.totalCapCents",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    },
+    {
+      "field": "expensePolicy.clauseRef",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    },
+    {
+      "field": "bonus.mode",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    },
+    {
+      "field": "bonus.tiers",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    },
+    {
+      "field": "bonus.clauseRef",
+      "total": 25,
+      "correct": 25,
+      "wrong": 0,
+      "missed": 0,
+      "invented": 0
+    }
+  ],
+  "byTag": [
+    {
+      "tag": "cents_in_guarantee",
+      "cases": 3,
+      "payoutExact": 3
+    },
+    {
+      "tag": "deposit_distractor",
+      "cases": 15,
+      "payoutExact": 15
+    },
+    {
+      "tag": "merch_percent_distractor",
+      "cases": 14,
+      "payoutExact": 14
+    },
+    {
+      "tag": "money_in_words",
+      "cases": 7,
+      "payoutExact": 7
+    },
+    {
+      "tag": "no_total_cap",
+      "cases": 3,
+      "payoutExact": 3
+    },
+    {
+      "tag": "prompt_injection",
+      "cases": 2,
+      "payoutExact": 2
+    },
+    {
+      "tag": "sub_clauses",
+      "cases": 19,
+      "payoutExact": 19
+    }
+  ],
+  "extractionFailures": 0,
+  "retries": 0,
+  "tokens": {
+    "input": 181836,
+    "output": 16041
+  },
+  "costNanoUsd": 1048164000,
+  "averageDurationMs": 5848
+}
