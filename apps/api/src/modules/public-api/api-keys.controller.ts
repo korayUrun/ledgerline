@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
 } from "@nestjs/common";
+import { ApiExcludeController } from "@nestjs/swagger";
 import {
   CreateApiKeyBodySchema,
   type ApiKeyDto,
@@ -20,7 +21,9 @@ import { CurrentActor } from "../auth/auth.guard.js";
 import { ApiKeysService } from "./api-keys.service.js";
 
 // Managing API keys is a person's job: these are session routes (no @ApiKeyAuth()),
-// so a key cannot create more keys or un-revoke itself.
+// so a key cannot create more keys or un-revoke itself. Left out of the /v1 OpenAPI
+// document, which describes only what an API key can call.
+@ApiExcludeController()
 @Controller("api-keys")
 export class ApiKeysController {
   constructor(@Inject(ApiKeysService) private readonly apiKeys: ApiKeysService) {}

@@ -10,4 +10,6 @@ allowBuilds:
   msgpackr-extract: false
   prisma: true
   protobufjs: false
+  # Usage analytics that swagger-ui-dist (@nestjs/swagger) installs. Nothing needs it.
+  "@scarf/scarf": false
   ssh2: false
