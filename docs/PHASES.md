@@ -22,7 +22,7 @@ Estimated total: ~4 weeks part-time.
 - [x] TypeScript strict mode, ESLint (including import-boundary rules from SYSTEM.md §2), Prettier, Vitest
 - [x] `docker-compose.yml` with Postgres + Redis; `.env.example`
 - [x] GitHub Actions `ci.yml`: install → lint → typecheck → test
-- [x] Add `CLAUDE.md`, `PROJECT_OVERVIEW.md`, `FEATURES.md`, `SYSTEM.md`, `PHASES.md`, an empty `DEBUGGING.md`
+- [x] Add `CLAUDE.md`, `PROJECT_OVERVIEW.md`, `FEATURES.md`, `SYSTEM.md`, `PHASES.md`, an empty `DEBUGGING.md` (removed in Phase 7, see below)
 
 **Done when:** `docker compose up` starts the DB and Redis; `pnpm test` passes in CI; the hand-calculated examples in `domain.md` are written down.
 
@@ -204,7 +204,7 @@ Estimated total: ~4 weeks part-time.
 **Tasks**
 - [ ] `evals.yml`: runs on PRs touching prompts/schemas/llm, comments a results table, fails below baseline
 - [ ] Structured logging (pino) with `requestId` / `jobId` / `settlementId`
-- [ ] Go through `DEBUGGING.md`: every drill from Phases 1–6 documented as symptom → layer → root cause → fix
+- [ ] ~~Go through `DEBUGGING.md`~~ Dropped: the log was removed. Bugs and their fixes are in the PR descriptions and the "as built" notes in `SYSTEM.md`; the Break it drills with what to look for are in `SELF_CHECK.md`.
 - [ ] README: problem, architecture diagram, key decisions (link SYSTEM.md), eval results table, how to run, MCP setup
 - [ ] 2-minute demo video: upload → review → compute → agent flags → approve → paid → MCP question
 - [ ] Final CV bullets
