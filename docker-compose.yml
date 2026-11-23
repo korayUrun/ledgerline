@@ -7,8 +7,10 @@ services:
       POSTGRES_USER: ledgerline
       POSTGRES_PASSWORD: ledgerline
       POSTGRES_DB: ledgerline
+    # 127.0.0.1: reachable from this machine only, not from the local network
+    # (the password is in this file).
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     # Healthchecks let later services use `depends_on: condition: service_healthy`
@@ -22,7 +24,7 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
