@@ -14,6 +14,7 @@ import {
   type CreateShowBody,
   type LoginResponseDto,
   type ResolveFlagBody,
+  type StripeOnboardingDto,
   type UpdateExpenseBody,
 } from "@ledgerline/schemas";
 import { cookies } from "next/headers";
@@ -249,4 +250,21 @@ export async function logout(): Promise<void> {
   await api.post("/auth/logout");
   (await cookies()).delete(SESSION_COOKIE);
   redirect("/login");
+}
+
+// Creates the artist's Stripe test account (once) and sends the person to Stripe's
+// hosted onboarding page to fill it in. Stripe sends them back to the app after.
+export async function connectStripeAccount(showId: string, artistId: string): Promise<void> {
+  let onboardingUrl: string;
+  try {
+    ({ onboardingUrl } = await api.post<StripeOnboardingDto>(
+      `/artists/${artistId}/stripe-account`,
+    ));
+  } catch (error) {
+    if (error instanceof ApiError) {
+      redirect(withError(`/shows/${showId}/settlement`, error.body));
+    }
+    throw error;
+  }
+  redirect(onboardingUrl);
 }
