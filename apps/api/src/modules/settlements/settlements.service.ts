@@ -112,6 +112,17 @@ export class SettlementsService {
         );
       }
 
+      // Same idea for the audit agent's flags (F6): the agent only points at
+      // problems, so a person must accept or dismiss each one before review.
+      const openFlagCount = await tx.expenseFlag.count({
+        where: { status: "open", expense: { showId } },
+      });
+      if (openFlagCount > 0) {
+        throw new ConflictException(
+          `${openFlagCount} assistant flag(s) are still open. Accept or dismiss them first.`,
+        );
+      }
+
       // Never send a result for review that no longer matches the data.
       const live = await loadLiveInputs(tx, showId);
       if (!live || hashSettlementInput(live.input) !== settlement.inputsHash) {

@@ -1,7 +1,7 @@
 import "reflect-metadata"; // Nest reads decorator data through the Reflect API; must load first
 import type { INestApplication, LogLevel } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module.js";
+import { AppModule, type AppOptions } from "./app.module.js";
 import { ApiExceptionFilter } from "./common/api-exception.filter.js";
 import type { ApiConfig } from "./config.js";
 
@@ -10,8 +10,11 @@ import type { ApiConfig } from "./config.js";
 export async function createApp(
   config: ApiConfig,
   logLevels: LogLevel[] = ["error", "warn", "log"],
+  options: AppOptions = {},
 ): Promise<INestApplication> {
-  const app = await NestFactory.create(AppModule.register(config), { logger: logLevels });
+  const app = await NestFactory.create(AppModule.register(config, options), {
+    logger: logLevels,
+  });
   app.useGlobalFilters(new ApiExceptionFilter());
   app.enableShutdownHooks();
   return app;

@@ -1,7 +1,7 @@
 import { Inject, Module, type DynamicModule, type OnApplicationShutdown } from "@nestjs/common";
 import { createPrismaClient, type PrismaClient } from "@ledgerline/db";
 import { CONFIG, LLM_CLIENT, PRISMA } from "./common/tokens.js";
-import type { WorkerConfig } from "./config.js";
+import type { ApiConfig } from "./config.js";
 import { AuditModule } from "./modules/audit/audit.module.js";
 import { ContractFileStorage } from "./modules/contracts/contract-file-storage.js";
 import { ContractStateMachine } from "./modules/contracts/contract-state-machine.js";
@@ -24,7 +24,7 @@ export type WorkerOptions = {
 export class WorkerModule implements OnApplicationShutdown {
   constructor(@Inject(PRISMA) private readonly prisma: PrismaClient) {}
 
-  static register(config: WorkerConfig, options: WorkerOptions = {}): DynamicModule {
+  static register(config: ApiConfig, options: WorkerOptions = {}): DynamicModule {
     return {
       module: WorkerModule,
       global: true,

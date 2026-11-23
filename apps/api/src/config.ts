@@ -8,24 +8,29 @@ export type ApiConfig = {
   // Root folder for uploaded files. A key such as "receipts/<uuid>.pdf" or
   // "contracts/<uuid>.pdf" is stored relative to it. API and worker must share it.
   storageDir: string;
+  llm: LlmConfig;
 };
 
 export type LlmConfig = {
   // "anthropic" calls Claude. "fake" never calls the network: every contract comes
-  // back as "nothing found" and a person types the terms in the review screen.
-  // For running the whole flow locally without an API key.
+  // back as "nothing found" (a person types the terms in the review screen) and the
+  // agent answers that it is offline. For running the whole flow without an API key.
   client: "anthropic" | "fake";
   apiKey: string | null;
   extractionModel: string;
+  // The audit agent's model (F6). Chosen by the agent eval; Sonnet until then,
+  // because an audit makes many calls and Opus costs more per token.
+  agentModel: string;
   timeoutMs: number;
   maxRetries: number; // SDK retries on 429/5xx/connection errors, per call
 };
 
-export type WorkerConfig = ApiConfig & { llm: LlmConfig };
-
 // Read once at startup, then passed into AppModule. Modules never read process.env
 // themselves, which is what lets the integration tests start the app against a
 // throwaway database just by passing a different config.
+//
+// The API and the worker read the same config. Both call Claude: the worker to read
+// contracts, the API to run the audit agent (its answers stream to the browser).
 export function readConfigFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   const databaseUrl = env["DATABASE_URL"];
   if (!databaseUrl) {
@@ -41,12 +46,11 @@ export function readConfigFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConf
     port: Number(env["API_PORT"] ?? 3001),
     storageDir:
       env["STORAGE_DIR"] ?? fileURLToPath(new URL("../../../var/storage", import.meta.url)),
+    llm: readLlmConfig(env),
   };
 }
 
-// The worker needs everything the API needs, plus the Claude settings. Only the
-// worker reads the API key: the HTTP API never calls Claude.
-export function readWorkerConfigFromEnv(env: NodeJS.ProcessEnv = process.env): WorkerConfig {
+function readLlmConfig(env: NodeJS.ProcessEnv): LlmConfig {
   const client = env["LLM_CLIENT"] ?? "anthropic";
   if (client !== "anthropic" && client !== "fake") {
     throw new Error(`LLM_CLIENT must be "anthropic" or "fake", got "${client}"`);
@@ -58,13 +62,11 @@ export function readWorkerConfigFromEnv(env: NodeJS.ProcessEnv = process.env): W
     );
   }
   return {
-    ...readConfigFromEnv(env),
-    llm: {
-      client,
-      apiKey,
-      extractionModel: env["EXTRACTION_MODEL"] ?? "claude-opus-5-5",
-      timeoutMs: Number(env["LLM_TIMEOUT_MS"] ?? 120_000),
-      maxRetries: Number(env["LLM_MAX_RETRIES"] ?? 3),
-    },
+    client,
+    apiKey,
+    extractionModel: env["EXTRACTION_MODEL"] ?? "claude-opus-5-5",
+    agentModel: env["AGENT_MODEL"] ?? "claude-sonnet-5-5",
+    timeoutMs: Number(env["LLM_TIMEOUT_MS"] ?? 120_000),
+    maxRetries: Number(env["LLM_MAX_RETRIES"] ?? 3),
   };
 }

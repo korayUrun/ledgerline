@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { Contract, PrismaClient } from "@ledgerline/db";
-import type { WorkerConfig } from "../../../config.js";
+import type { ApiConfig } from "../../../config.js";
 import { SYSTEM_ACTOR_LABEL } from "../../../common/actor.service.js";
 import { CONFIG, LLM_CLIENT, PRISMA } from "../../../common/tokens.js";
 import type { LlmClient } from "../../llm/llm-client.js";
@@ -24,7 +24,7 @@ export class ExtractionProcessor {
     @Inject(ContractStateMachine) private readonly stateMachine: ContractStateMachine,
     @Inject(ContractFileStorage) private readonly storage: ContractFileStorage,
     @Inject(LLM_CLIENT) private readonly llm: LlmClient,
-    @Inject(CONFIG) private readonly config: WorkerConfig,
+    @Inject(CONFIG) private readonly config: ApiConfig,
   ) {}
 
   async process(contractId: string, job: { isLastAttempt: boolean }): Promise<ProcessOutcome> {

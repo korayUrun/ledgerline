@@ -1,6 +1,6 @@
 import "reflect-metadata"; // Nest reads decorator data through the Reflect API; must load first
 import { NestFactory } from "@nestjs/core";
-import { readWorkerConfigFromEnv } from "./config.js";
+import { readConfigFromEnv } from "./config.js";
 import { WorkerModule } from "./worker.module.js";
 
 // The background worker (F8): takes contract-extraction jobs from Redis.
@@ -11,7 +11,7 @@ try {
   // No .env file: rely on the environment.
 }
 
-const config = readWorkerConfigFromEnv();
+const config = readConfigFromEnv();
 // An application context: Nest's dependency injection without an HTTP server.
 const app = await NestFactory.createApplicationContext(WorkerModule.register(config), {
   logger: ["error", "warn", "log"],

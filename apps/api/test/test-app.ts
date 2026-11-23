@@ -3,10 +3,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { INestApplication } from "@nestjs/common";
 import { createPrismaClient, DEMO_USER_EMAIL, type PrismaClient } from "@ledgerline/db";
+import type Anthropic from "@anthropic-ai/sdk";
 import type { ContractTerms } from "@ledgerline/schemas";
 import { inject } from "vitest";
 import { createApp } from "../src/app.js";
 import type { ApiConfig } from "../src/config.js";
+import { FakeLlmClient } from "../src/modules/llm/fake-llm-client.js";
 
 export type Result<T> = { status: number; body: T };
 
@@ -25,6 +27,9 @@ export type TestApp = {
     content: string | Buffer,
     type: string,
   ) => Promise<Result<T>>;
+  // Scripts what "Claude" answers the API's agent from now on: model call 1 gets
+  // replies[0], call 2 replies[1]… Returns the requests sent, for assertions.
+  scriptLlm: (...replies: Anthropic.Message[]) => Anthropic.MessageCreateParamsNonStreaming[];
   close: () => Promise<void>;
 };
 
@@ -36,8 +41,26 @@ export async function startTestApp(): Promise<TestApp> {
     redisUrl: inject("redisUrl"),
     port: 0,
     storageDir,
+    llm: {
+      client: "fake",
+      apiKey: null,
+      extractionModel: "claude-opus-5-5",
+      agentModel: "claude-sonnet-5-5",
+      timeoutMs: 1_000,
+      maxRetries: 0,
+    },
   };
-  const app: INestApplication = await createApp(config, ["error"]);
+  // One fake for the whole app; each test scripts its own replies.
+  let replies: Anthropic.Message[] = [];
+  let sent: Anthropic.MessageCreateParamsNonStreaming[] = [];
+  const llm = new FakeLlmClient((params) => {
+    // A copy: the agent loop keeps appending to the same messages array.
+    sent.push(JSON.parse(JSON.stringify(params)) as typeof params);
+    const reply = replies[sent.length - 1];
+    if (!reply) throw new Error(`no scripted LLM reply for call ${sent.length}`);
+    return reply;
+  });
+  const app: INestApplication = await createApp(config, ["error"], { llmClient: llm });
   await app.listen(0);
   const baseUrl = await app.getUrl();
   const prisma = createPrismaClient(config.databaseUrl);
@@ -72,6 +95,11 @@ export async function startTestApp(): Promise<TestApp> {
       form.append("file", new Blob([part], { type }), fileName);
       return toResult<T>(await fetch(`${baseUrl}${urlPath}`, { method: "POST", body: form }));
     },
+    scriptLlm: (...scripted) => {
+      replies = scripted;
+      sent = [];
+      return sent;
+    },
     close: async () => {
       await prisma.$disconnect();
       await app.close();
@@ -84,7 +112,7 @@ export async function startTestApp(): Promise<TestApp> {
 // TRUNCATE … CASCADE is the fastest way and ignores foreign-key order.
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
   await prisma.$executeRawUnsafe(
-    `TRUNCATE "SettlementLine", "Settlement", "ContractTerms", "Contract", "Expense",
+    `TRUNCATE "ExpenseFlag", "AgentStep", "AgentRun", "SettlementLine", "Settlement", "ContractTerms", "Contract", "Expense",
               "TicketSale", "Show", "Artist", "Venue", "AuditLog", "User" CASCADE`,
   );
   await prisma.user.create({ data: { email: DEMO_USER_EMAIL, name: "Demo Manager" } });
