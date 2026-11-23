@@ -245,6 +245,32 @@ and an explicit `@Public()` mark, forgetting makes a route closed, which shows u
 
 </details>
 
+**3. Why is the `Payout` row written in the same transaction as the approval, and not by the payout job later?**
+
+<details><summary>Answer</summary>
+
+So "approved" and "we intend to pay" can never disagree. If the payout were created later,
+a crash between the approval commit and that write would leave an approved settlement that
+nobody pays, and nothing in the database would show it. Written together, a crash leaves
+either nothing (the approval rolled back) or an approval with a `pending` payout that the
+job or the sweeper will pick up. This is the outbox idea in its simplest form
+(`apps/api/src/modules/payments/approvals.service.ts`).
+
+</details>
+
+**4. A payout failed for good. Why does the retry get a new idempotency key instead of reusing the old one?**
+
+<details><summary>Answer</summary>
+
+Stripe remembers each key and answers a repeated request with the first answer. That is
+exactly what protects us against a timeout: resend with the same key and no second
+transfer is made. But after a real failure, the same key would only replay the failure. So
+each attempt is a new `Payout` row (`attempt + 1`) with its own key
+(`payout:<settlement>:v<version>:a<attempt>`), and `UNIQUE(settlementId, attempt)` makes two
+retries clicked at once create only one new attempt.
+
+</details>
+
 ---
 
 # Deferred phase quizzes (after the last phase)
