@@ -12,12 +12,15 @@ import {
   type ApiErrorDto,
   type CreateExpenseBody,
   type CreateShowBody,
+  type LoginResponseDto,
   type ResolveFlagBody,
   type UpdateExpenseBody,
 } from "@ledgerline/schemas";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, loginRequest } from "../lib/api";
 import { withError } from "../lib/flash";
+import { SESSION_COOKIE } from "../lib/session";
 import { termsFromForm } from "../lib/terms-form";
 
 // Runs the API call and returns where to go next. redirect() works by throwing,
@@ -205,4 +208,33 @@ export async function resolveFlag(
   const path = `/shows/${showId}/settlement`;
   const body: ResolveFlagBody = { resolution };
   redirect(await callApi(path, () => api.post(`/flags/${flagId}/resolve`, body)));
+}
+
+// --- Login (Phase 5) -------------------------------------------------------------------------
+
+export async function login(form: FormData): Promise<void> {
+  let session: LoginResponseDto;
+  try {
+    session = await loginRequest({ email: text(form, "email"), password: text(form, "password") });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      redirect(withError("/login", error.body));
+    }
+    throw error;
+  }
+  (await cookies()).set(SESSION_COOKIE, session.token, {
+    httpOnly: true, // page JavaScript cannot read it
+    sameSite: "lax", // not sent with requests that other sites start
+    secure: process.env.NODE_ENV === "production", // https only, outside local dev
+    path: "/",
+    expires: new Date(session.expiresAt),
+  });
+  redirect("/shows");
+}
+
+export async function logout(): Promise<void> {
+  // The API deletes the session, so the token is dead even if a copy survives.
+  await api.post("/auth/logout");
+  (await cookies()).delete(SESSION_COOKIE);
+  redirect("/login");
 }

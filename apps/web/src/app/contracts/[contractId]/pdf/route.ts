@@ -1,4 +1,4 @@
-import { apiUrl } from "../../../../lib/api";
+import { fetchFromApi } from "../../../../lib/api";
 
 // The contract PDF for the review page's viewer. Like receipts: the browser asks
 // the web server, which fetches the file from the API and passes it through.
@@ -7,9 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ contractId: string }> },
 ) {
   const { contractId } = await params;
-  const response = await fetch(apiUrl(`/contracts/${encodeURIComponent(contractId)}/pdf`), {
-    cache: "no-store",
-  });
+  const response = await fetchFromApi(`/contracts/${encodeURIComponent(contractId)}/pdf`);
   return new Response(response.body, {
     status: response.status,
     headers: {

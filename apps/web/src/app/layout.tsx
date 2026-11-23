@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { currentUser } from "../lib/api";
+import { logout } from "./actions";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -7,7 +9,8 @@ export const metadata: Metadata = {
   description: "Artist settlements you can explain line by line",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const user = await currentUser();
   return (
     <html lang="en">
       <body>
@@ -15,7 +18,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Link href="/shows" className="brand">
             Ledgerline
           </Link>
-          <span className="muted">Synthetic data · Stripe test mode</span>
+          <div className="row">
+            <span className="muted">Synthetic data · Stripe test mode</span>
+            {user && (
+              <form action={logout} className="row">
+                <span>{user.name}</span>
+                <button type="submit" className="secondary">
+                  Log out
+                </button>
+              </form>
+            )}
+          </div>
         </header>
         <main className="page">{children}</main>
       </body>
