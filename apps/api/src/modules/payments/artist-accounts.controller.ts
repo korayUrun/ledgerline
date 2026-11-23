@@ -39,14 +39,19 @@ export class ArtistAccountsController {
     try {
       let accountId = artist.stripeAccountId;
       if (accountId === null) {
-        ({ accountId } = await this.gateway.createConnectedAccount({
+        const created = await this.gateway.createConnectedAccount({
           artistId,
           artistName: artist.name,
-        }));
-        await this.prisma.artist.update({
-          where: { id: artistId },
-          data: { stripeAccountId: accountId },
         });
+        // Compare-and-set: only an artist still without an account gets this one.
+        // Of two clicks at once, the second's account stays unused (harmless in
+        // test mode) and both continue with the one that was saved.
+        await this.prisma.artist.updateMany({
+          where: { id: artistId, stripeAccountId: null },
+          data: { stripeAccountId: created.accountId },
+        });
+        const saved = await this.prisma.artist.findUniqueOrThrow({ where: { id: artistId } });
+        accountId = saved.stripeAccountId ?? created.accountId;
       }
       const { url } = await this.gateway.createOnboardingLink({
         accountId,
