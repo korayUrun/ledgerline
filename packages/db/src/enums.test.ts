@@ -9,6 +9,7 @@ import {
   ExpenseCategorySchema,
   ExpenseStatusSchema,
   LineKindSchema,
+  PayoutStatusSchema,
   SettlementStatusSchema,
 } from "@ledgerline/schemas";
 import { describe, expect, it } from "vitest";
@@ -22,6 +23,7 @@ import {
   ExpenseFlagKind,
   ExpenseFlagStatus,
   ExpenseStatus,
+  PayoutStatus,
   SettlementLineKind,
   SettlementStatus,
 } from "./generated/prisma/enums.js";
@@ -48,6 +50,10 @@ describe("Prisma enums match the Zod enums", () => {
 
   it("settlement statuses", () => {
     expect(Object.values(SettlementStatus)).toEqual(SettlementStatusSchema.options);
+  });
+
+  it("payout statuses", () => {
+    expect(Object.values(PayoutStatus)).toEqual(PayoutStatusSchema.options);
   });
 
   it("agent run kinds, statuses, outcomes and step kinds", () => {

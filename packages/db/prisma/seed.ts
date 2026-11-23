@@ -202,6 +202,7 @@ async function main(): Promise<void> {
     await tx.expenseFlag.deleteMany();
     await tx.agentStep.deleteMany();
     await tx.agentRun.deleteMany();
+    await tx.payout.deleteMany();
     await tx.settlementLine.deleteMany();
     await tx.settlement.deleteMany();
     await tx.contractTerms.deleteMany();
