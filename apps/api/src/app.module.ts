@@ -4,10 +4,18 @@ import {
   Inject,
   Module,
   type DynamicModule,
+  type MiddlewareConsumer,
+  type NestModule,
   type OnApplicationShutdown,
 } from "@nestjs/common";
+import { APP_INTERCEPTOR } from "@nestjs/core";
 import { createPrismaClient, type PrismaClient } from "@ledgerline/db";
-import { CONFIG, LLM_CLIENT, PAYMENT_GATEWAY, PRISMA } from "./common/tokens.js";
+import type { Logger } from "./common/logging.js";
+import {
+  RequestContextMiddleware,
+  SettlementLogContextInterceptor,
+} from "./common/request-context.js";
+import { CONFIG, LLM_CLIENT, LOGGER, PAYMENT_GATEWAY, PRISMA } from "./common/tokens.js";
 import type { ApiConfig } from "./config.js";
 import { AgentModule } from "./modules/agent/agent.module.js";
 import { AuditModule } from "./modules/audit/audit.module.js";
@@ -47,10 +55,10 @@ export type AppOptions = {
 // passed in from outside: main.ts reads it from the environment, the integration
 // tests pass a throwaway database.
 @Module({})
-export class AppModule implements OnApplicationShutdown {
+export class AppModule implements NestModule, OnApplicationShutdown {
   constructor(@Inject(PRISMA) private readonly prisma: PrismaClient) {}
 
-  static register(config: ApiConfig, options: AppOptions = {}): DynamicModule {
+  static register(config: ApiConfig, logger: Logger, options: AppOptions = {}): DynamicModule {
     return {
       module: AppModule,
       // global: the config, the Prisma client and the LLM client can be injected in
@@ -69,6 +77,9 @@ export class AppModule implements OnApplicationShutdown {
       controllers: [HealthController],
       providers: [
         { provide: CONFIG, useValue: config },
+        { provide: LOGGER, useValue: logger },
+        // Adds the route's :settlementId to the log context of every request.
+        { provide: APP_INTERCEPTOR, useClass: SettlementLogContextInterceptor },
         // One client (one connection pool) for the whole app.
         { provide: PRISMA, useFactory: () => createPrismaClient(config.databaseUrl) },
         // For the audit agent, which runs in the API so its answer can stream.
@@ -84,6 +95,11 @@ export class AppModule implements OnApplicationShutdown {
       ],
       exports: [CONFIG, PRISMA, LLM_CLIENT, PAYMENT_GATEWAY],
     };
+  }
+
+  // Every route: a requestId and a "request finished" line (common/request-context.ts).
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(RequestContextMiddleware).forRoutes("*");
   }
 
   // Close the pool on shutdown, so tests and `tsx watch` restarts do not leak connections.

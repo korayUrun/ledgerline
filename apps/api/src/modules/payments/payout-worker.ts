@@ -6,6 +6,7 @@ import {
   type OnApplicationShutdown,
 } from "@nestjs/common";
 import { Worker } from "bullmq";
+import { withLogContext } from "../../common/logging.js";
 import { CONFIG } from "../../common/tokens.js";
 import type { ApiConfig } from "../../config.js";
 import { PayoutProcessor } from "./payout-processor.js";
@@ -29,22 +30,27 @@ export class PayoutWorker implements OnApplicationBootstrap, OnApplicationShutdo
     await this.queue.scheduleSweeper();
     this.worker = new Worker<PayoutJobData>(
       PAYOUTS_QUEUE,
-      async (job) => {
-        if (job.name === "sweep") {
-          await this.sweeper.sweep();
-          return;
-        }
-        if (!("payoutId" in job.data)) {
-          throw new Error(`job ${job.id}: no payoutId`);
-        }
-        const outcome = await this.processor.process(job.data.payoutId);
-        this.logger.log(`job ${job.id} attempt ${job.attemptsStarted}: ${outcome}`);
-      },
+      // Every line logged while the job runs carries its jobId; the processor adds
+      // the settlementId once it has read the payout.
+      (job) =>
+        withLogContext({ jobId: `${PAYOUTS_QUEUE}:${job.id}` }, async () => {
+          if (job.name === "sweep") {
+            await this.sweeper.sweep();
+            return;
+          }
+          if (!("payoutId" in job.data)) {
+            throw new Error(`job ${job.id}: no payoutId`);
+          }
+          const outcome = await this.processor.process(job.data.payoutId);
+          this.logger.log(`job ${job.id} attempt ${job.attemptsStarted}: ${outcome}`);
+        }),
       // One payout at a time: the volume is tiny and it keeps the logs readable.
       { connection: { url: this.config.redisUrl }, concurrency: 1 },
     );
     this.worker.on("failed", (job, error) => {
-      this.logger.warn(`job ${job?.id} attempt ${job?.attemptsStarted} failed: ${error.message}`);
+      withLogContext({ jobId: `${PAYOUTS_QUEUE}:${job?.id}` }, () => {
+        this.logger.warn(`job ${job?.id} attempt ${job?.attemptsStarted} failed: ${error.message}`);
+      });
     });
   }
 

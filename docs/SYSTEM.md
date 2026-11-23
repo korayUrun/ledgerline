@@ -461,6 +461,12 @@ As built (`packages/evals/`):
 - `AuditLog`: who changed what, before/after.
 - Optional: Prometheus metrics (job durations, LLM latency, payout failures) with a Grafana dashboard.
 
+As built (Phase 7, `apps/api/src/common/logging.ts`, `request-context.ts`):
+- **pino**, one JSON object per line on stdout (`LOG_FORMAT=pretty` for readable text, `LOG_LEVEL` default `info`). Nest's own lines and every `new Logger(...)` go through a small `NestPinoLogger` adapter, so the existing log calls did not change.
+- **Context without passing ids around:** an `AsyncLocalStorage` holds `{ requestId, jobId, settlementId, contractId }` for the current request or job; pino's `mixin` adds it to every line. `withLogContext` starts one (middleware, job handlers), `addLogContext` adds an id found halfway (the payout job and the webhook add `settlementId` after reading the payout).
+- **HTTP:** module middleware sets `requestId` (the caller's `x-request-id` if it is short and plain, else a UUID), echoes it in the response header and logs one `request finished` line (method, path without query, status, duration). It is module middleware, not `app.use`, because the body parser calls `next()` from a stream event and the context would be lost. An interceptor adds the route's `:settlementId`; it runs after the auth guard, so a `401` line has only the `requestId`.
+- **Jobs:** `jobId` is `queue:id` (`payouts:42`, `contract-extraction:7`). Headers and bodies are never logged (session cookies, API keys, contract text).
+
 ---
 
 ## 13. Debugging guide

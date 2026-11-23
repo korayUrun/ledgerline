@@ -11,9 +11,11 @@ import {
 } from "@ledgerline/db";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { ContractTerms, ExpenseDto, ShowDto } from "@ledgerline/schemas";
+import type { DestinationStream } from "pino";
 import { inject } from "vitest";
 import { createApp } from "../src/app.js";
 import { userActor, type Actor } from "../src/common/actor.js";
+import { createLogger } from "../src/common/logging.js";
 import type { ApiConfig } from "../src/config.js";
 import { hashSessionToken } from "../src/modules/auth/session-token.js";
 import { FakeLlmClient } from "../src/modules/llm/fake-llm-client.js";
@@ -62,8 +64,14 @@ export type TestApp = {
   close: () => Promise<void>;
 };
 
+export type TestAppOptions = {
+  // Receives every log line at level info and above (the logging test reads them).
+  // Without it, only errors are logged, to stdout.
+  logDestination?: DestinationStream;
+};
+
 // Starts the real app (same createApp as main.ts) on a random free port.
-export async function startTestApp(): Promise<TestApp> {
+export async function startTestApp(options: TestAppOptions = {}): Promise<TestApp> {
   const storageDir = await mkdtemp(path.join(tmpdir(), "ledgerline-test-"));
   const config: ApiConfig = {
     databaseUrl: inject("databaseUrl"),
@@ -95,7 +103,12 @@ export async function startTestApp(): Promise<TestApp> {
     if (!reply) throw new Error(`no scripted LLM reply for call ${sent.length}`);
     return reply;
   });
-  const app: INestApplication = await createApp(config, ["error"], {
+  // Errors only by default: the tests cause 4xx/5xx on purpose, a line per request
+  // is noise.
+  const logger = options.logDestination
+    ? createLogger({ level: "info", format: "json" }, options.logDestination)
+    : createLogger({ level: "error", format: "json" });
+  const app: INestApplication = await createApp(config, logger, {
     llmClient: llm,
     paymentGateway: payments,
   });

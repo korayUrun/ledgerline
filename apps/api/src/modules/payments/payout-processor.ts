@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { Payout, PrismaClient } from "@ledgerline/db";
+import { addLogContext } from "../../common/logging.js";
 import { PAYMENT_GATEWAY, PRISMA } from "../../common/tokens.js";
 import { PaymentRefusedError, type PaymentGateway } from "./payment-gateway.js";
 import { PayoutStateService } from "./payout-state.service.js";
@@ -30,6 +31,9 @@ export class PayoutProcessor {
       where: { id: payoutId },
       include: { settlement: { include: { show: { include: { artist: true } } } } },
     });
+    if (payout) {
+      addLogContext({ settlementId: payout.settlementId });
+    }
     if (!payout || payout.status === "succeeded" || payout.status === "failed") {
       this.logger.log(`payout ${payoutId}: nothing to do (${payout?.status ?? "not found"})`);
       return "skipped";
