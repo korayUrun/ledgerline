@@ -1,6 +1,8 @@
 import {
   formatCents,
+  type AgentRunDto,
   type AuditEntryDto,
+  type ExpenseFlagDto,
   type SettlementInput,
   type SettlementViewDto,
   type SourceRef,
@@ -9,8 +11,9 @@ import Link from "next/link";
 import { api } from "../../../../lib/api";
 import type { SearchParams } from "../../../../lib/flash";
 import { formatDateTime, humanize } from "../../../../lib/format";
-import { computeSettlement, submitForReview } from "../../../actions";
+import { computeSettlement, resolveFlag, submitForReview } from "../../../actions";
 import { ErrorBanner, StatusBadge } from "../../../components";
+import { AssistantPanel } from "./assistant-panel";
 
 // F5: the worksheet. Every line shows the contract clause it applies and the
 // input rows it was computed from. Those rows come from the settlement's frozen
@@ -29,7 +32,17 @@ export default async function SettlementPage({
   const history = settlement
     ? await api.get<AuditEntryDto[]>(`/audit?entity=settlement&entityId=${settlement.id}`)
     : [];
-  const canSubmit = settlement?.status === "computed" && view.pendingExpenseCount === 0;
+  const flags = settlement
+    ? await api.get<ExpenseFlagDto[]>(`/settlements/${settlement.id}/flags`)
+    : [];
+  const runs = settlement
+    ? await api.get<AgentRunDto[]>(`/settlements/${settlement.id}/agent-runs`)
+    : [];
+  const openFlagCount = flags.filter((flag) => flag.status === "open").length;
+  const canSubmit =
+    settlement?.status === "computed" && view.pendingExpenseCount === 0 && openFlagCount === 0;
+  // The assistant audits a result that matches the data (the API checks it too).
+  const canAsk = settlement?.status === "computed" || settlement?.status === "in_review";
 
   return (
     <>
@@ -46,6 +59,12 @@ export default async function SettlementPage({
           {view.pendingExpenseCount} expense(s) are still pending. They are included in the math as
           a preview, but the settlement cannot go to review until each one is allowed or disallowed
           on the <Link href={`/shows/${showId}`}>expenses tab</Link>.
+        </div>
+      )}
+      {openFlagCount > 0 && (
+        <div className="banner banner-warn">
+          The assistant flagged {openFlagCount} expense(s). Accept or dismiss each flag below before
+          submitting for review.
         </div>
       )}
       {settlement?.status === "in_review" && (
@@ -138,6 +157,15 @@ export default async function SettlementPage({
             </table>
           </div>
 
+          <h2>Assistant</h2>
+          {canAsk ? (
+            <AssistantPanel settlementId={settlement.id} />
+          ) : (
+            <p className="muted">Recompute the settlement to use the assistant.</p>
+          )}
+          {flags.length > 0 && <FlagsTable showId={showId} flags={flags} />}
+          {runs.length > 0 && <RunsList showId={showId} runs={runs} />}
+
           {settlement.inputSnapshot && <SnapshotTables snapshot={settlement.inputSnapshot} />}
         </>
       )}
@@ -213,6 +241,98 @@ function describeChange(entry: AuditEntryDto): string {
   }
   if (after?.reason) parts.push(after.reason);
   return parts.join(" · ");
+}
+
+// Flags the assistant opened. Only a person resolves them; accepting is agreement,
+// and the expense itself is changed on the expenses tab.
+function FlagsTable({ showId, flags }: { showId: string; flags: ExpenseFlagDto[] }) {
+  return (
+    <>
+      <h2>Assistant flags</h2>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Expense</th>
+              <th className="num">Amount</th>
+              <th>Problem</th>
+              <th>Status</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {flags.map((flag) => (
+              <tr key={flag.id}>
+                <td>
+                  {humanize(flag.expense.category)}
+                  <div className="muted">{flag.expense.description}</div>
+                </td>
+                <td className="num">{formatCents(flag.expense.amountCents)}</td>
+                <td>
+                  <strong>{humanize(flag.kind)}</strong>
+                  <div>{flag.reason}</div>
+                </td>
+                <td>
+                  <span className={`badge badge-flag_${flag.status}`}>{flag.status}</span>
+                </td>
+                <td>
+                  {flag.status === "open" && (
+                    <div className="row">
+                      <form action={resolveFlag.bind(null, showId, flag.id, "accepted")}>
+                        <button type="submit">Accept</button>
+                      </form>
+                      <form action={resolveFlag.bind(null, showId, flag.id, "dismissed")}>
+                        <button type="submit" className="secondary">
+                          Dismiss
+                        </button>
+                      </form>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="muted">
+        Accepting records that you agree. To take the expense out of the payout, mark it disallowed
+        on the <Link href={`/shows/${showId}`}>expenses tab</Link> and recompute.
+      </p>
+    </>
+  );
+}
+
+// Every assistant run on this settlement, newest first, each with its replay.
+function RunsList({ showId, runs }: { showId: string; runs: AgentRunDto[] }) {
+  return (
+    <>
+      <h2>Assistant history</h2>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Run</th>
+              <th>Result</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {runs.map((run) => (
+              <tr key={run.id}>
+                <td>{formatDateTime(run.startedAt)}</td>
+                <td>{run.kind === "audit" ? "Audit" : run.question}</td>
+                <td>{run.status === "completed" ? humanize(run.outcome ?? "") : run.status}</td>
+                <td>
+                  <Link href={`/shows/${showId}/settlement/runs/${run.id}`}>Replay</Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
 }
 
 // The frozen inputs. Worksheet links jump here (#src-<id>), so a reader can check

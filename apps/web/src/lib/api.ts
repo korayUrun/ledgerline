@@ -43,3 +43,23 @@ export const api = {
 export function apiUrl(path: string): string {
   return `${API_URL}${path}`;
 }
+
+// For the assistant's route handlers: forwards a POST to the API and passes the
+// response through unchanged, so the event stream reaches the browser as it is
+// produced (and a JSON error keeps its status). The browser only ever talks to
+// the web server.
+export async function proxyPost(path: string, body?: string): Promise<Response> {
+  const upstream = await fetch(apiUrl(path), {
+    method: "POST",
+    headers: body === undefined ? {} : { "content-type": "application/json" },
+    body: body ?? null,
+    cache: "no-store",
+  });
+  return new Response(upstream.body, {
+    status: upstream.status,
+    headers: {
+      "content-type": upstream.headers.get("content-type") ?? "application/json",
+      "cache-control": "no-cache, no-transform",
+    },
+  });
+}

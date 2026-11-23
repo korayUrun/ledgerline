@@ -368,3 +368,69 @@ legend {
   font-style: normal;
   color: var(--warn);
 }
+
+/* --- Assistant (F6) ------------------------------------------------------------------ */
+
+.assistant {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agent-run {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.agent-question {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.agent-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Model text keeps its line breaks. */
+.agent-message {
+  white-space: pre-wrap;
+  background: var(--info-bg);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.agent-tool {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.agent-tool summary {
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.agent-tool pre {
+  max-height: 260px;
+  overflow: auto;
+  font-size: 12px;
+}
+
+.agent-tool-error {
+  border-color: var(--danger);
+}
+
+.badge-flag_open {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.badge-flag_accepted {
+  background: var(--info-bg);
+  color: var(--accent);
+}

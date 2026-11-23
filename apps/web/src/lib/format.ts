@@ -17,3 +17,12 @@ export function formatDateTime(iso: string): string {
 export function humanize(value: string): string {
   return value.replaceAll("_", " ");
 }
+
+// Rounded half up to $0.0001 (100,000 nano-dollars), with integer remainders
+// like formatCents. The API has the same helper; web cannot import api code.
+export function formatNanoUsd(nano: number): string {
+  const remainder = nano % 100_000;
+  const units = (nano - remainder) / 100_000 + (remainder >= 50_000 ? 1 : 0);
+  const fraction = units % 10_000;
+  return `$${(units - fraction) / 10_000}.${String(fraction).padStart(4, "0")}`;
+}
