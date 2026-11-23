@@ -12,6 +12,7 @@ import {
   type ApiErrorDto,
   type CreateExpenseBody,
   type CreateShowBody,
+  type ResolveFlagBody,
   type UpdateExpenseBody,
 } from "@ledgerline/schemas";
 import { redirect } from "next/navigation";
@@ -189,4 +190,19 @@ export async function computeSettlement(showId: string): Promise<void> {
 export async function submitForReview(showId: string): Promise<void> {
   const path = `/shows/${showId}/settlement`;
   redirect(await callApi(path, () => api.post(`/shows/${showId}/settlement/submit-for-review`)));
+}
+
+// --- Assistant flags (F6) -------------------------------------------------------------------
+
+// A person's decision on a flag the assistant opened. Accepting does not change the
+// expense: the person does that on the expenses tab, so every money change stays
+// a deliberate human edit.
+export async function resolveFlag(
+  showId: string,
+  flagId: string,
+  resolution: ResolveFlagBody["resolution"],
+): Promise<void> {
+  const path = `/shows/${showId}/settlement`;
+  const body: ResolveFlagBody = { resolution };
+  redirect(await callApi(path, () => api.post(`/flags/${flagId}/resolve`, body)));
 }

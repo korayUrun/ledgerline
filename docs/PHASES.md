@@ -122,12 +122,12 @@ Estimated total: ~4 weeks part-time.
 **Goal:** an agent that reviews a settlement, flags bad expenses and explains every number. The loop is written by hand.
 
 **Tasks**
-- [ ] `AgentRun` / `AgentStep` tables; record every model call and tool call with tokens
-- [ ] Tools: `get_settlement`, `get_contract_terms`, `list_expenses`, `list_ticket_sales`, `explain_line`, `recompute_settlement`, `flag_expense`; each with a precise description and input schema
-- [ ] Agent loop: `stop_reason` handling (`tool_use`, `end_turn`, `max_tokens`), `tool_result` blocks with matching `tool_use_id`, step limit, token budget
-- [ ] `POST /settlements/:id/ask` streaming over SSE; chat panel in the worksheet showing tool steps
-- [ ] "Run audit" button: the agent reviews and creates flags; a human resolves them
-- [ ] Eval: flag precision/recall against the planted violations in the dataset
+- [x] `AgentRun` / `AgentStep` tables; record every model call and tool call with tokens
+- [x] Tools: `get_settlement`, `get_contract_terms`, `list_expenses`, `list_ticket_sales`, `explain_line`, `recompute_settlement`, `flag_expense`; each with a precise description and input schema
+- [x] Agent loop: `stop_reason` handling (`tool_use`, `end_turn`, `max_tokens`), `tool_result` blocks with matching `tool_use_id`, step limit, token budget
+- [x] `POST /settlements/:id/ask` streaming over SSE; chat panel in the worksheet showing tool steps
+- [x] "Run audit" button: the agent reviews and creates flags; a human resolves them
+- [ ] Eval: flag precision/recall against the planted violations in the dataset (runner and oracle done: `pnpm evals:agent`; live baseline and model comparison pending)
 
 **Done when:** on the eval set the agent finds the planted expense violations (record precision/recall), and every answer can be replayed step by step from `AgentStep`.
 
@@ -138,6 +138,8 @@ Estimated total: ~4 weeks part-time.
 - Why is there no `approve` or `pay` tool? What is the prompt-injection risk in contract text?
 
 **Break it:** (1) remove the step limit and give the agent a tool that always returns "try again". (2) Write a vague tool description. Watch the traces in both cases.
+
+**Status:** done 2026-11-23, except the live eval run. Built: trace tables, the hand-written loop, the seven tools, ask/audit over SSE with the chat panel, flags resolved by a person (open flags block review), the replay page and the agent eval (`pnpm evals:agent`; the oracle scores 100% precision/recall). Every answer can be replayed from `AgentStep`. **Deferred to the end of the project (API budget):** the live run that records precision/recall, saves `packages/evals/baselines/agent.{json,md}` and picks `AGENT_MODEL` (default `claude-sonnet-5-5` until then). The Explain it questions and the Break it drill are in `SELF_CHECK.md` (deferred).
 
 ---
 

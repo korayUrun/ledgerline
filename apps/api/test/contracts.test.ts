@@ -65,19 +65,7 @@ async function startWorker(
   options: { consumeQueue: boolean },
 ): Promise<INestApplicationContext> {
   worker = await NestFactory.createApplicationContext(
-    WorkerModule.register(
-      {
-        ...t.config,
-        llm: {
-          client: "fake",
-          apiKey: null,
-          extractionModel: "claude-opus-5-5",
-          timeoutMs: 1_000,
-          maxRetries: 0,
-        },
-      },
-      { llmClient, startQueueConsumer: options.consumeQueue },
-    ),
+    WorkerModule.register(t.config, { llmClient, startQueueConsumer: options.consumeQueue }),
     { logger: ["error"] },
   );
   return worker;

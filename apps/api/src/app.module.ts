@@ -8,10 +8,13 @@ import {
 } from "@nestjs/common";
 import { createPrismaClient, type PrismaClient } from "@ledgerline/db";
 import { ActorService } from "./common/actor.service.js";
-import { CONFIG, PRISMA } from "./common/tokens.js";
+import { CONFIG, LLM_CLIENT, PRISMA } from "./common/tokens.js";
 import type { ApiConfig } from "./config.js";
+import { AgentModule } from "./modules/agent/agent.module.js";
 import { AuditModule } from "./modules/audit/audit.module.js";
 import { ContractsModule } from "./modules/contracts/contracts.module.js";
+import { createLlmClient } from "./modules/llm/create-llm-client.js";
+import type { LlmClient } from "./modules/llm/llm-client.js";
 import { SettlementsModule } from "./modules/settlements/settlements.module.js";
 import { ShowsModule } from "./modules/shows/shows.module.js";
 
@@ -27,6 +30,11 @@ class HealthController {
   }
 }
 
+export type AppOptions = {
+  // Tests pass a scripted fake here instead of building one from config.
+  llmClient?: LlmClient;
+};
+
 // The root module. register(config) instead of a static @Module so the config is
 // passed in from outside: main.ts reads it from the environment, the integration
 // tests pass a throwaway database.
@@ -34,21 +42,26 @@ class HealthController {
 export class AppModule implements OnApplicationShutdown {
   constructor(@Inject(PRISMA) private readonly prisma: PrismaClient) {}
 
-  static register(config: ApiConfig): DynamicModule {
+  static register(config: ApiConfig, options: AppOptions = {}): DynamicModule {
     return {
       module: AppModule,
       // global: the config, the Prisma client and ActorService can be injected in
       // every feature module without each one importing them.
       global: true,
-      imports: [AuditModule, SettlementsModule, ShowsModule, ContractsModule],
+      imports: [AuditModule, SettlementsModule, ShowsModule, ContractsModule, AgentModule],
       controllers: [HealthController],
       providers: [
         { provide: CONFIG, useValue: config },
         // One client (one connection pool) for the whole app.
         { provide: PRISMA, useFactory: () => createPrismaClient(config.databaseUrl) },
+        // For the audit agent, which runs in the API so its answer can stream.
+        {
+          provide: LLM_CLIENT,
+          useFactory: () => options.llmClient ?? createLlmClient(config.llm),
+        },
         ActorService,
       ],
-      exports: [CONFIG, PRISMA, ActorService],
+      exports: [CONFIG, PRISMA, LLM_CLIENT, ActorService],
     };
   }
 

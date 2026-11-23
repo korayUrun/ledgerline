@@ -29,22 +29,46 @@ export class FakeLlmClient implements LlmClient {
   }
 }
 
+export type FakeMessageOptions = {
+  stopReason?: Anthropic.StopReason;
+  model?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+};
+
 // A minimal Message with one text block, as the API returns for structured output.
-export function fakeTextMessage(
-  text: string,
-  options: {
-    stopReason?: Anthropic.StopReason;
-    model?: string;
-    inputTokens?: number;
-    outputTokens?: number;
-  } = {},
+export function fakeTextMessage(text: string, options: FakeMessageOptions = {}): Anthropic.Message {
+  return fakeMessage([{ type: "text", text, citations: null }], options);
+}
+
+// A reply that asks for one or more tools, as the agent loop receives it: the
+// blocks in order, and stop_reason "tool_use".
+export function fakeToolUseMessage(
+  calls: { id: string; name: string; input: unknown }[],
+  options: FakeMessageOptions = {},
+): Anthropic.Message {
+  return fakeMessage(
+    calls.map((call) => ({
+      type: "tool_use",
+      id: call.id,
+      name: call.name,
+      input: call.input,
+      caller: { type: "direct" },
+    })),
+    { stopReason: "tool_use", ...options },
+  );
+}
+
+export function fakeMessage(
+  content: Anthropic.ContentBlock[],
+  options: FakeMessageOptions = {},
 ): Anthropic.Message {
   return {
     id: "msg_fake",
     type: "message",
     role: "assistant",
     model: options.model ?? "claude-opus-5-5",
-    content: [{ type: "text", text, citations: null }],
+    content,
     stop_reason: options.stopReason ?? "end_turn",
     stop_sequence: null,
     stop_details: null,
