@@ -142,6 +142,12 @@ As built in Phase 5 (login):
 - **Every API route needs a session unless it is `@Public()`** (health, login). A global `AuthGuard` reads `Authorization: Bearer <token>`, loads the user and attaches the actor; controllers take it with `@CurrentActor()`. Closed by default: a new endpoint is protected without anyone remembering to protect it. Wrong email and wrong password give the same 401 message.
 - **Web:** the login server action stores the token in an httpOnly, SameSite=Lax cookie (page JavaScript cannot read it), and every call from the Next.js server to the API sends it as the bearer token. A 401 from the API redirects to `/login`. The browser still never calls the API.
 
+As built in Phase 6 (API keys):
+- **`ApiKey`** (`name`, `prefix` UNIQUE, `keyHash` UNIQUE, `createdById`, `lastUsedAt`, `revokedAt`). The key is `ll_<prefix>_<secret>`: 4 random bytes as 8 hex characters, then 32 random bytes. Only the SHA-256 of the whole key is stored (the column is `keyHash`, like `Session.tokenHash`); the prefix is stored in clear so a person can tell keys apart. Revoking sets `revokedAt` and keeps the row for the audit log. `lastUsedAt` is written at most once a minute.
+- **Each route has exactly one way in** (`AuthGuard`): `@Public()`, `@ApiKeyAuth()` (the `/v1` routes, API key only) or, by default, a logged-in session. A key on a session route and a session token on `/v1` are both 401. Approve and pay are session routes, so no key can reach them.
+- **Two actor types:** `Actor` (a person, `user:<id>`) and `ApiKeyActor` (`api_key:<id>`). The approval and payment services take `Actor`, and an `ApiKeyActor` has no `userId`, so passing one does not compile.
+- **Keys are managed by a person** through session routes: `GET /api-keys`, `POST /api-keys` (the only response that contains the key), `POST /api-keys/:id/revoke`. Audit actions `api_key.created` and `api_key.revoked`, never with the key.
+
 ---
 
 ## 5. State machines

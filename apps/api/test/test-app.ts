@@ -164,7 +164,7 @@ let demoPasswordHash: Promise<string> | null = null;
 // way and ignores foreign-key order. Returns the demo user as an actor.
 export async function resetDatabase(prisma: PrismaClient): Promise<Actor> {
   await prisma.$executeRawUnsafe(
-    `TRUNCATE "Session", "Payout", "ProcessedWebhookEvent", "ExpenseFlag", "AgentStep", "AgentRun", "SettlementLine", "Settlement", "ContractTerms", "Contract", "Expense",
+    `TRUNCATE "ApiKey", "Session", "Payout", "ProcessedWebhookEvent", "ExpenseFlag", "AgentStep", "AgentRun", "SettlementLine", "Settlement", "ContractTerms", "Contract", "Expense",
               "TicketSale", "Show", "Artist", "Venue", "AuditLog", "User" CASCADE`,
   );
   demoPasswordHash ??= hashPassword(DEMO_USER_PASSWORD);
