@@ -174,6 +174,28 @@ export default defineConfig([
     },
   },
 
+  // --- mcp: stdout is the protocol channel ---------------------------------------
+  // Over stdio, every byte on stdout must be a JSON-RPC message; a stray log line
+  // breaks the client's parser. Logs go to stderr.
+  {
+    files: ["apps/mcp/src/**/*.ts"],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        ...["log", "info", "debug", "table", "dir"].map((property) => ({
+          object: "console",
+          property,
+          message: "stdout carries the MCP protocol. Log with console.error (stderr) instead.",
+        })),
+        {
+          object: "process",
+          property: "stdout",
+          message: "stdout carries the MCP protocol. Write logs to stderr.",
+        },
+      ],
+    },
+  },
+
   // Must stay last: turns off every stylistic rule that Prettier owns.
   prettier,
 ]);
