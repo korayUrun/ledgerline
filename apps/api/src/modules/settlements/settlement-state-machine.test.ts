@@ -13,6 +13,12 @@ describe("settlement transitions", () => {
     ["computed", "stale"],
     ["in_review", "stale"],
     ["stale", "computed"],
+    ["in_review", "approved"],
+    ["approved", "paying"],
+    ["approved", "paid"], // nothing to pay
+    ["paying", "paid"],
+    ["paying", "payment_failed"],
+    ["payment_failed", "paying"], // a person retries
   ] as const)("allows %s → %s", (from, to) => {
     expect(canTransition(from, to)).toBe(true);
   });
@@ -23,6 +29,14 @@ describe("settlement transitions", () => {
     ["stale", "in_review"], // must recompute first
     ["in_review", "computed"], // goes stale first if its inputs changed
     ["in_review", "draft"],
+    ["computed", "approved"], // approval needs a review first
+    ["in_review", "paying"], // paying only after an approval
+    ["approved", "stale"], // approved inputs are locked
+    ["paying", "stale"],
+    ["paying", "computed"], // no recompute while money is moving
+    ["payment_failed", "paid"], // only a payout that arrives makes it paid
+    ["paid", "paying"], // paid is final: never pay twice
+    ["paid", "computed"],
   ] as const)("refuses %s → %s", (from, to) => {
     expect(canTransition(from, to)).toBe(false);
   });

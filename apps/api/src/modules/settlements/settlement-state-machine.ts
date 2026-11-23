@@ -4,21 +4,28 @@ import type { SettlementStatus } from "@ledgerline/schemas";
 import { bigintToSafeNumber } from "../../common/bigint.js";
 import { AuditService } from "../audit/audit.service.js";
 
-// Every legal move, and nothing else (docs/SYSTEM.md §5). Phase 5 adds
-// in_review → approved → paying → paid.
+// Every legal move, and nothing else (docs/SYSTEM.md §5).
 //
-//   draft ──▶ computed ──▶ in_review
-//               ▲  │ ↺         │
-//               │  ▼           │
-//               └─ stale ◀─────┘   (inputs changed)
+//   draft ──▶ computed ──▶ in_review ──▶ approved ──▶ paying ──▶ paid
+//               ▲  │ ↺         │            │          │  ▲
+//               │  ▼           │            └──────────┼──┼──▶ paid  (nothing to pay)
+//               └─ stale ◀─────┘                       ▼  │
+//                 (inputs changed)               payment_failed  (a person retries)
 //
 // computed → computed is a recompute with no input change (it does no harm).
 // in_review cannot be recomputed directly: if its inputs changed it goes stale first.
+// From approved on, the inputs are locked (see onInputChange), and paid is final.
 export const SETTLEMENT_TRANSITIONS: Record<SettlementStatus, readonly SettlementStatus[]> = {
   draft: ["computed"],
   computed: ["computed", "in_review", "stale"],
-  in_review: ["stale"],
+  in_review: ["stale", "approved"],
   stale: ["computed"],
+  // paying in the same transaction as the approval; paid directly only when the
+  // payout is $0 (Stripe cannot transfer nothing).
+  approved: ["paying", "paid"],
+  paying: ["paid", "payment_failed"],
+  payment_failed: ["paying"],
+  paid: [],
 };
 
 export function canTransition(from: SettlementStatus, to: SettlementStatus): boolean {
@@ -27,6 +34,15 @@ export function canTransition(from: SettlementStatus, to: SettlementStatus): boo
 
 // The statuses whose result was computed from inputs that may since have changed.
 const STATUSES_THAT_CAN_GO_STALE: readonly SettlementStatus[] = ["computed", "in_review"];
+
+// Once a person has approved the number, the inputs behind it must not move: the
+// money is (about to be) on its way. Edits are refused instead of making it stale.
+const STATUSES_WITH_LOCKED_INPUTS: readonly SettlementStatus[] = [
+  "approved",
+  "paying",
+  "paid",
+  "payment_failed",
+];
 
 export type TransitionRequest = {
   // The row exactly as the caller read it. Its status and version are the
@@ -80,15 +96,22 @@ export class SettlementStateMachine {
   }
 
   // Called by every service that changes an input (ticket sales, expenses, terms),
-  // inside the same transaction as that change. A draft or already-stale settlement
-  // has nothing to invalidate, so it is left alone.
-  async markStaleIfComputed(
+  // inside the same transaction as that change:
+  //   - approved or later: refuse (409), so the whole change rolls back;
+  //   - computed or in_review: mark it stale;
+  //   - draft or already stale: nothing to invalidate.
+  async onInputChange(
     tx: Prisma.TransactionClient,
     showId: string,
     actor: string,
     reason: string,
   ): Promise<void> {
     const settlement = await tx.settlement.findUnique({ where: { showId } });
+    if (settlement && STATUSES_WITH_LOCKED_INPUTS.includes(settlement.status)) {
+      throw new ConflictException(
+        `The settlement is ${settlement.status.replace("_", " ")}: its inputs can no longer change.`,
+      );
+    }
     if (!settlement || !STATUSES_THAT_CAN_GO_STALE.includes(settlement.status)) {
       return;
     }

@@ -14,6 +14,7 @@ import { AuditModule } from "./modules/audit/audit.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { Public } from "./modules/auth/auth.guard.js";
 import { ContractsModule } from "./modules/contracts/contracts.module.js";
+import { PaymentsModule } from "./modules/payments/payments.module.js";
 import { createLlmClient } from "./modules/llm/create-llm-client.js";
 import type { LlmClient } from "./modules/llm/llm-client.js";
 import { SettlementsModule } from "./modules/settlements/settlements.module.js";
@@ -58,6 +59,7 @@ export class AppModule implements OnApplicationShutdown {
         ShowsModule,
         ContractsModule,
         AgentModule,
+        PaymentsModule,
       ],
       controllers: [HealthController],
       providers: [

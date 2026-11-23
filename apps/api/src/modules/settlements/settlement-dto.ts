@@ -1,7 +1,8 @@
-import type { Settlement, SettlementLine as SettlementLineRow } from "@ledgerline/db";
+import type { Payout, Settlement, SettlementLine as SettlementLineRow } from "@ledgerline/db";
 import {
   SettlementInputSchema,
   SourceRefSchema,
+  type PayoutDto,
   type SettlementDto,
   type SettlementLine,
 } from "@ledgerline/schemas";
@@ -40,5 +41,19 @@ function toLine(row: SettlementLineRow): SettlementLine {
     amountCents: bigintToSafeNumber(row.amountCents),
     clauseRef: row.clauseRef,
     sourceRefs: SourceRefSchema.array().parse(row.sourceRefs),
+  };
+}
+
+export function toPayoutDto(payout: Payout): PayoutDto {
+  return {
+    id: payout.id,
+    attempt: payout.attempt,
+    amountCents: bigintToSafeNumber(payout.amountCents),
+    status: payout.status,
+    idempotencyKey: payout.idempotencyKey,
+    stripeTransferId: payout.stripeTransferId,
+    failureReason: payout.failureReason,
+    createdAt: payout.createdAt.toISOString(),
+    updatedAt: payout.updatedAt.toISOString(),
   };
 }

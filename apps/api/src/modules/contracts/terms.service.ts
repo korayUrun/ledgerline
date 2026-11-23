@@ -86,7 +86,7 @@ export class TermsService {
         contractId: input.contractId ?? null,
       },
     });
-    await this.stateMachine.markStaleIfComputed(
+    await this.stateMachine.onInputChange(
       tx,
       showId,
       actor.label,

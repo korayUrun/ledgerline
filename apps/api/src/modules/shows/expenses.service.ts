@@ -56,7 +56,7 @@ export class ExpensesService {
         before: null,
         after: auditFields(created),
       });
-      await this.stateMachine.markStaleIfComputed(tx, showId, actor.label, "expense added");
+      await this.stateMachine.onInputChange(tx, showId, actor.label, "expense added");
       return created;
     });
     return toExpenseDto(expense);
@@ -84,12 +84,7 @@ export class ExpensesService {
         before: auditFields(before),
         after: auditFields(updated),
       });
-      await this.stateMachine.markStaleIfComputed(
-        tx,
-        updated.showId,
-        actor.label,
-        "expense changed",
-      );
+      await this.stateMachine.onInputChange(tx, updated.showId, actor.label, "expense changed");
       return updated;
     });
     return toExpenseDto(expense);
@@ -109,12 +104,7 @@ export class ExpensesService {
         before: auditFields(before),
         after: null,
       });
-      await this.stateMachine.markStaleIfComputed(
-        tx,
-        before.showId,
-        actor.label,
-        "expense deleted",
-      );
+      await this.stateMachine.onInputChange(tx, before.showId, actor.label, "expense deleted");
     });
   }
 
