@@ -26,6 +26,9 @@ export type Result<T> = { status: number; body: T };
 // headers (or none).
 export const TEST_SESSION_TOKEN = "test-session-token";
 export const TEST_WEBHOOK_SECRET = "whsec_test_secret";
+// Low, so the rate limit test reaches it quickly; above what any other test file
+// sends with one key.
+export const TEST_RATE_LIMIT_PER_MINUTE = 30;
 const AUTH_HEADERS = { authorization: `Bearer ${TEST_SESSION_TOKEN}` };
 
 export type TestApp = {
@@ -79,6 +82,7 @@ export async function startTestApp(): Promise<TestApp> {
     // tests sign their webhook payloads exactly like Stripe does.
     stripe: { secretKey: null, webhookSecret: TEST_WEBHOOK_SECRET },
     webUrl: "http://localhost:3000",
+    publicApi: { rateLimitPerMinute: TEST_RATE_LIMIT_PER_MINUTE },
   };
   const payments = new FakePaymentGateway();
   // One fake for the whole app; each test scripts its own replies.
