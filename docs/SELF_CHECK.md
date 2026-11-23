@@ -376,6 +376,39 @@ cases.
 
 </details>
 
+**6. Why does every MCP tool return the same data twice, as `structuredContent` and as text in `content`?**
+
+<details><summary>Answer</summary>
+
+`structuredContent` is the typed JSON, checked by the SDK against the tool's output schema,
+for clients that read typed results. `content` is what most clients (Claude Desktop
+included) actually put in front of the model, so it carries the same JSON as text. The MCP
+spec asks for both when a tool has an output schema (`apps/mcp/src/tools/tool-result.ts`).
+
+</details>
+
+**7. A tool call fails because the API key was revoked. Why return `isError: true` instead of throwing?**
+
+<details><summary>Answer</summary>
+
+A thrown error is a bug in the server; a failed API call is an answer. With `isError: true`
+the model reads the sentence ("refused the API key… create a new key") and can tell the
+user what to do, or fix its own mistake (a wrong line position comes back with the valid
+range). `runTool` turns only `ApiRequestError` into such a result; anything else is thrown.
+
+</details>
+
+**8. Why may the MCP server never write to stdout with `console.log`?**
+
+<details><summary>Answer</summary>
+
+Over stdio, stdout is the protocol channel: the client parses every line there as a
+JSON-RPC message, so one log line breaks the connection. Logs go to stderr
+(`console.error`), which clients show as the server's log. ESLint bans `console.log` and
+`process.stdout` in `apps/mcp` so the mistake cannot slip in.
+
+</details>
+
 ---
 
 # Deferred phase quizzes (after the last phase)
@@ -645,5 +678,63 @@ Exactly one transfer per settlement in Dashboard → Connect, and the settlement
 delivery answers `{"outcome":"duplicate"}` and adds no audit row. (3) One click gets a
 409. (4) The forged call gets a 400 and `ProcessedWebhookEvent` stays empty. The same
 drills already run against the fake in `apps/api/test/payouts.test.ts`.
+
+</details>
+
+## Phase 6 — Public API & MCP server
+
+**1. What happens during the MCP handshake (`initialize`, `tools/list`, `tools/call`)?**
+
+<details><summary>Answer</summary>
+
+The client starts the server process and sends `initialize` over stdin with its protocol
+version and capabilities. The server answers on stdout with its name and version, its
+capabilities (here: `tools`) and its `instructions` (guidance for the model about the whole
+server); the client confirms with an `initialized` notification. `tools/list` returns each
+tool's name, description, input and output JSON Schema and annotations: that is everything
+the model learns about a tool. `tools/call` sends a name and arguments; the SDK checks the
+arguments against the input schema, runs the handler (one `/v1` call), checks the result
+against the output schema and returns it. Tests do the same over `InMemoryTransport`
+(`apps/mcp/src/server.test.ts`).
+
+</details>
+
+**2. Why does the MCP server call the API instead of the database?**
+
+<details><summary>Answer</summary>
+
+So the business rules exist once, in `apps/api`. Through the API, every MCP call gets the
+same API key check, rate limit, input validation, drift check (stale numbers are labelled
+stale), flag rules (no flags after approval) and audit log as any other client. With
+database access the MCP server would need its own copy of those rules, and it could do
+things no key may do, such as approving. ESLint forbids `@ledgerline/db` in `apps/mcp`.
+
+</details>
+
+**3. How is an MCP tool different from the tools in my own agent loop?**
+
+<details><summary>Answer</summary>
+
+The agent's tools (Phase 4) run inside the API, in a loop we wrote, with the model and
+prompt we chose; they read a context loaded once per run and call services directly. MCP
+tools are offered through a standard protocol to someone else's model and loop (Claude
+Desktop), which decides when to call them; they hold no data and no rules, only call the
+public API with a key, so they have exactly the powers of that key. Same idea (a name, a
+description, a schema), different owner of the loop and a different trust boundary.
+
+</details>
+
+**Break it (Phase 6):** connect Claude Desktop (or MCP Inspector's UI) to the server, ask
+something that calls a tool, then revoke the key on the web app's API keys page while the
+server keeps running, and ask again.
+
+<details><summary>What to look for</summary>
+
+The next tool call returns `isError: true` with "The Ledgerline API refused the API key
+(missing, unknown or revoked). A person must create a new key…", and the model passes that
+on. Nothing is cached: the API checks the key on every request, so revoking takes effect on
+the very next call, with no restart. The API logs nothing special (a 401), and the
+`ApiKey` row stays with `revokedAt` set. Automated in `apps/mcp/src/tools/list-shows.test.ts`
+and `apps/api/test/public-api.test.ts`.
 
 </details>

@@ -408,6 +408,19 @@ As built (`apps/api/src/modules/public-api`, schemas in `packages/schemas/src/pu
 
 **Why MCP → API instead of MCP → DB:** the same auth, validation, state machine and audit log apply. The MCP server has no special powers and holds no business logic.
 
+MCP server as built (`apps/mcp`, `@modelcontextprotocol/sdk` 1.32.2; how to connect it: `README.md`):
+
+- **Files:** `config.ts` reads `LEDGERLINE_API_URL` and `LEDGERLINE_API_KEY` (from the MCP client's config, not the repo's `.env`); `api-client.ts` is the only way out (HTTP to `/v1` with the key); `tools/*.ts` register one tool each; `server.ts` builds the server without a transport; `index.ts` adds stdio. Tests connect a real MCP client in memory (`InMemoryTransport`), so they go through `initialize`, `tools/list` and `tools/call` like Claude Desktop does.
+- **The handshake:** the client sends `initialize` (its protocol version and capabilities); the server answers with its name, its capabilities (`tools`) and `instructions`, guidance for the model about the whole server (find the settlement, then the lines, then explain; quote `formatted`, never compute; cannot approve or pay). Then `tools/list` returns each tool's name, description, input and output JSON Schema (converted from Zod) and annotations, and `tools/call` runs one.
+- **Each tool = one route,** with an input schema (`z.uuid()` for ids, which also keeps them safe in the URL path; `position` an integer ≥ 0) and an output schema that is the API's own `/v1` Zod schema. The SDK checks the arguments before the handler runs (a bad one comes back as an error result the model can fix, and no request is sent) and the structured result after.
+- **Two checks on every answer:** the API client parses it with the `/v1` schema (a wrong URL can reach another server that also answers 200), and the SDK checks it against the tool's output schema.
+- **Errors are results, not crashes.** An `ApiRequestError` (401, 429, 404, 409, unreachable) becomes `isError: true` with a sentence the model can repeat: a revoked key says to create a new one; a rate limit gives the seconds to wait; a 404 passes on the API's message (e.g. the valid line range). Anything else is a bug and is thrown.
+- **Every result has both forms:** `structuredContent` (typed, checked) and the same JSON as text in `content`, which is what most clients show the model.
+- **Annotations:** the three readers are `readOnlyHint: true`; `flag_expense` is `readOnlyHint: false, destructiveHint: false, idempotentHint: true` (the API returns the same open flag). Annotations are hints for the client's UI, not security: the security is the API key and the routes it can reach.
+- **stdout is the protocol channel.** Every byte there must be a JSON-RPC message, so logs go to stderr, and ESLint bans `console.log` / `process.stdout` in `apps/mcp`.
+- **MCP tools vs the agent's tools (F6):** the agent's tools run inside the API, in a loop we wrote, with the model we chose, on a context loaded once per run. MCP tools are offered to someone else's model (Claude Desktop) through a standard protocol; they only call the public API with a key, so they get exactly the powers of that key.
+- **Checked by hand** with MCP Inspector 2.14.0 (`--cli`) over stdio against the running API: the four tools list with their annotations; list → settlement → explain a deal line (confirmed terms and the PDF quotes) and an expense line; a flag is created, then returned (`created: false`) on the second call; after revoking the key, the next call returns the "revoked" error.
+
 ---
 
 ## 11. Evals (F11)

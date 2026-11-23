@@ -180,9 +180,9 @@ Estimated total: ~4 weeks part-time.
 
 **Tasks**
 - [x] `/v1` controllers; API keys (show once, store a SHA-256 hash + prefix); rate limiting; OpenAPI via `@nestjs/swagger` (#36–#40; also an API keys page in the web app)
-- [ ] `apps/mcp` with the official TypeScript SDK, stdio transport; tools `list_shows`, `get_settlement`, `explain_settlement_line`, `flag_expense`, each wrapping one `/v1` endpoint
-- [ ] Test with MCP Inspector, then Claude Desktop or Claude Code
-- [ ] README section: how to connect the MCP server
+- [x] `apps/mcp` with the official TypeScript SDK, stdio transport; tools `list_shows`, `get_settlement`, `explain_settlement_line`, `flag_expense`, each wrapping one `/v1` endpoint
+- [ ] Test with MCP Inspector, then Claude Desktop or Claude Code (Inspector `--cli` done over stdio against the running API; Claude Desktop / Claude Code still to do)
+- [x] README section: how to connect the MCP server
 
 **Done when:** from an MCP client I can ask "why did we pay this artist $X for show Y?" and get a correct, line-by-line answer; the MCP server has no direct DB access.
 
@@ -228,6 +228,7 @@ Ideas and small follow-ups that came up while building. Not scheduled; pick them
 - Check that each evidence quote really appears in the PDF text (needs a PDF text extractor). Today a human checks the quote against the PDF.
 - Server-side refusal fallback for extraction (another model when Claude declines). Left off so the eval measures one model; a refusal fails the extraction and a human types the terms.
 - Delete or archive the stored PDF of a superseded contract upload (today every upload is kept).
+- MCP output schemas use `type: ["string", "null"]` for nullable fields (Zod's JSON Schema). Valid, and Claude reads it, but MCP Inspector's `--strict` warns that single-`type` dialects (e.g. Gemini function declarations) may reject it. Switch to `anyOf` if a non-Claude client needs it.
 - `formatNanoUsd` exists twice (api and web) because web cannot import api code. Move it to `packages/schemas` next to `formatCents` if a third user appears.
 - Run the eval CI gate (`evals.yml`, Phase 7) against the committed baseline.
 - Harder eval contracts: the baseline is 100%, so the eval can no longer show a prompt getting better. Ideas: terms in a table, an amendment that overrides an earlier clause, a percentage of gross instead of net, a term that is truly missing, scanned (image-only) pages.
