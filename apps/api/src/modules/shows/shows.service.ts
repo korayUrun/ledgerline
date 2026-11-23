@@ -12,7 +12,7 @@ import { PRISMA } from "../../common/tokens.js";
 
 const SHOW_INCLUDE = {
   venue: { select: { id: true, name: true } },
-  artist: { select: { id: true, name: true } },
+  artist: { select: { id: true, name: true, stripeAccountId: true } },
   settlement: { select: { status: true } },
 } as const;
 
@@ -33,13 +33,16 @@ export class ShowsService {
 
   listArtists(): Promise<ArtistDto[]> {
     return this.prisma.artist.findMany({
-      select: { id: true, name: true },
+      select: { id: true, name: true, stripeAccountId: true },
       orderBy: { name: "asc" },
     });
   }
 
   createArtist(body: CreateArtistBody): Promise<ArtistDto> {
-    return this.prisma.artist.create({ data: body, select: { id: true, name: true } });
+    return this.prisma.artist.create({
+      data: body,
+      select: { id: true, name: true, stripeAccountId: true },
+    });
   }
 
   async listShows(): Promise<ShowDto[]> {

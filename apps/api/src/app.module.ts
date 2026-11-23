@@ -7,13 +7,15 @@ import {
   type OnApplicationShutdown,
 } from "@nestjs/common";
 import { createPrismaClient, type PrismaClient } from "@ledgerline/db";
-import { CONFIG, LLM_CLIENT, PRISMA } from "./common/tokens.js";
+import { CONFIG, LLM_CLIENT, PAYMENT_GATEWAY, PRISMA } from "./common/tokens.js";
 import type { ApiConfig } from "./config.js";
 import { AgentModule } from "./modules/agent/agent.module.js";
 import { AuditModule } from "./modules/audit/audit.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { Public } from "./modules/auth/auth.guard.js";
 import { ContractsModule } from "./modules/contracts/contracts.module.js";
+import { createPaymentGateway } from "./modules/payments/create-payment-gateway.js";
+import type { PaymentGateway } from "./modules/payments/payment-gateway.js";
 import { PaymentsModule } from "./modules/payments/payments.module.js";
 import { createLlmClient } from "./modules/llm/create-llm-client.js";
 import type { LlmClient } from "./modules/llm/llm-client.js";
@@ -37,6 +39,7 @@ class HealthController {
 export type AppOptions = {
   // Tests pass a scripted fake here instead of building one from config.
   llmClient?: LlmClient;
+  paymentGateway?: PaymentGateway;
 };
 
 // The root module. register(config) instead of a static @Module so the config is
@@ -71,8 +74,13 @@ export class AppModule implements OnApplicationShutdown {
           provide: LLM_CLIENT,
           useFactory: () => options.llmClient ?? createLlmClient(config.llm),
         },
+        // Stripe (test mode), or null when no key is set.
+        {
+          provide: PAYMENT_GATEWAY,
+          useFactory: () => options.paymentGateway ?? createPaymentGateway(config.stripe),
+        },
       ],
-      exports: [CONFIG, PRISMA, LLM_CLIENT],
+      exports: [CONFIG, PRISMA, LLM_CLIENT, PAYMENT_GATEWAY],
     };
   }
 

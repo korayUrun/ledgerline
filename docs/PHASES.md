@@ -150,12 +150,12 @@ Estimated total: ~4 weeks part-time.
 **Tasks**
 - [x] Simple login, so approval is tied to a real person (replaces the demo user in `ActorService`, added in Phase 2)
 - [x] State machine extended: `in_review → approved → paying → paid`, `payment_failed → paying`; human-only approval; no edits from `paying` onwards
-- [ ] Stripe test mode: Express connected accounts for seeded artists; fund the test platform balance
+- [ ] Stripe test mode: Express connected accounts for seeded artists; fund the test platform balance (code done: Connect Stripe account button + onboarding link; live setup waits for the test key)
 - [x] Approval transaction: status change + `Payout(pending, idempotencyKey)` + `AuditLog` together
-- [ ] `payouts` queue: re-read the payout, exit if already done, call `transfers.create` with the idempotency key
-- [ ] Webhook endpoint: signature verification, `ProcessedWebhookEvent` dedupe, final status update in one transaction
-- [ ] Sweeper job: find `pending` payouts older than N minutes and re-enqueue them
-- [ ] Local webhooks with `stripe listen`
+- [x] `payouts` queue: re-read the payout, exit if already done, call `transfers.create` with the idempotency key
+- [x] Webhook endpoint: signature verification, `ProcessedWebhookEvent` dedupe, final status update in one transaction
+- [x] Sweeper job: find `pending` payouts older than N minutes and re-enqueue them
+- [ ] Local webhooks with `stripe listen` (endpoint ready at `/payments/webhook`; waits for the test key)
 
 **Done when:** all four failure drills below end with exactly one transfer in the Stripe dashboard and a `paid` settlement.
 
@@ -169,6 +169,8 @@ Estimated total: ~4 weeks part-time.
 2. Replay the same webhook event twice.
 3. Click "approve" twice quickly.
 4. Send a webhook with a bad signature.
+
+**Status:** code complete 2026-11-23; the live Stripe check is pending until the test key is added. Built: login, the payment states with locked inputs, approval + `Payout` in one transaction, the `PaymentGateway` (Stripe / fake), the payout job, the signed and deduped webhook, the sweeper, the artist onboarding link, and the worksheet UI. All four drills pass in `test/payouts.test.ts` against a fake Stripe that keeps Stripe's idempotency behaviour. **Pending (needs `STRIPE_SECRET_KEY` + `stripe listen`):** one real test-mode payout end to end, checking the Stripe dashboard shows exactly one transfer per drill.
 
 ---
 

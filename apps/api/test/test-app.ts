@@ -10,13 +10,14 @@ import {
   type PrismaClient,
 } from "@ledgerline/db";
 import type Anthropic from "@anthropic-ai/sdk";
-import type { ContractTerms } from "@ledgerline/schemas";
+import type { ContractTerms, ExpenseDto, ShowDto } from "@ledgerline/schemas";
 import { inject } from "vitest";
 import { createApp } from "../src/app.js";
 import { userActor, type Actor } from "../src/common/actor.js";
 import type { ApiConfig } from "../src/config.js";
 import { hashSessionToken } from "../src/modules/auth/session-token.js";
 import { FakeLlmClient } from "../src/modules/llm/fake-llm-client.js";
+import { FakePaymentGateway } from "../src/modules/payments/fake-payment-gateway.js";
 
 export type Result<T> = { status: number; body: T };
 
@@ -24,6 +25,7 @@ export type Result<T> = { status: number; body: T };
 // resetDatabase creates with this token. Tests of the login itself send their own
 // headers (or none).
 export const TEST_SESSION_TOKEN = "test-session-token";
+export const TEST_WEBHOOK_SECRET = "whsec_test_secret";
 const AUTH_HEADERS = { authorization: `Bearer ${TEST_SESSION_TOKEN}` };
 
 export type TestApp = {
@@ -49,6 +51,8 @@ export type TestApp = {
     content: string | Buffer,
     type: string,
   ) => Promise<Result<T>>;
+  // Stands in for Stripe in the API and in any worker the test starts.
+  payments: FakePaymentGateway;
   // Scripts what "Claude" answers the API's agent from now on: model call 1 gets
   // replies[0], call 2 replies[1]… Returns the requests sent, for assertions.
   scriptLlm: (...replies: Anthropic.Message[]) => Anthropic.MessageCreateParamsNonStreaming[];
@@ -71,7 +75,12 @@ export async function startTestApp(): Promise<TestApp> {
       timeoutMs: 1_000,
       maxRetries: 0,
     },
+    // The fake gateway is passed in below; the webhook secret is real, so the
+    // tests sign their webhook payloads exactly like Stripe does.
+    stripe: { secretKey: null, webhookSecret: TEST_WEBHOOK_SECRET },
+    webUrl: "http://localhost:3000",
   };
+  const payments = new FakePaymentGateway();
   // One fake for the whole app; each test scripts its own replies.
   let replies: Anthropic.Message[] = [];
   let sent: Anthropic.MessageCreateParamsNonStreaming[] = [];
@@ -82,7 +91,10 @@ export async function startTestApp(): Promise<TestApp> {
     if (!reply) throw new Error(`no scripted LLM reply for call ${sent.length}`);
     return reply;
   });
-  const app: INestApplication = await createApp(config, ["error"], { llmClient: llm });
+  const app: INestApplication = await createApp(config, ["error"], {
+    llmClient: llm,
+    paymentGateway: payments,
+  });
   await app.listen(0);
   const baseUrl = await app.getUrl();
   const prisma = createPrismaClient(config.databaseUrl);
@@ -95,6 +107,7 @@ export async function startTestApp(): Promise<TestApp> {
   return {
     nest: app,
     config,
+    payments,
     baseUrl,
     prisma,
     request: async <T>(
@@ -151,7 +164,7 @@ let demoPasswordHash: Promise<string> | null = null;
 // way and ignores foreign-key order. Returns the demo user as an actor.
 export async function resetDatabase(prisma: PrismaClient): Promise<Actor> {
   await prisma.$executeRawUnsafe(
-    `TRUNCATE "Session", "Payout", "ExpenseFlag", "AgentStep", "AgentRun", "SettlementLine", "Settlement", "ContractTerms", "Contract", "Expense",
+    `TRUNCATE "Session", "Payout", "ProcessedWebhookEvent", "ExpenseFlag", "AgentStep", "AgentRun", "SettlementLine", "Settlement", "ContractTerms", "Contract", "Expense",
               "TicketSale", "Show", "Artist", "Venue", "AuditLog", "User" CASCADE`,
   );
   demoPasswordHash ??= hashPassword(DEMO_USER_PASSWORD);
@@ -188,3 +201,41 @@ export const TICKET_SALES_CSV = `tier,qty_sold,comps,price,tax,fees
 GA,320,25,35.00,560.00,224.00
 VIP,70,10,80.00,280.00,112.00
 `;
+
+// A show whose settlement is computed and in review (no pending expenses), with a
+// (fake) Stripe account for the artist: ready to approve.
+export async function createShowInReview(
+  t: TestApp,
+  name: string,
+  terms: ContractTerms,
+): Promise<{ showId: string; expenses: ExpenseDto[] }> {
+  const venue = await t.request<{ id: string }>("POST", "/venues", { name: `${name} Hall` });
+  const artist = await t.request<{ id: string }>("POST", "/artists", { name: `${name} Band` });
+  const show = await t.request<ShowDto>("POST", "/shows", {
+    name,
+    showDate: "2026-11-06",
+    venueId: venue.body.id,
+    artistId: artist.body.id,
+  });
+  const id = show.body.id;
+  // Payouts need somewhere to go: a (fake) connected account for the artist.
+  await t.prisma.artist.update({
+    where: { id: artist.body.id },
+    data: { stripeAccountId: `acct_test_${artist.body.id.slice(0, 8)}` },
+  });
+  await t.upload(`/shows/${id}/ticket-sales/import`, "sales.csv", TICKET_SALES_CSV, "text/csv");
+  await t.request("POST", `/shows/${id}/terms`, terms);
+  const created: ExpenseDto[] = [];
+  for (const expense of [
+    { category: "production", description: "Crew", amountCents: 280_000, status: "allowed" },
+    { category: "security", description: "Security", amountCents: 120_000, status: "allowed" },
+  ]) {
+    created.push((await t.request<ExpenseDto>("POST", `/shows/${id}/expenses`, expense)).body);
+  }
+  await t.request("POST", `/shows/${id}/settlement/compute`);
+  const submitted = await t.request("POST", `/shows/${id}/settlement/submit-for-review`);
+  if (submitted.status !== 200) {
+    throw new Error(`submit-for-review answered ${submitted.status}`);
+  }
+  return { showId: id, expenses: created };
+}

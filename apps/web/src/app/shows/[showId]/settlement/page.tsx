@@ -6,6 +6,7 @@ import {
   type PayoutDto,
   type SettlementInput,
   type SettlementViewDto,
+  type ShowDto,
   type SourceRef,
 } from "@ledgerline/schemas";
 import Link from "next/link";
@@ -15,6 +16,7 @@ import { formatDateTime, humanize } from "../../../../lib/format";
 import {
   approveSettlement,
   computeSettlement,
+  connectStripeAccount,
   resolveFlag,
   retryPayment,
   submitForReview,
@@ -36,6 +38,12 @@ export default async function SettlementPage({
   const { showId } = await params;
   const view = await api.get<SettlementViewDto>(`/shows/${showId}/settlement`);
   const settlement = view.settlement;
+  const show = await api.get<ShowDto>(`/shows/${showId}`);
+  const artistAccount = show.artist.stripeAccountId;
+  // Approval and retry need somewhere to send the money (the API checks too).
+  const needsAccount =
+    artistAccount === null &&
+    (settlement?.status === "in_review" || settlement?.status === "payment_failed");
   const history = settlement
     ? await api.get<AuditEntryDto[]>(`/audit?entity=settlement&entityId=${settlement.id}`)
     : [];
@@ -98,6 +106,13 @@ export default async function SettlementPage({
         </div>
       )}
 
+      {needsAccount && (
+        <div className="banner banner-warn">
+          {show.artist.name} has no Stripe account to receive the payout yet. Connect one (Stripe
+          test mode: fill in the onboarding page with test data), then approve.
+        </div>
+      )}
+
       <div className="row" style={{ margin: "16px 0" }}>
         {!locked && (
           <>
@@ -113,9 +128,16 @@ export default async function SettlementPage({
             </form>
           </>
         )}
+        {(needsAccount || (artistAccount !== null && settlement?.status === "in_review")) && (
+          <form action={connectStripeAccount.bind(null, showId, show.artist.id)}>
+            <button type="submit" className="secondary">
+              {artistAccount === null ? "Connect Stripe account" : "Finish Stripe onboarding"}
+            </button>
+          </form>
+        )}
         {settlement?.status === "in_review" && (
           <form action={approveSettlement.bind(null, showId)}>
-            <button type="submit">
+            <button type="submit" disabled={needsAccount}>
               Approve and pay{" "}
               {settlement.payoutCents === null ? "" : formatCents(settlement.payoutCents)}
             </button>
@@ -128,6 +150,11 @@ export default async function SettlementPage({
         )}
       </div>
 
+      {artistAccount !== null && locked && (
+        <p className="muted">
+          Paid to {show.artist.name}&apos;s Stripe account <code>{artistAccount}</code> (test mode).
+        </p>
+      )}
       {view.payouts.length > 0 && <PayoutsTable payouts={view.payouts} />}
 
       {!settlement || settlement.status === "draft" ? (

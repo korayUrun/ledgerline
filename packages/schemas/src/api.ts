@@ -110,7 +110,15 @@ export const ConfirmContractBodySchema = ContractTermsSchema;
 // Dates are ISO strings, because that is what JSON.stringify makes of a Date.
 
 export type VenueDto = { id: string; name: string };
-export type ArtistDto = { id: string; name: string };
+export type ArtistDto = {
+  id: string;
+  name: string;
+  stripeAccountId: string | null; // the connected account payouts go to (Phase 5)
+};
+
+// POST /artists/:id/stripe-account: the Stripe-hosted page where the artist's test
+// account is set up (bank details, identity) before it can receive transfers.
+export type StripeOnboardingDto = { stripeAccountId: string; onboardingUrl: string };
 
 export type ShowDto = {
   id: string;

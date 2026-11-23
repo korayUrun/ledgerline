@@ -5,3 +5,6 @@ export const PRISMA = Symbol("PRISMA");
 // The LlmClient (an interface, so it has no class Nest could look up). The worker
 // uses it to read contracts, the API to run the audit agent.
 export const LLM_CLIENT = Symbol("LLM_CLIENT");
+// The PaymentGateway (Stripe in the app, a fake in tests), or null when Stripe is
+// not configured.
+export const PAYMENT_GATEWAY = Symbol("PAYMENT_GATEWAY");

@@ -3,7 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import { readConfigFromEnv } from "./config.js";
 import { WorkerModule } from "./worker.module.js";
 
-// The background worker (F8): takes contract-extraction jobs from Redis.
+// The background worker (F8): takes contract-extraction and payout jobs from Redis.
 // `pnpm --filter @ledgerline/api dev` starts it next to the HTTP API.
 try {
   process.loadEnvFile(new URL("../../../.env", import.meta.url));
@@ -19,5 +19,5 @@ const app = await NestFactory.createApplicationContext(WorkerModule.register(con
 // Ctrl-C / SIGTERM → onApplicationShutdown → running jobs finish, connections close.
 app.enableShutdownHooks();
 console.log(
-  `Worker started (llm=${config.llm.client}, model=${config.llm.extractionModel}, redis=${new URL(config.redisUrl).host})`,
+  `Worker started (llm=${config.llm.client}, model=${config.llm.extractionModel}, stripe=${config.stripe.secretKey ? "test" : "off"}, redis=${new URL(config.redisUrl).host})`,
 );
