@@ -330,11 +330,22 @@ sequenceDiagram
 - **Signature verification + event-id dedupe.** Forged and duplicate webhooks are rejected or ignored.
 - **Test mode setup:** create Express connected accounts for test artists; fund the platform's test balance with test charges; forward webhooks locally with `stripe listen`.
 
-As built so far (Phase 5, `apps/api/src/modules/payments/`):
+As built (Phase 5, `apps/api/src/modules/payments/`):
 - **Approval** (`POST /shows/:id/settlement/approve`, logged-in person only) is one transaction: `in_review → approved` (audit `settlement.approved`), the `Payout` row (attempt 1, `pending`), `approved → paying` (audit `settlement.payment_started` with the payout id and key). It re-checks the inputs hash first; the read before it also runs the drift check, so changed data turns the settlement stale and the approval gets a 409.
 - **Two approvals at once:** both read `in_review`; the compare-and-set lets one UPDATE match, the other gets a 409 and its transaction (with its Payout insert) rolls back. Tested with two concurrent requests: exactly one payout.
 - **`Payout`**: one row per attempt, `idempotencyKey = payout:<settlementId>:v<version>:a<attempt>` (UNIQUE), `UNIQUE(settlementId, attempt)`, `amountCents` copied from the approved settlement. A retry (`POST …/retry-payment`, only from `payment_failed`, only after a failed payout) is a new row with a new key, because Stripe answers a repeated key with the first answer.
-- Not yet: the payout job, Stripe, the webhook and the sweeper (next PRs). Until then an approved settlement stays `paying` with a `pending` payout.
+- **Before approving**, the API checks that Stripe is configured (503 otherwise) and that the artist has a connected account (409 otherwise), so nothing is approved that can only fail. The job is enqueued **after** the commit; if Redis is down at that moment the approval still stands and the sweeper picks the payout up.
+- **`PaymentGateway`** is the app's view of the provider (`createTransfer`, `createConnectedAccount`, `createOnboardingLink`). `StripeGateway` is the real one (`stripe` 23.1.0, test keys only: a non-`sk_test_` key stops the app at startup); `FakePaymentGateway` copies the behaviour the code relies on (a repeated idempotency key returns the first transfer) and can script a refusal, a timeout, or a crash right after the transfer.
+- **The payout job** (`payouts` queue, job id = payout id, 5 attempts, exponential backoff) re-reads the payout and stops if it is `succeeded`/`failed` or already has a transfer id; otherwise `pending → processing`, then `transfers.create` with the payout's key and `metadata.payoutId`, then saves the transfer id (still `processing`). Errors are sorted in one place: a definite "no" from Stripe (invalid request, permission, idempotency mismatch) fails the payout and the settlement (`payment_failed`); a rejected key is a setup error; **everything else (timeout, connection, 5xx, 429) is retried with the same key and the payout is never marked failed**, because the money may have moved and a person's retry would use a new key.
+- **The webhook** (`POST /payments/webhook`, public, `stripe listen` forwards it locally) verifies the signature over the raw request bytes (`rawBody: true`), then in one transaction: insert the event id into `ProcessedWebhookEvent` (a duplicate hits the primary key and is answered `duplicate`), find the payout by the transfer's `metadata.payoutId` (so it works even if it arrives before the job saved the transfer id), refuse a transfer whose amount differs from the payout, and mark `succeeded` + settlement `paid`. For a transfer between Stripe balances the confirming event is `transfer.created` (Stripe has no paid/failed events for transfers); `transfer.reversed` is recorded and logged, handling it is out of scope.
+- **The sweeper** (a BullMQ job scheduler, every minute, in the worker) re-enqueues payouts untouched for 5 minutes that are `pending`, or `processing` without a transfer id. One with a transfer id is waiting for the webhook and is left alone.
+- **The four drills** run in `test/payouts.test.ts` against the fake: worker killed after the Stripe call (the retry gets the same transfer back), the same webhook twice, approve clicked twice, a bad signature. Each ends with one transfer and a paid settlement.
+
+**Stripe test mode setup** (once, needs a free Stripe account):
+1. `.env`: `STRIPE_SECRET_KEY=sk_test_…` (Dashboard → Developers → API keys), and `STRIPE_WEBHOOK_SECRET=whsec_…` printed by step 3. Optional `WEB_URL` (default `http://localhost:3000`).
+2. Fund the platform's test balance: a test charge with the card `4000 0000 0000 0077`, which makes the funds available at once (Dashboard → Payments → Create payment). Transfers draw from this balance.
+3. `stripe listen --forward-to localhost:<API_PORT>/payments/webhook` and keep it running.
+4. In the app: worksheet → **Connect Stripe account** → fill Stripe's onboarding with test data → back in the app, **Approve and pay**. The transfer appears under Dashboard → Connect → the account, and the settlement turns `paid` when the webhook arrives.
 
 ---
 
@@ -343,7 +354,7 @@ As built so far (Phase 5, `apps/api/src/modules/payments/`):
 | Queue | Job | Retries | Idempotent because |
 |-------|-----|---------|--------------------|
 | `contract-extraction` | extract terms for a contract | 3, exponential | writes a new terms version; re-running is harmless |
-| `payouts` | send transfer for a payout | 5, exponential | Stripe idempotency key + status check before calling |
+| `payouts` | send transfer for a payout; `sweep` every minute | 5, exponential | Stripe idempotency key + status check before calling |
 | `evals` (optional) | run eval suite | 0 | read-only |
 
 Every job handler starts by **re-reading state from the DB** and exiting if the work is already done. Jobs carry IDs, not data, so they never act on stale copies.

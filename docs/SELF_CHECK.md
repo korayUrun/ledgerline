@@ -271,6 +271,31 @@ retries clicked at once create only one new attempt.
 
 </details>
 
+**5. The payout job's call to Stripe times out. Why does the job retry instead of marking the payout failed?**
+
+<details><summary>Answer</summary>
+
+A timeout means "no answer", not "no". Stripe may have made the transfer and only the
+reply was lost. Retrying with the same idempotency key is safe: if the transfer exists,
+Stripe returns it instead of making a new one. Marking it failed would invite a person to
+retry, and a retry is a new attempt with a new key, which could pay twice. Only a definite
+refusal (invalid request, permission) fails the payout (`payout-processor.ts`,
+`toRefusalOrRethrow` in `stripe-gateway.ts`).
+
+</details>
+
+**6. Why is the webhook handled in one transaction that starts by inserting the event id?**
+
+<details><summary>Answer</summary>
+
+The insert is the dedupe: the event id is the primary key, so a second delivery of the
+same event fails at once and changes nothing. Being in the same transaction as the effect
+matters too: if marking the payout paid fails, the insert rolls back as well, so Stripe's
+retry is processed properly instead of being skipped as a "duplicate"
+(`stripe-webhook.service.ts`).
+
+</details>
+
 ---
 
 # Deferred phase quizzes (after the last phase)
@@ -488,5 +513,57 @@ step limit no longer does: that is why both limits exist. Without either, the ru
 never end. (2) Watch precision: with no rule about when to flag, the model tends to flag
 pending, large or unusual expenses, and flags on flat or percentage deals. The tool
 description is part of the prompt. Restore both afterwards. Needs a live run (API key).
+
+</details>
+
+## Phase 5 — Approval & payments
+
+**1. A request to Stripe times out. Was the money sent? How does the system find out?**
+
+<details><summary>Answer</summary>
+
+We cannot know from our side. The payout stays `processing` without a transfer id and the
+job retries with the same idempotency key: Stripe either makes the transfer now or returns
+the one it already made, never a second one. When the transfer exists, the
+`transfer.created` webhook confirms it and the settlement becomes `paid`. If Stripe stays
+unreachable past the job's retries, the sweeper re-enqueues the payout after 5 minutes.
+
+</details>
+
+**2. Why is the webhook, not the API response, the source of truth?**
+
+<details><summary>Answer</summary>
+
+The response only reaches us if nothing breaks on the way: a timeout or a crash right
+after the call loses it, even though the transfer was made. Stripe keeps sending the
+webhook until we answer 2xx, so it arrives even after our worker died. And it is signed,
+so it cannot be faked. The job's answer is "Stripe accepted the request"; the webhook is
+"the money moved".
+
+</details>
+
+**3. What would go wrong if the `Payout` row were created after the approval commits?**
+
+<details><summary>Answer</summary>
+
+A crash between the two writes would leave a settlement that is approved (and locked) but
+has no payout: nobody would ever pay it, and nothing in the database would show that
+something is missing. In one transaction, there is either no approval or an approval with
+a `pending` payout that the job or the sweeper will send.
+
+</details>
+
+**Break it (Phase 5):** with the test key and `stripe listen` running, do each of the four
+drills (kill the worker right after the Stripe call; resend a webhook from the Stripe
+dashboard; double-click approve; send a webhook with a wrong secret), then check the
+Stripe dashboard and the worksheet.
+
+<details><summary>What to look for</summary>
+
+Exactly one transfer per settlement in Dashboard → Connect, and the settlement `paid`.
+(1) The killed job's retry logs `transfer_created` with the same transfer id. (2) The second
+delivery answers `{"outcome":"duplicate"}` and adds no audit row. (3) One click gets a
+409. (4) The forged call gets a 400 and `ProcessedWebhookEvent` stays empty. The same
+drills already run against the fake in `apps/api/test/payouts.test.ts`.
 
 </details>
