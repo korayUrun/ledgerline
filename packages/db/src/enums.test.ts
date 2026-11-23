@@ -1,5 +1,11 @@
 import {
+  AgentOutcomeSchema,
+  AgentRunKindSchema,
+  AgentRunStatusSchema,
+  AgentStepKindSchema,
   ContractStatusSchema,
+  ExpenseFlagKindSchema,
+  ExpenseFlagStatusSchema,
   ExpenseCategorySchema,
   ExpenseStatusSchema,
   LineKindSchema,
@@ -7,8 +13,14 @@ import {
 } from "@ledgerline/schemas";
 import { describe, expect, it } from "vitest";
 import {
+  AgentOutcome,
+  AgentRunKind,
+  AgentRunStatus,
+  AgentStepKind,
   ContractStatus,
   ExpenseCategory,
+  ExpenseFlagKind,
+  ExpenseFlagStatus,
   ExpenseStatus,
   SettlementLineKind,
   SettlementStatus,
@@ -36,5 +48,17 @@ describe("Prisma enums match the Zod enums", () => {
 
   it("settlement statuses", () => {
     expect(Object.values(SettlementStatus)).toEqual(SettlementStatusSchema.options);
+  });
+
+  it("agent run kinds, statuses, outcomes and step kinds", () => {
+    expect(Object.values(AgentRunKind)).toEqual(AgentRunKindSchema.options);
+    expect(Object.values(AgentRunStatus)).toEqual(AgentRunStatusSchema.options);
+    expect(Object.values(AgentOutcome)).toEqual(AgentOutcomeSchema.options);
+    expect(Object.values(AgentStepKind)).toEqual(AgentStepKindSchema.options);
+  });
+
+  it("expense flag kinds and statuses", () => {
+    expect(Object.values(ExpenseFlagKind)).toEqual(ExpenseFlagKindSchema.options);
+    expect(Object.values(ExpenseFlagStatus)).toEqual(ExpenseFlagStatusSchema.options);
   });
 });

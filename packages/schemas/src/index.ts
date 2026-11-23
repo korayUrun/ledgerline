@@ -6,3 +6,4 @@ export * from "./contract-terms.js";
 export * from "./settlement.js";
 export * from "./api.js";
 export * from "./contract-extraction.js";
+export * from "./agent.js";

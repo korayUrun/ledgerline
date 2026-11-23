@@ -8,7 +8,7 @@
 //   - Percentages live inside termsJson as basis points; there is no float column.
 //
 // Tables are added in the phase that first uses them: Contract (PDF) in Phase 3,
-// AgentRun/AgentStep in Phase 4, Payout/ProcessedWebhookEvent in Phase 5, ApiKey in Phase 6.
+// AgentRun/AgentStep/ExpenseFlag in Phase 4, Payout/ProcessedWebhookEvent in Phase 5, ApiKey in Phase 6.
 
 generator client {
   provider            = "prisma-client"
@@ -81,6 +81,44 @@ enum ContractStatus {
   failed
 }
 
+// Audit agent (F6, F12). Mirrors of the Zod enums in packages/schemas/src/agent.ts.
+enum AgentRunKind {
+  audit
+  question
+}
+
+enum AgentRunStatus {
+  running
+  completed
+  failed
+}
+
+enum AgentOutcome {
+  answered
+  step_limit
+  token_budget
+  truncated
+  refused
+  unexpected_stop
+}
+
+enum AgentStepKind {
+  model_call
+  tool_call
+}
+
+enum ExpenseFlagKind {
+  category_not_allowed
+  over_category_cap
+  other
+}
+
+enum ExpenseFlagStatus {
+  open
+  accepted
+  dismissed
+}
+
 // --- People and places --------------------------------------------------------------
 
 // A human who can confirm terms (and, from Phase 5, approve payouts).
@@ -92,6 +130,7 @@ model User {
   createdAt DateTime @default(now())
 
   confirmedTerms ContractTerms[]
+  resolvedFlags  ExpenseFlag[]
 }
 
 model Venue {
@@ -165,7 +204,8 @@ model Expense {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  show Show @relation(fields: [showId], references: [id])
+  show  Show          @relation(fields: [showId], references: [id])
+  flags ExpenseFlag[]
 
   @@index([showId])
 }
@@ -250,9 +290,10 @@ model Settlement {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
-  show  Show             @relation(fields: [showId], references: [id])
-  terms ContractTerms?   @relation(fields: [termsId], references: [id])
-  lines SettlementLine[]
+  show      Show             @relation(fields: [showId], references: [id])
+  terms     ContractTerms?   @relation(fields: [termsId], references: [id])
+  lines     SettlementLine[]
+  agentRuns AgentRun[]
 }
 
 model SettlementLine {
@@ -270,6 +311,101 @@ model SettlementLine {
   settlement Settlement @relation(fields: [settlementId], references: [id])
 
   @@unique([settlementId, position])
+}
+
+// --- Audit agent (F6) and its traces (F12) --------------------------------------------
+
+// One run of the agent loop over one settlement. Together with its steps it is a
+// full replay of the conversation: the question is the first user message, and
+// the steps are everything that followed, in order.
+model AgentRun {
+  id                String         @id @default(uuid())
+  settlementId      String
+  // The settlement version the agent looked at. If the settlement is recomputed
+  // later, the run's answers describe the older numbers.
+  settlementVersion Int
+  kind              AgentRunKind
+  question          String // the first user message, exactly as sent
+  model             String // as requested; each model_call step stores the one that answered
+  promptVersion     String // the system prompt and tool set live in code, versioned
+  // "user:<id>": who asked. The agent itself acts as "agent:<runId>" in AuditLog.
+  startedBy         String
+  status            AgentRunStatus @default(running)
+  outcome           AgentOutcome? // set when status = completed
+  finalText         String? // set when outcome = answered
+  errorMessage      String? // set when status = failed
+  // Totals over the model_call steps, added in the same transaction as each step,
+  // so they always match the steps (even for a run that crashed halfway).
+  inputTokens       Int            @default(0)
+  outputTokens      Int            @default(0)
+  // Nano-dollars, like Contract.llmUsage. BigInt: a few dollars is already above
+  // the Int maximum (2.1e9 nano-dollars ≈ $2.15). NULL = some call had no known
+  // price; SQL keeps it NULL from then on, because NULL + x is NULL.
+  costNanoUsd       BigInt?        @default(0)
+  startedAt         DateTime       @default(now())
+  finishedAt        DateTime?
+
+  settlement Settlement    @relation(fields: [settlementId], references: [id])
+  steps      AgentStep[]
+  flags      ExpenseFlag[]
+
+  @@index([settlementId, startedAt])
+}
+
+// One step of a run: a model call or a tool call. One table with columns that
+// only one kind uses (instead of two tables), so the whole run reads back in
+// order with a single ORDER BY position.
+model AgentStep {
+  id        String        @id @default(uuid())
+  runId     String
+  position  Int // 0, 1, 2… in the order things happened
+  kind      AgentStepKind
+  createdAt DateTime      @default(now())
+
+  // kind = model_call
+  model        String? // the model that answered
+  stopReason   String?
+  // The reply's content blocks exactly as received (text, thinking, tool_use).
+  content      Json?
+  inputTokens  Int?
+  outputTokens Int?
+  costNanoUsd  BigInt?
+  durationMs   Int?
+
+  // kind = tool_call
+  toolUseId  String? // pairs the call with the tool_use block in the step before
+  toolName   String?
+  toolInput  Json? // as the model sent it, before validation
+  toolOutput String? // exactly the text sent back in the tool_result
+  isError    Boolean?
+
+  run AgentRun @relation(fields: [runId], references: [id])
+
+  @@unique([runId, position])
+}
+
+// The agent's (later also an MCP client's) note that an expense looks wrong. It
+// never changes the expense: a person reads it and decides (F6: "the human
+// resolves them"), so it does not make the settlement stale either.
+model ExpenseFlag {
+  id           String            @id @default(uuid())
+  // Cascade: a flag about a deleted expense means nothing. The AuditLog keeps
+  // both the deleted expense and the flag's creation.
+  expenseId    String
+  agentRunId   String
+  kind         ExpenseFlagKind
+  reason       String
+  status       ExpenseFlagStatus @default(open)
+  resolvedById String?
+  resolvedAt   DateTime?
+  createdAt    DateTime          @default(now())
+
+  expense    Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  agentRun   AgentRun @relation(fields: [agentRunId], references: [id])
+  resolvedBy User?    @relation(fields: [resolvedById], references: [id])
+
+  @@index([expenseId])
+  @@index([agentRunId])
 }
 
 // --- Audit (F12) ---------------------------------------------------------------------
