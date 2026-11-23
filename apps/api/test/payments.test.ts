@@ -1,9 +1,9 @@
-import type { AuditEntryDto, ExpenseDto, SettlementViewDto, ShowDto } from "@ledgerline/schemas";
+import type { AuditEntryDto, ExpenseDto, SettlementViewDto } from "@ledgerline/schemas";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
+  createShowInReview,
   resetDatabase,
   startTestApp,
-  TICKET_SALES_CSV,
   VERSUS_TERMS,
   type TestApp,
 } from "./test-app.js";
@@ -22,36 +22,8 @@ afterAll(async () => {
 // Every test starts from a settlement in review: computed, no pending expenses.
 beforeEach(async () => {
   await resetDatabase(t.prisma);
-  ({ showId, expenses } = await createShowInReview("Test Night", VERSUS_TERMS));
+  ({ showId, expenses } = await createShowInReview(t, "Test Night", VERSUS_TERMS));
 });
-
-async function createShowInReview(
-  name: string,
-  terms: typeof VERSUS_TERMS,
-): Promise<{ showId: string; expenses: ExpenseDto[] }> {
-  const venue = await t.request<{ id: string }>("POST", "/venues", { name: `${name} Hall` });
-  const artist = await t.request<{ id: string }>("POST", "/artists", { name: `${name} Band` });
-  const show = await t.request<ShowDto>("POST", "/shows", {
-    name,
-    showDate: "2026-11-06",
-    venueId: venue.body.id,
-    artistId: artist.body.id,
-  });
-  const id = show.body.id;
-  await t.upload(`/shows/${id}/ticket-sales/import`, "sales.csv", TICKET_SALES_CSV, "text/csv");
-  await t.request("POST", `/shows/${id}/terms`, terms);
-  const created: ExpenseDto[] = [];
-  for (const expense of [
-    { category: "production", description: "Crew", amountCents: 280_000, status: "allowed" },
-    { category: "security", description: "Security", amountCents: 120_000, status: "allowed" },
-  ]) {
-    created.push((await t.request<ExpenseDto>("POST", `/shows/${id}/expenses`, expense)).body);
-  }
-  await t.request("POST", `/shows/${id}/settlement/compute`);
-  const submitted = await t.request("POST", `/shows/${id}/settlement/submit-for-review`);
-  expect(submitted.status).toBe(200);
-  return { showId: id, expenses: created };
-}
 
 const approve = (id = showId) =>
   t.request<SettlementViewDto & { message: string }>("POST", `/shows/${id}/settlement/approve`);
@@ -125,9 +97,21 @@ describe("approve", () => {
     expect(settlement.status).toBe("stale");
   });
 
+  it("refuses while the artist has no Stripe account to pay into", async () => {
+    await t.prisma.artist.updateMany({ data: { stripeAccountId: null } });
+
+    const response = await approve();
+
+    expect(response.status).toBe(409);
+    expect(response.body.message).toMatch(/no Stripe account/);
+    expect(await t.prisma.payout.count()).toBe(0);
+    const settlement = await t.prisma.settlement.findFirstOrThrow();
+    expect(settlement.status).toBe("in_review");
+  });
+
   it("marks a $0 settlement paid without a payout: there is nothing to transfer", async () => {
     await resetDatabase(t.prisma);
-    const zero = await createShowInReview("Zero Night", {
+    const zero = await createShowInReview(t, "Zero Night", {
       ...VERSUS_TERMS,
       // 0% versus a $0 guarantee: the artist is owed nothing.
       deal: { type: "versus", guaranteeCents: 0, artistShareBps: 0, clauseRef: "§4.2" },

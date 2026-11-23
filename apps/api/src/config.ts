@@ -9,6 +9,16 @@ export type ApiConfig = {
   // "contracts/<uuid>.pdf" is stored relative to it. API and worker must share it.
   storageDir: string;
   llm: LlmConfig;
+  stripe: StripeConfig;
+  // Where people open the web app; Stripe's onboarding page sends them back here.
+  webUrl: string;
+};
+
+// Stripe test mode (F7). Both are optional so the app runs without them: approving
+// then answers 503 ("payments are not configured") and the webhook endpoint 503.
+export type StripeConfig = {
+  secretKey: string | null; // "sk_test_…"; a live key is refused at startup
+  webhookSecret: string | null; // "whsec_…", printed by `stripe listen`
 };
 
 export type LlmConfig = {
@@ -47,7 +57,18 @@ export function readConfigFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConf
     storageDir:
       env["STORAGE_DIR"] ?? fileURLToPath(new URL("../../../var/storage", import.meta.url)),
     llm: readLlmConfig(env),
+    stripe: readStripeConfig(env),
+    webUrl: env["WEB_URL"] ?? "http://localhost:3000",
   };
+}
+
+function readStripeConfig(env: NodeJS.ProcessEnv): StripeConfig {
+  const secretKey = env["STRIPE_SECRET_KEY"] || null;
+  // Real money is out of scope (CLAUDE.md): refuse to start with a live key.
+  if (secretKey !== null && !secretKey.startsWith("sk_test_")) {
+    throw new Error("STRIPE_SECRET_KEY must be a test-mode key (sk_test_…).");
+  }
+  return { secretKey, webhookSecret: env["STRIPE_WEBHOOK_SECRET"] || null };
 }
 
 function readLlmConfig(env: NodeJS.ProcessEnv): LlmConfig {

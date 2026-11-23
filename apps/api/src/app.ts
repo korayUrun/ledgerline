@@ -14,6 +14,9 @@ export async function createApp(
 ): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule.register(config, options), {
     logger: logLevels,
+    // Keeps the exact request bytes next to the parsed JSON: the Stripe webhook
+    // signature is computed over those bytes.
+    rawBody: true,
   });
   app.useGlobalFilters(new ApiExceptionFilter());
   app.enableShutdownHooks();
