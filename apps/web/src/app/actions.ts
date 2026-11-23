@@ -10,6 +10,8 @@ import {
   ExpenseStatusSchema,
   parseDollarsToCents,
   type ApiErrorDto,
+  type CreateApiKeyBody,
+  type CreatedApiKeyDto,
   type CreateExpenseBody,
   type CreateShowBody,
   type LoginResponseDto,
@@ -17,6 +19,7 @@ import {
   type StripeOnboardingDto,
   type UpdateExpenseBody,
 } from "@ledgerline/schemas";
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { api, ApiError, loginRequest } from "../lib/api";
@@ -267,4 +270,39 @@ export async function connectStripeAccount(showId: string, artistId: string): Pr
     throw error;
   }
   redirect(onboardingUrl);
+}
+
+// --- API keys (Phase 6) -----------------------------------------------------------------------
+
+const API_KEYS_PATH = "/settings/api-keys";
+
+// What the create form shows after a submit. Not a redirect like the other actions:
+// the new key must never be put in a URL (browser history, server logs). It goes
+// back to the form in the action's response and lives only in that page's memory,
+// so a reload makes it disappear, exactly like "shown once" promises.
+export type CreateApiKeyState =
+  | { status: "idle" }
+  | { status: "created"; name: string; key: string }
+  | { status: "error"; message: string };
+
+export async function createApiKey(
+  _previous: CreateApiKeyState,
+  form: FormData,
+): Promise<CreateApiKeyState> {
+  const body: CreateApiKeyBody = { name: text(form, "name") };
+  try {
+    const created = await api.post<CreatedApiKeyDto>("/api-keys", body);
+    // Re-render the key list (server component) in the same response.
+    revalidatePath(API_KEYS_PATH);
+    return { status: "created", name: created.apiKey.name, key: created.key };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { status: "error", message: error.body.message };
+    }
+    throw error;
+  }
+}
+
+export async function revokeApiKey(apiKeyId: string): Promise<void> {
+  redirect(await callApi(API_KEYS_PATH, () => api.post(`/api-keys/${apiKeyId}/revoke`)));
 }

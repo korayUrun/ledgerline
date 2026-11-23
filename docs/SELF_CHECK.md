@@ -310,6 +310,72 @@ account call has no key, and double clicks are stopped in the database instead
 
 </details>
 
+## Phase 6 — Public API & MCP server
+
+**1. An API key cannot approve or pay. What stops it, and would it still be stopped if someone added a new route under `/v1`?**
+
+<details><summary>Answer</summary>
+
+Three layers. (1) Routes: every route has exactly one way in (`AuthGuard`): `@Public()`,
+`@ApiKeyAuth()` or, by default, a session. Approve and retry-payment are session routes,
+and a session route only looks up `Session` rows, so a key gets 401 there. (2) Types: the
+approval and payment services take an `Actor` (a person, with a `userId`); a key is an
+`ApiKeyActor`, which has no `userId`, so passing it to them does not compile. (3) Tests:
+`public-api.test.ts` sends a key to approve and retry-payment (401, no `Payout` row), and
+`openapi.test.ts` checks that the document lists no approve or pay route. A new `/v1` route
+would still need someone to call `ApprovalsService` with an `Actor` they do not have.
+
+</details>
+
+**2. Why does the new API key come back from the server action as state, when every other form redirects with `?error=…`?**
+
+<details><summary>Answer</summary>
+
+A redirect would put the key in the URL, and URLs end up in browser history, server logs
+and the Referer header. With `useActionState`, the key travels once in the action's
+response, lives only in the page's memory, and is gone on reload, which is what "shown
+once" means. The database has only its SHA-256 by then, so nobody can show it again
+(`apps/web/src/app/settings/api-keys/create-key-form.tsx`).
+
+</details>
+
+**3. "Why did we pay this artist $X?": which part of the answer does the code produce, and which part does the language model?**
+
+<details><summary>Answer</summary>
+
+The code produces every fact: the worksheet lines and the payout (from the engine, stored at
+compute time), and for one line the input rows behind it and the contract clause (confirmed
+terms as name/value text, plus the PDF quotes). That is `GET /v1/settlements/:id/lines/:position`
+(`line-explanation.ts`), with no LLM call. The model on the client side (Claude through MCP)
+only turns those facts into sentences and quotes the `formatted` amounts. It never computes
+a number, so every amount in the answer is one the engine produced.
+
+</details>
+
+**4. The rate limiter lets requests through when Redis is down. Why is that acceptable here, and when would it not be?**
+
+<details><summary>Answer</summary>
+
+The limit protects capacity, not data: the API key decides who may read, and it is checked
+in Postgres on every request. Failing closed would turn every Redis blip into a full `/v1`
+outage, which hurts more than a minute without a limit. It would not be acceptable if the
+limit were a security control, e.g. on login attempts (guessing passwords) or on an
+endpoint that costs money per call; there, fail closed.
+
+</details>
+
+**5. The service already sets exactly one of `agentRunId` / `apiKeyId` on a flag. Why also a CHECK constraint in the database?**
+
+<details><summary>Answer</summary>
+
+The service is one writer; the database sees every writer (a future code path, a script, a
+manual SQL fix). The CHECK `ExpenseFlag_one_source` makes "a flag without a source" or "with
+two" impossible to store, not just unlikely. Prisma cannot express CHECK constraints, so it
+is written by hand in the migration, and `v1.test.ts` checks that the database refuses both
+cases.
+
+</details>
+
 ---
 
 # Deferred phase quizzes (after the last phase)

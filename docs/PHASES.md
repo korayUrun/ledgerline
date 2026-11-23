@@ -179,7 +179,7 @@ Estimated total: ~4 weeks part-time.
 **Goal:** other tools, Claude included, can safely read and explain settlements.
 
 **Tasks**
-- [ ] `/v1` controllers; API keys (show once, store a SHA-256 hash + prefix); rate limiting; OpenAPI via `@nestjs/swagger`
+- [x] `/v1` controllers; API keys (show once, store a SHA-256 hash + prefix); rate limiting; OpenAPI via `@nestjs/swagger` (#36–#40; also an API keys page in the web app)
 - [ ] `apps/mcp` with the official TypeScript SDK, stdio transport; tools `list_shows`, `get_settlement`, `explain_settlement_line`, `flag_expense`, each wrapping one `/v1` endpoint
 - [ ] Test with MCP Inspector, then Claude Desktop or Claude Code
 - [ ] README section: how to connect the MCP server
