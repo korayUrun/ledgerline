@@ -150,12 +150,12 @@ Estimated total: ~4 weeks part-time.
 **Tasks**
 - [x] Simple login, so approval is tied to a real person (replaces the demo user in `ActorService`, added in Phase 2)
 - [x] State machine extended: `in_review → approved → paying → paid`, `payment_failed → paying`; human-only approval; no edits from `paying` onwards
-- [ ] Stripe test mode: Express connected accounts for seeded artists; fund the test platform balance (code done: Connect Stripe account button + onboarding link; live setup waits for the test key)
+- [x] Stripe test mode: Express connected accounts for seeded artists; fund the test platform balance (Accounts v2 recipients, onboarding from the worksheet)
 - [x] Approval transaction: status change + `Payout(pending, idempotencyKey)` + `AuditLog` together
 - [x] `payouts` queue: re-read the payout, exit if already done, call `transfers.create` with the idempotency key
 - [x] Webhook endpoint: signature verification, `ProcessedWebhookEvent` dedupe, final status update in one transaction
 - [x] Sweeper job: find `pending` payouts older than N minutes and re-enqueue them
-- [ ] Local webhooks with `stripe listen` (endpoint ready at `/payments/webhook`; waits for the test key)
+- [x] Local webhooks with `stripe listen`
 
 **Done when:** all four failure drills below end with exactly one transfer in the Stripe dashboard and a `paid` settlement.
 
@@ -170,7 +170,7 @@ Estimated total: ~4 weeks part-time.
 3. Click "approve" twice quickly.
 4. Send a webhook with a bad signature.
 
-**Status:** code complete 2026-11-23; the live Stripe check is pending until the test key is added. Built: login, the payment states with locked inputs, approval + `Payout` in one transaction, the `PaymentGateway` (Stripe / fake), the payout job, the signed and deduped webhook, the sweeper, the artist onboarding link, and the worksheet UI. All four drills pass in `test/payouts.test.ts` against a fake Stripe that keeps Stripe's idempotency behaviour. **Pending (needs `STRIPE_SECRET_KEY` + `stripe listen`):** one real test-mode payout end to end, checking the Stripe dashboard shows exactly one transfer per drill.
+**Status:** done 2026-11-23. Built: login, the payment states with locked inputs, approval + `Payout` in one transaction, the `PaymentGateway` (Stripe / fake), the payout job, the signed and deduped webhook, the sweeper, artist onboarding (Accounts v2) and the worksheet UI. The four drills pass in `test/payouts.test.ts` against a fake Stripe, and were repeated against a real Stripe sandbox: each ended with exactly one transfer and a `paid` settlement (`docs/SYSTEM.md` §8, "Live run"). The first live run found two things the fake could not: Stripe refuses v1 account creation for new platforms, and a fixed idempotency key on account creation replayed an early error. The Explain it questions and the Break it drill are in `SELF_CHECK.md` (deferred).
 
 ---
 

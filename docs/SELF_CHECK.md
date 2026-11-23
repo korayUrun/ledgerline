@@ -296,6 +296,20 @@ retry is processed properly instead of being skipped as a "duplicate"
 
 </details>
 
+**7. Why does the payout send an idempotency key, but creating the artist's account does not?**
+
+<details><summary>Answer</summary>
+
+Stripe stores the first answer for a key and replays it, errors included. For a payout
+that is the point: a retry after a timeout gets the first transfer back instead of a second
+one, and a definite failure is retried as a new attempt with a new key. For the account it
+backfired in the first live run: the first click failed (Connect was not enabled yet), and
+the fixed key `artist-account:<id>` made every later click get that same error back. So the
+account call has no key, and double clicks are stopped in the database instead
+(`UPDATE … WHERE stripeAccountId IS NULL`).
+
+</details>
+
 ---
 
 # Deferred phase quizzes (after the last phase)
