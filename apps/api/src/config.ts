@@ -42,6 +42,30 @@ export type LlmConfig = {
   maxRetries: number; // SDK retries on 429/5xx/connection errors, per call
 };
 
+// Logging (docs/SYSTEM.md §12). Separate from ApiConfig because the logger exists
+// before the app does: main.ts and worker.ts create it first and hand it to Nest.
+export type LogConfig = {
+  level: LogLevelName;
+  // "json": one JSON object per line (default, what a log tool reads).
+  // "pretty": the same fields as readable text, for a terminal.
+  format: "json" | "pretty";
+};
+
+const LOG_LEVELS = ["fatal", "error", "warn", "info", "debug", "trace", "silent"] as const;
+export type LogLevelName = (typeof LOG_LEVELS)[number];
+
+export function readLogConfigFromEnv(env: NodeJS.ProcessEnv = process.env): LogConfig {
+  const level = env["LOG_LEVEL"] || "info";
+  if (!(LOG_LEVELS as readonly string[]).includes(level)) {
+    throw new Error(`LOG_LEVEL must be one of ${LOG_LEVELS.join(", ")}, got "${level}"`);
+  }
+  const format = env["LOG_FORMAT"] || "json";
+  if (format !== "json" && format !== "pretty") {
+    throw new Error(`LOG_FORMAT must be "json" or "pretty", got "${format}"`);
+  }
+  return { level: level as LogLevelName, format };
+}
+
 // Read once at startup, then passed into AppModule. Modules never read process.env
 // themselves, which is what lets the integration tests start the app against a
 // throwaway database just by passing a different config.

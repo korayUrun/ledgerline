@@ -1,6 +1,7 @@
 import "reflect-metadata"; // Nest reads decorator data through the Reflect API; must load first
 import { NestFactory } from "@nestjs/core";
-import { readConfigFromEnv } from "./config.js";
+import { createLogger, NestPinoLogger } from "./common/logging.js";
+import { readConfigFromEnv, readLogConfigFromEnv } from "./config.js";
 import { WorkerModule } from "./worker.module.js";
 
 // The background worker (F8): takes contract-extraction and payout jobs from Redis.
@@ -11,13 +12,20 @@ try {
   // No .env file: rely on the environment.
 }
 
+const logger = createLogger(readLogConfigFromEnv());
 const config = readConfigFromEnv();
 // An application context: Nest's dependency injection without an HTTP server.
 const app = await NestFactory.createApplicationContext(WorkerModule.register(config), {
-  logger: ["error", "warn", "log"],
+  logger: new NestPinoLogger(logger),
 });
 // Ctrl-C / SIGTERM → onApplicationShutdown → running jobs finish, connections close.
 app.enableShutdownHooks();
-console.log(
-  `Worker started (llm=${config.llm.client}, model=${config.llm.extractionModel}, stripe=${config.stripe.secretKey ? "test" : "off"}, redis=${new URL(config.redisUrl).host})`,
+logger.info(
+  {
+    llm: config.llm.client,
+    model: config.llm.extractionModel,
+    stripe: config.stripe.secretKey ? "test" : "off",
+    redis: new URL(config.redisUrl).host,
+  },
+  "worker started",
 );

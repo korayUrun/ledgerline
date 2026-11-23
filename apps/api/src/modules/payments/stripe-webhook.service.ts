@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Prisma, type PrismaClient } from "@ledgerline/db";
 import type Stripe from "stripe";
+import { addLogContext } from "../../common/logging.js";
 import { PRISMA } from "../../common/tokens.js";
 import { PayoutStateService } from "./payout-state.service.js";
 
@@ -38,6 +39,9 @@ export class StripeWebhookService {
         const transfer = event.data.object;
         const payoutId = transfer.metadata?.["payoutId"];
         const payout = payoutId ? await tx.payout.findUnique({ where: { id: payoutId } }) : null;
+        if (payout) {
+          addLogContext({ settlementId: payout.settlementId });
+        }
         if (!payout) {
           this.logger.warn(`event ${event.id}: transfer ${transfer.id} matches no payout`);
           return "ignored";

@@ -1,5 +1,6 @@
 import { createApp } from "./app.js";
-import { readConfigFromEnv } from "./config.js";
+import { createLogger } from "./common/logging.js";
+import { readConfigFromEnv, readLogConfigFromEnv } from "./config.js";
 
 // Load the repo-root .env for local development. In CI or production the
 // variables come from the environment and the file does not exist.
@@ -9,7 +10,8 @@ try {
   // No .env file: rely on the environment.
 }
 
+const logger = createLogger(readLogConfigFromEnv());
 const config = readConfigFromEnv();
-const app = await createApp(config);
+const app = await createApp(config, logger);
 await app.listen(config.port);
-console.log(`API listening on http://localhost:${config.port}`);
+logger.info({ port: config.port }, `API listening on http://localhost:${config.port}`);

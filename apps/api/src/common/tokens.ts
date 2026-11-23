@@ -8,3 +8,5 @@ export const LLM_CLIENT = Symbol("LLM_CLIENT");
 // The PaymentGateway (Stripe in the app, a fake in tests), or null when Stripe is
 // not configured.
 export const PAYMENT_GATEWAY = Symbol("PAYMENT_GATEWAY");
+// The pino logger, for code that logs fields rather than a message (request lines).
+export const LOGGER = Symbol("LOGGER");

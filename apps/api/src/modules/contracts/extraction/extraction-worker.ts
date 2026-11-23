@@ -8,6 +8,7 @@ import {
 import { Worker } from "bullmq";
 import type { ApiConfig } from "../../../config.js";
 import { CONFIG } from "../../../common/tokens.js";
+import { withLogContext } from "../../../common/logging.js";
 import { ExtractionProcessor } from "./extraction-processor.js";
 import { CONTRACT_EXTRACTION_QUEUE, type ExtractionJobData } from "./extraction-queue.js";
 
@@ -27,17 +28,23 @@ export class ExtractionWorker implements OnApplicationBootstrap, OnApplicationSh
   onApplicationBootstrap(): void {
     this.worker = new Worker<ExtractionJobData>(
       CONTRACT_EXTRACTION_QUEUE,
-      async (job) => {
-        // attemptsStarted is the number of this attempt (1, 2, 3).
-        const isLastAttempt = job.attemptsStarted >= (job.opts.attempts ?? 1);
-        const outcome = await this.processor.process(job.data.contractId, { isLastAttempt });
-        this.logger.log(`job ${job.id} attempt ${job.attemptsStarted}: ${outcome}`);
-      },
+      (job) =>
+        withLogContext(
+          { jobId: `${CONTRACT_EXTRACTION_QUEUE}:${job.id}`, contractId: job.data.contractId },
+          async () => {
+            // attemptsStarted is the number of this attempt (1, 2, 3).
+            const isLastAttempt = job.attemptsStarted >= (job.opts.attempts ?? 1);
+            const outcome = await this.processor.process(job.data.contractId, { isLastAttempt });
+            this.logger.log(`job ${job.id} attempt ${job.attemptsStarted}: ${outcome}`);
+          },
+        ),
       // Two extractions at a time: each one mostly waits on Claude.
       { connection: { url: this.config.redisUrl }, concurrency: 2 },
     );
     this.worker.on("failed", (job, error) => {
-      this.logger.warn(`job ${job?.id} attempt ${job?.attemptsStarted} failed: ${error.message}`);
+      withLogContext({ jobId: `${CONTRACT_EXTRACTION_QUEUE}:${job?.id}` }, () => {
+        this.logger.warn(`job ${job?.id} attempt ${job?.attemptsStarted} failed: ${error.message}`);
+      });
     });
   }
 
