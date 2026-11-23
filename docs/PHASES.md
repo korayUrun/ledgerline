@@ -205,7 +205,7 @@ Estimated total: ~4 weeks part-time.
 - [ ] `evals.yml`: runs on PRs touching prompts/schemas/llm, comments a results table, fails below baseline
 - [x] Structured logging (pino) with `requestId` / `jobId` / `settlementId`
 - [ ] ~~Go through `DEBUGGING.md`~~ Dropped: the log was removed. Bugs and their fixes are in the PR descriptions and the "as built" notes in `SYSTEM.md`; the Break it drills with what to look for are in `SELF_CHECK.md`.
-- [ ] README: problem, architecture diagram, key decisions (link SYSTEM.md), eval results table, how to run, MCP setup
+- [x] README: problem, architecture diagram, key decisions (link SYSTEM.md), eval results table, how to run, MCP setup (the agent eval row and the eval badge follow the live runs)
 - [x] Web UI design pass: consistent layout, typography, tables and states across the existing pages. No new features or screens. (Color tokens with dark mode, IBM Plex via `next/font`, active tab and top navigation, payout as the headline number, status badges in four tones.)
 - [x] Bind the compose ports to `127.0.0.1` (from Later)
 - [x] CI runner upkeep: runner pinned to `ubuntu-24.04`, `pnpm/action-setup` v4 → v6 (runs on Node 24) (from Later)
