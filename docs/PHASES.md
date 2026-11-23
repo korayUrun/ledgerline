@@ -181,7 +181,7 @@ Estimated total: ~4 weeks part-time.
 **Tasks**
 - [x] `/v1` controllers; API keys (show once, store a SHA-256 hash + prefix); rate limiting; OpenAPI via `@nestjs/swagger` (#36–#40; also an API keys page in the web app)
 - [x] `apps/mcp` with the official TypeScript SDK, stdio transport; tools `list_shows`, `get_settlement`, `explain_settlement_line`, `flag_expense`, each wrapping one `/v1` endpoint
-- [ ] Test with MCP Inspector, then Claude Desktop or Claude Code (Inspector `--cli` done over stdio against the running API; Claude Desktop / Claude Code still to do)
+- [x] Test with MCP Inspector, then Claude Desktop or Claude Code
 - [x] README section: how to connect the MCP server
 
 **Done when:** from an MCP client I can ask "why did we pay this artist $X for show Y?" and get a correct, line-by-line answer; the MCP server has no direct DB access.
@@ -192,6 +192,8 @@ Estimated total: ~4 weeks part-time.
 - How is an MCP tool different from the tools in my own agent loop?
 
 **Break it:** revoke the API key while the MCP server is running. What does the client see?
+
+**Status:** done 2026-11-23 (PRs #36–#41, CI green on `main`). Built: API keys (hash + prefix, shown once, managed on a web page), the four `/v1` routes with Zod response schemas, a per-key rate limit in Redis, the OpenAPI document (`/v1/docs`), and the MCP server with four tools over stdio. Checked with MCP Inspector, then from Claude Code: asked "why did we pay The Velvet Harbors $12,223.65?", it answered line by line with the amounts of the worksheet and the contract's own words for §4.1 and §6, and said it cannot approve. Break it: after revoking the key, the next tool call failed with the "revoked" error. The drill also showed that revoking stops new calls, not what the model already read: asked the same question again, Claude answered from the earlier tool results without calling the server. The Explain it questions and the Break it drill are in `SELF_CHECK.md` (deferred).
 
 ---
 
