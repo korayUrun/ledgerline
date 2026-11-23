@@ -147,6 +147,7 @@ model User {
   resolvedFlags  ExpenseFlag[]
   sessions       Session[]
   payouts        Payout[]
+  apiKeys        ApiKey[]
 }
 
 // A logged-in browser (Phase 5: approval must be tied to a real person). The token
@@ -162,6 +163,30 @@ model Session {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// A key for the public /v1 API (F9) and the MCP server (F10). The full key
+// ("ll_<prefix>_<secret>") is shown once, when it is created; the database keeps
+// only its SHA-256, like Session.tokenHash. A key is not a person: it can read
+// settlements and flag expenses, never approve or pay (those routes accept only a
+// logged-in session).
+model ApiKey {
+  id          String    @id @default(uuid())
+  name        String // what the person called it, e.g. "Claude Desktop"
+  // The 8 characters after "ll_". Not secret: shown in the key list so a person can
+  // tell their keys apart. Useless without the secret part.
+  prefix      String    @unique
+  keyHash     String    @unique
+  createdById String
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+  // Set once, never cleared. The row stays, so the audit log can still say which key
+  // did what.
+  revokedAt   DateTime?
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([createdById])
 }
 
 model Venue {

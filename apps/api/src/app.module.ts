@@ -17,6 +17,7 @@ import { ContractsModule } from "./modules/contracts/contracts.module.js";
 import { createPaymentGateway } from "./modules/payments/create-payment-gateway.js";
 import type { PaymentGateway } from "./modules/payments/payment-gateway.js";
 import { PaymentsModule } from "./modules/payments/payments.module.js";
+import { PublicApiModule } from "./modules/public-api/public-api.module.js";
 import { createLlmClient } from "./modules/llm/create-llm-client.js";
 import type { LlmClient } from "./modules/llm/llm-client.js";
 import { SettlementsModule } from "./modules/settlements/settlements.module.js";
@@ -63,6 +64,7 @@ export class AppModule implements OnApplicationShutdown {
         ContractsModule,
         AgentModule,
         PaymentsModule,
+        PublicApiModule,
       ],
       controllers: [HealthController],
       providers: [

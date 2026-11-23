@@ -7,3 +7,4 @@ export * from "./settlement.js";
 export * from "./api.js";
 export * from "./contract-extraction.js";
 export * from "./agent.js";
+export * from "./public-api.js";

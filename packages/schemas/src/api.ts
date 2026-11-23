@@ -66,6 +66,26 @@ export type UserDto = { id: string; email: string; name: string };
 // API request as "Authorization: Bearer <token>".
 export type LoginResponseDto = { token: string; expiresAt: string; user: UserDto };
 
+// --- API keys (Phase 6) -------------------------------------------------------------------
+// Managed by a logged-in person through these routes; used by other tools on /v1.
+
+export const CreateApiKeyBodySchema = z.object({ name: z.string().trim().min(1).max(100) });
+export type CreateApiKeyBody = z.infer<typeof CreateApiKeyBodySchema>;
+
+// Never contains the key or its hash: after creation, nobody can read a key again.
+export type ApiKeyDto = {
+  id: string;
+  name: string;
+  prefix: string; // "3f9a1c2e": shown as "ll_3f9a1c2e_…" so a person can tell keys apart
+  createdByName: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null; // set = the key no longer works
+};
+
+// The only response that ever contains the full key.
+export type CreatedApiKeyDto = { apiKey: ApiKeyDto; key: string };
+
 export const CreateVenueBodySchema = z.object({ name: NameSchema });
 export type CreateVenueBody = z.infer<typeof CreateVenueBodySchema>;
 
