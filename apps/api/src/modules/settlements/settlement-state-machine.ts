@@ -127,6 +127,12 @@ export class SettlementStateMachine {
   isStaleable(status: SettlementStatus): boolean {
     return STATUSES_THAT_CAN_GO_STALE.includes(status);
   }
+
+  // Approved or later: the numbers are final, so the inputs (and notes about them,
+  // such as expense flags from API clients) can no longer change.
+  hasLockedInputs(status: SettlementStatus): boolean {
+    return STATUSES_WITH_LOCKED_INPUTS.includes(status);
+  }
 }
 
 // The fields worth seeing in the history. The snapshot and lines are left out:

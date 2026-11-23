@@ -184,7 +184,8 @@ model ApiKey {
   // did what.
   revokedAt   DateTime?
 
-  createdBy User @relation(fields: [createdById], references: [id])
+  createdBy User          @relation(fields: [createdById], references: [id])
+  flags     ExpenseFlag[]
 
   @@index([createdById])
 }
@@ -488,15 +489,18 @@ model AgentStep {
   @@unique([runId, position])
 }
 
-// The agent's (later also an MCP client's) note that an expense looks wrong. It
-// never changes the expense: a person reads it and decides (F6: "the human
-// resolves them"), so it does not make the settlement stale either.
+// The agent's or an API client's (e.g. the MCP server's) note that an expense looks
+// wrong. It never changes the expense: a person reads it and decides (F6: "the
+// human resolves them"), so it does not make the settlement stale either.
 model ExpenseFlag {
   id           String            @id @default(uuid())
   // Cascade: a flag about a deleted expense means nothing. The AuditLog keeps
   // both the deleted expense and the flag's creation.
   expenseId    String
-  agentRunId   String
+  // Who opened it: exactly one of these two is set. A CHECK constraint in the
+  // migration (ExpenseFlag_one_source) enforces it; Prisma cannot express it.
+  agentRunId   String?
+  apiKeyId     String?
   kind         ExpenseFlagKind
   reason       String
   status       ExpenseFlagStatus @default(open)
@@ -504,12 +508,14 @@ model ExpenseFlag {
   resolvedAt   DateTime?
   createdAt    DateTime          @default(now())
 
-  expense    Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  agentRun   AgentRun @relation(fields: [agentRunId], references: [id])
-  resolvedBy User?    @relation(fields: [resolvedById], references: [id])
+  expense    Expense   @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  agentRun   AgentRun? @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
+  apiKey     ApiKey?   @relation(fields: [apiKeyId], references: [id], onDelete: Restrict)
+  resolvedBy User?     @relation(fields: [resolvedById], references: [id])
 
   @@index([expenseId])
   @@index([agentRunId])
+  @@index([apiKeyId])
 }
 
 // --- Audit (F12) ---------------------------------------------------------------------

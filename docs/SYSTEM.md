@@ -135,7 +135,7 @@ As built in Phase 4:
 - **`AgentRun`** (`settlementId`, `settlementVersion`, `kind: audit|question`, `question`, `model`, `promptVersion`, `startedBy`, `status: running|completed|failed`, `outcome`, `finalText`, `errorMessage`, token totals, `costNanoUsd`). `settlementVersion` says which numbers the run looked at; a later recompute does not change what it saw.
 - **`AgentStep`**: one table for both step kinds, ordered by `position` (`UNIQUE(runId, position)`). A `model_call` row keeps the reply's blocks exactly as received (`content` JSON, thinking and `tool_use` blocks included), its stop reason, tokens, cost and duration; a `tool_call` row keeps `toolUseId`, `toolName`, `toolInput`, `toolOutput` (the exact text sent back) and `isError`. The other kind's columns are null. Replay = `ORDER BY position`.
 - **Run totals are updated in the same transaction as each model-call step**, so they always equal the sum of the stored steps, even after a crash. An unknown price makes `costNanoUsd` NULL and it stays NULL (SQL `NULL + x` is `NULL`): never a misleading $0.
-- **`ExpenseFlag`** (`expenseId`, `agentRunId`, `kind: category_not_allowed|over_category_cap|other`, `reason`, `status: open|accepted|dismissed`, `resolvedById`, `resolvedAt`). A flag is a note, not an input: it never changes the expense or makes the settlement stale. Open flags block submit-for-review, like pending expenses.
+- **`ExpenseFlag`** (`expenseId`, `agentRunId`, `kind: category_not_allowed|over_category_cap|other`, `reason`, `status: open|accepted|dismissed`, `resolvedById`, `resolvedAt`). A flag is a note, not an input: it never changes the expense or makes the settlement stale. Open flags block submit-for-review, like pending expenses. (Phase 6: `agentRunId` became nullable and `apiKeyId` was added, for flags opened through `/v1`.)
 
 As built in Phase 5 (login):
 - **`User.passwordHash`** (`scrypt$<salt>$<hash>`, Node's built-in scrypt; null = cannot log in) and **`Session`** (`userId`, `tokenHash` UNIQUE, `expiresAt`, 7 days). The token is 32 random bytes; only its SHA-256 is stored, so a leaked row cannot be used to log in. Logout deletes the row, which kills the token everywhere.
@@ -384,6 +384,22 @@ As built for `contract-extraction` (Phase 3):
 - `/v1/shows`, `/v1/settlements/:id`, `/v1/settlements/:id/lines`, `/v1/settlements/:id/explain`, `/v1/expenses/:id/flag`
 - API keys: random secret shown once; only a SHA-256 hash and a prefix are stored. Rate-limited.
 - OpenAPI generated with `@nestjs/swagger`.
+
+As built (`apps/api/src/modules/public-api`, schemas in `packages/schemas/src/public-api.ts`):
+
+| Route (API key only) | Returns |
+|---|---|
+| `GET /v1/shows` | `{ data: [...] }`, newest show first, each with its settlement id, status and payout |
+| `GET /v1/settlements/:id` | status, show, payout, the worksheet lines (with `position`), payment attempts, open flag count |
+| `GET /v1/settlements/:id/lines/:position` | one line with the input rows it was computed from (from the frozen `inputSnapshot`) and the contract clause behind it: the confirmed terms as name/value text, plus the PDF quotes when the terms came from an extraction |
+| `POST /v1/expenses/:id/flags` | opens an expense flag (201), or returns the same open flag (200); 409 once the settlement is approved |
+
+- **Lines are part of the settlement**, so the planned separate `/lines` list became the `lines` field, and `/explain` became the line resource itself (`/lines/:position`). The MCP tools map one-to-one: `list_shows`, `get_settlement`, `explain_settlement_line`, `flag_expense`.
+- **The explanation is collected, not written.** No LLM runs on the API side: the code gathers the facts (rows, terms, quotes), and the client's model (Claude through MCP) puts them into sentences. That keeps every number in the answer one the engine produced and costs nothing per call.
+- **Money is `{ cents, formatted }`.** Programs use the integer, language models quote the text instead of converting cents themselves.
+- **Every response is parsed with its Zod schema before it is sent.** A mismatch is our bug, so it is a 500, not a 422.
+- **Reads go through `SettlementsService.getView`**, so they run the drift check: a client never sees old numbers labelled as current (they come back `stale`).
+- **Flags from an API key** are stored with `apiKeyId` (`agentRunId` stays null); a CHECK constraint makes sure exactly one of the two is set. Audited as `api_key:<id>`. Like the agent's flags, they block submit-for-review until a person resolves them.
 
 **MCP server:** a separate small process using the official SDK, with stdio transport for Claude Desktop. Each MCP tool is a thin wrapper over one `/v1` endpoint, with a clear description and an input schema.
 
