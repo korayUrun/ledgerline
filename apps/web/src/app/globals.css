@@ -463,3 +463,14 @@ legend {
   background: var(--danger-bg);
   color: var(--danger);
 }
+
+/* A new API key: long, unbroken text that must wrap rather than widen the page. */
+.new-key {
+  margin: 8px 0;
+}
+
+.new-key code {
+  font-size: 13px;
+  word-break: break-all;
+  user-select: all;
+}

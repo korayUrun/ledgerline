@@ -7,7 +7,7 @@ import { authHeaders } from "./session";
 // (server components, server actions, route handlers), so the browser never calls
 // the API. Each call carries the person's session token (lib/session.ts).
 
-const API_URL = process.env["API_URL"] ?? "http://localhost:3001";
+export const API_URL = process.env["API_URL"] ?? "http://localhost:3001";
 
 export class ApiError extends Error {
   constructor(

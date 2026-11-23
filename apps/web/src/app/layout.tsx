@@ -22,6 +22,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <span className="muted">Synthetic data · Stripe test mode</span>
             {user && (
               <form action={logout} className="row">
+                <Link href="/settings/api-keys">API keys</Link>
                 <span>{user.name}</span>
                 <button type="submit" className="secondary">
                   Log out

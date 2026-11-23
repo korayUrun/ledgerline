@@ -147,6 +147,7 @@ As built in Phase 6 (API keys):
 - **Each route has exactly one way in** (`AuthGuard`): `@Public()`, `@ApiKeyAuth()` (the `/v1` routes, API key only) or, by default, a logged-in session. A key on a session route and a session token on `/v1` are both 401. Approve and pay are session routes, so no key can reach them.
 - **Two actor types:** `Actor` (a person, `user:<id>`) and `ApiKeyActor` (`api_key:<id>`). The approval and payment services take `Actor`, and an `ApiKeyActor` has no `userId`, so passing one does not compile.
 - **Keys are managed by a person** through session routes: `GET /api-keys`, `POST /api-keys` (the only response that contains the key), `POST /api-keys/:id/revoke`. Audit actions `api_key.created` and `api_key.revoked`, never with the key.
+- **Web page `/settings/api-keys`** (link in the top bar): create, list (prefix, last used, status) and revoke. The new key comes back from the server action as `useActionState` state and is shown in a client component: never in a URL (browser history, logs) or a cookie, and gone on reload.
 
 ---
 
