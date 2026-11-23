@@ -1,16 +1,69 @@
+/* Ledgerline — one stylesheet, no CSS framework.
+ *
+ * Colors are tokens on :root and are redefined for dark mode below, so components
+ * never name a color directly. Status colors come in tones (info, warn, danger,
+ * success) and every badge maps to a tone, so a color means the same thing on
+ * every page. */
+
 :root {
-  --bg: #f7f7f5;
+  --bg: #f6f5f1;
   --surface: #ffffff;
-  --text: #1c1c1a;
-  --muted: #6b6b66;
-  --border: #e2e2dd;
-  --accent: #2f5d50;
-  --danger: #a63d32;
-  --warn: #8a6100;
-  --warn-bg: #fff6dd;
-  --danger-bg: #fdecea;
-  --info-bg: #eaf2ef;
+  --surface-2: #faf9f6;
+  --text: #1a1d1b;
+  --muted: #66706b;
+  --border: #e4e2db;
+  --border-strong: #cfccc2;
+  --accent: #1f5c4a;
+  --accent-hover: #174a3b;
+  --accent-soft: #e7f0ec;
+  --on-accent: #ffffff;
+
+  --info: #2b4c8c;
+  --info-bg: #e9eef9;
+  --warn: #855600;
+  --warn-bg: #fcf2da;
+  --danger: #a1342a;
+  --danger-bg: #fbebe8;
+  --success: #1f6b4a;
+  --success-bg: #e4f2ea;
+
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+  --shadow: 0 1px 2px rgb(20 24 22 / 0.04), 0 1px 1px rgb(20 24 22 / 0.03);
+  --radius: 10px;
+  --radius-sm: 6px;
+
+  color-scheme: light;
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111413;
+    --surface: #181c1a;
+    --surface-2: #1c211f;
+    --text: #e6e9e7;
+    --muted: #98a29d;
+    --border: #2a302d;
+    --border-strong: #3a423e;
+    --accent: #6cc4a1;
+    --accent-hover: #86d3b4;
+    --accent-soft: #1b2c25;
+    --on-accent: #0d1a15;
+
+    --info: #9db7ef;
+    --info-bg: #1b2333;
+    --warn: #e7bd62;
+    --warn-bg: #2e2617;
+    --danger: #f19a8f;
+    --danger-bg: #351d1a;
+    --success: #7fd3a8;
+    --success-bg: #17291f;
+
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+
+/* --- Base ----------------------------------------------------------------------------- */
 
 * {
   box-sizing: border-box;
@@ -21,45 +74,43 @@ body {
   background: var(--bg);
   color: var(--text);
   font:
-    15px/1.5 system-ui,
+    15px/1.55 var(--font-sans, system-ui),
+    system-ui,
     -apple-system,
     "Segoe UI",
     sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
   color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 24px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+a:hover {
+  color: var(--accent-hover);
 }
 
-.brand {
-  font-weight: 700;
-  text-decoration: none;
-  color: var(--text);
-}
-
-.page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px 16px 64px;
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-sm);
 }
 
 h1 {
-  margin: 0 0 4px;
-  font-size: 24px;
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 h2 {
-  margin: 32px 0 12px;
-  font-size: 18px;
+  margin: 36px 0 12px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
 }
 
 .muted {
@@ -67,18 +118,202 @@ h2 {
   font-size: 13px;
 }
 
-.tabs {
+code,
+pre {
+  font-family: var(--font-mono, ui-monospace), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+code {
+  font-size: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 0 5px;
+  border-radius: 4px;
+}
+
+pre {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  font-size: 12px;
+}
+
+/* --- Top bar ------------------------------------------------------------------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 10px 16px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.brand:hover {
+  color: var(--text);
+}
+
+/* A ledger page: a green square with ruled lines. */
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 5px,
+      color-mix(in srgb, var(--on-accent) 70%, transparent) 5px 6px
+    ),
+    var(--accent);
+  background-clip: content-box, border-box;
+  padding: 4px 5px;
+}
+
+.topnav {
   display: flex;
   gap: 4px;
-  margin: 16px 0 8px;
+}
+
+.topnav a {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.topnav a:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.topnav a[aria-current="page"] {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.env-pill {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--warn);
+  background: var(--warn-bg);
+  white-space: nowrap;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-name {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .topbar-inner {
+    gap: 12px;
+  }
+  .user-name,
+  .env-pill {
+    display: none;
+  }
+}
+
+/* --- Page ---------------------------------------------------------------------------- */
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px 16px 80px;
+}
+
+.page > h1 {
+  margin-bottom: 6px;
+}
+
+.show-header {
+  margin-bottom: 4px;
+}
+
+.breadcrumb {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.breadcrumb a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--accent);
+}
+
+.show-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.show-header .muted {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin: 20px 0 8px;
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .tabs a {
-  padding: 8px 12px;
+  padding: 10px 12px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
   text-decoration: none;
   color: var(--muted);
+  font-weight: 500;
+  font-size: 14px;
   white-space: nowrap;
 }
 
@@ -86,11 +321,23 @@ h2 {
   color: var(--text);
 }
 
+.tabs a[aria-current="page"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.actions {
+  margin: 20px 0;
+}
+
+/* --- Cards & tables ------------------------------------------------------------------ */
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
   margin-bottom: 16px;
 }
 
@@ -98,7 +345,9 @@ h2 {
   overflow-x: auto;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
 }
 
 table {
@@ -106,23 +355,52 @@ table {
   border-collapse: collapse;
 }
 
+/* On a phone a wide table scrolls sideways inside its frame instead of squeezing
+   every column into a few characters. */
+@media (max-width: 640px) {
+  .table-wrap table {
+    min-width: 600px;
+  }
+}
+
 th,
 td {
-  padding: 8px 12px;
+  padding: 10px 14px;
   text-align: left;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
 
 th {
-  font-size: 12px;
+  background: var(--surface-2);
+  font-size: 11.5px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--muted);
+  white-space: nowrap;
 }
 
-tr:last-child td {
+tbody tr:last-child td {
   border-bottom: none;
+}
+
+tbody tr:hover td {
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+
+td a {
+  text-decoration: none;
+  font-weight: 500;
+}
+
+td a:hover {
+  text-decoration: underline;
+}
+
+td.muted {
+  padding: 18px 14px;
+  text-align: center;
 }
 
 .num {
@@ -131,35 +409,102 @@ tr:last-child td {
   white-space: nowrap;
 }
 
-tr.total td {
-  font-weight: 700;
-  border-top: 2px solid var(--text);
-}
-
 tr.subtotal td {
   font-weight: 600;
+  background: var(--surface-2);
+}
+
+tr.total td {
+  font-weight: 700;
+  font-size: 16px;
+  border-top: 2px solid var(--text);
+  background: var(--accent-soft);
+}
+
+tr.total td.num {
+  color: var(--accent);
 }
 
 tr.target {
-  scroll-margin-top: 16px;
+  scroll-margin-top: 80px;
 }
 
-tr.target:target {
+tr.target:target td {
   background: var(--warn-bg);
 }
+
+/* Worksheet: the input rows a line was computed from. Quiet links, so the amounts
+   stay the first thing the eye reads. */
+.source-ref {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+tr.subtotal .source-ref,
+tr.total .source-ref {
+  font-weight: 400;
+}
+
+/* --- Summary ------------------------------------------------------------------------- */
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px 20px;
+  align-items: end;
+}
+
+.summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summary strong {
+  font-size: 18px;
+}
+
+.summary-total {
+  grid-column: span 2;
+}
+
+.summary .summary-total strong {
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .summary-total {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- Forms --------------------------------------------------------------------------- */
 
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+  gap: 14px;
   align-items: end;
+}
+
+.form-grid > button {
+  justify-self: start;
 }
 
 label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   font-size: 13px;
+  font-weight: 500;
   color: var(--muted);
 }
 
@@ -171,39 +516,123 @@ label.inline {
 }
 
 input,
-select {
+select,
+textarea {
   font: inherit;
-  padding: 6px 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  font-size: 14px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
   min-width: 0;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--muted);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+input::placeholder {
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+input[type="checkbox"] {
+  min-height: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+input[type="file"] {
+  padding: 4px;
+}
+
+input[type="file"]::file-selector-button {
+  font: inherit;
+  font-size: 13px;
+  margin-right: 10px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
 }
 
 button {
   font: inherit;
-  padding: 6px 14px;
-  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  min-height: 36px;
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--accent);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 button.secondary {
   background: var(--surface);
   color: var(--accent);
+  border-color: var(--border-strong);
+}
+
+button.secondary:hover:not(:disabled) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 
 button.danger {
   background: var(--surface);
-  border-color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
   color: var(--danger);
 }
 
+button.danger:hover:not(:disabled) {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+
+button.ghost {
+  min-height: 32px;
+  padding: 4px 10px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+button.ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
@@ -214,10 +643,40 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.card.row {
+  align-items: flex-end;
+}
+
+.card.row label {
+  flex: 1;
+}
+
+fieldset {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 0 0 16px;
+  padding: 14px 18px 18px;
+}
+
+legend {
+  font-weight: 600;
+  padding: 0 6px;
+}
+
+/* --- Banners & badges ---------------------------------------------------------------- */
+
 .banner {
   padding: 12px 16px;
-  border-radius: 8px;
-  margin: 12px 0;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid currentColor;
+  margin: 14px 0;
+  font-size: 14px;
+}
+
+.banner a {
+  color: inherit;
+  font-weight: 600;
 }
 
 .banner ul {
@@ -236,101 +695,82 @@ button:disabled {
 }
 
 .banner-info {
-  background: var(--info-bg);
+  background: var(--accent-soft);
   color: var(--accent);
 }
 
 .badge {
-  display: inline-block;
-  padding: 1px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 9px 1px 8px;
   border-radius: 999px;
   font-size: 12px;
-  background: var(--border);
-  color: var(--text);
+  font-weight: 500;
+  line-height: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
   white-space: nowrap;
 }
 
+/* The dot keeps the status readable where the background tint is subtle. */
+.badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Tone: done or fine. */
 .badge-computed,
-.badge-allowed {
+.badge-allowed,
+.badge-confirmed,
+.badge-paid,
+.badge-payout_succeeded,
+.badge-flag_accepted {
+  background: var(--success-bg);
+  border-color: transparent;
+  color: var(--success);
+}
+
+/* Tone: moving, a person or a job is on it. */
+.badge-in_review,
+.badge-approved,
+.badge-paying,
+.badge-payout_pending,
+.badge-payout_processing {
   background: var(--info-bg);
-  color: var(--accent);
+  border-color: transparent;
+  color: var(--info);
 }
 
-.badge-in_review {
-  background: #e7ecf8;
-  color: #2f4a8a;
-}
-
+/* Tone: needs attention. */
 .badge-stale,
-.badge-pending {
-  background: var(--warn-bg);
-  color: var(--warn);
-}
-
-.badge-disallowed {
-  background: var(--danger-bg);
-  color: var(--danger);
-}
-
-.summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-}
-
-.summary div {
-  display: flex;
-  flex-direction: column;
-}
-
-.summary strong {
-  font-size: 18px;
-}
-
-code {
-  font-size: 12px;
-  background: var(--bg);
-  padding: 1px 4px;
-  border-radius: 4px;
-}
-
-pre {
-  background: var(--bg);
-  padding: 12px;
-  border-radius: 6px;
-  overflow-x: auto;
-}
-
-fieldset {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin: 0 0 16px;
-  padding: 12px 16px 16px;
-}
-
-legend {
-  font-weight: 600;
-  padding: 0 4px;
-}
-
+.badge-pending,
 .badge-needs_review,
 .badge-uploaded,
-.badge-extracting {
+.badge-extracting,
+.badge-flag_open {
   background: var(--warn-bg);
+  border-color: transparent;
   color: var(--warn);
 }
 
-.badge-confirmed {
-  background: var(--info-bg);
-  color: var(--accent);
-}
-
-.badge-failed {
+/* Tone: refused or broken. */
+.badge-disallowed,
+.badge-failed,
+.badge-payment_failed,
+.badge-payout_failed {
   background: var(--danger-bg);
+  border-color: transparent;
   color: var(--danger);
 }
 
-/* Contract review: PDF and form side by side, stacked on narrow screens. */
+/* --- Contract review ----------------------------------------------------------------- */
+
+/* PDF and form side by side, stacked on narrow screens. */
 .review-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -340,11 +780,11 @@ legend {
 
 .pdf-viewer {
   position: sticky;
-  top: 16px;
+  top: 72px;
   width: 100%;
   height: 85vh;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -362,11 +802,14 @@ legend {
   font-size: 12px;
   font-style: italic;
   color: var(--text);
+  border-left: 2px solid var(--border-strong);
+  padding-left: 8px;
 }
 
 .evidence-missing {
   font-style: normal;
   color: var(--warn);
+  border-left-color: var(--warn);
 }
 
 /* --- Assistant (F6) ------------------------------------------------------------------ */
@@ -396,16 +839,17 @@ legend {
 /* Model text keeps its line breaks. */
 .agent-message {
   white-space: pre-wrap;
-  background: var(--info-bg);
-  border-radius: 6px;
-  padding: 8px 12px;
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
 }
 
 .agent-tool {
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
   font-size: 13px;
+  background: var(--surface-2);
 }
 
 .agent-tool summary {
@@ -419,50 +863,34 @@ legend {
   max-height: 260px;
   overflow: auto;
   font-size: 12px;
+  background: var(--surface);
 }
 
 .agent-tool-error {
   border-color: var(--danger);
 }
 
-.badge-flag_open {
-  background: var(--warn-bg);
-  color: var(--warn);
-}
-
-.badge-flag_accepted {
-  background: var(--info-bg);
-  color: var(--accent);
-}
-
-/* --- Login (Phase 5) ----------------------------------------------------------------- */
+/* --- Login ----------------------------------------------------------------------------- */
 
 .login {
-  max-width: 380px;
-  margin: 48px auto;
+  max-width: 400px;
+  margin: 56px auto;
+  padding: 28px;
 }
 
-/* --- Approval & payout (Phase 5) ------------------------------------------------------ */
-
-.badge-approved,
-.badge-paying,
-.badge-payout_pending,
-.badge-payout_processing {
-  background: #e7ecf8;
-  color: #2f4a8a;
+.login h1 {
+  margin-bottom: 18px;
 }
 
-.badge-paid,
-.badge-payout_succeeded {
-  background: var(--info-bg);
-  color: var(--accent);
+.login .form-grid {
+  grid-template-columns: 1fr;
 }
 
-.badge-payment_failed,
-.badge-payout_failed {
-  background: var(--danger-bg);
-  color: var(--danger);
+.login .form-grid > button {
+  justify-self: stretch;
 }
+
+/* --- API keys -------------------------------------------------------------------------- */
 
 /* A new API key: long, unbroken text that must wrap rather than widen the page. */
 .new-key {
@@ -473,4 +901,13 @@ legend {
   font-size: 13px;
   word-break: break-all;
   user-select: all;
+}
+
+/* Form tables (allowed categories and caps): checkbox, text and input on one line. */
+fieldset td {
+  vertical-align: middle;
+}
+
+.login code {
+  white-space: nowrap;
 }

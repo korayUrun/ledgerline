@@ -113,7 +113,7 @@ export default async function SettlementPage({
         </div>
       )}
 
-      <div className="row" style={{ margin: "16px 0" }}>
+      <div className="row actions">
         {!locked && (
           <>
             <form action={computeSettlement.bind(null, showId)}>
@@ -164,7 +164,7 @@ export default async function SettlementPage({
       ) : (
         <>
           <div className="card summary">
-            <div>
+            <div className="summary-total">
               <span className="muted">Artist payout</span>
               <strong>
                 {settlement.payoutCents === null ? "—" : formatCents(settlement.payoutCents)}
@@ -218,7 +218,7 @@ export default async function SettlementPage({
                       {line.sourceRefs.length === 0 && <span className="muted">lines above</span>}
                       {line.sourceRefs.map((ref) => (
                         <div key={`${ref.type}-${ref.id}`}>
-                          <a href={`#src-${ref.id}`}>
+                          <a href={`#src-${ref.id}`} className="source-ref">
                             {describeSource(ref, settlement.inputSnapshot)}
                           </a>
                         </div>
@@ -479,7 +479,7 @@ function SnapshotTables({ snapshot }: { snapshot: SettlementInput }) {
           </tbody>
         </table>
       </div>
-      <div className="table-wrap" style={{ marginTop: 12 }}>
+      <div className="table-wrap">
         <table>
           <thead>
             <tr>
@@ -502,6 +502,13 @@ function SnapshotTables({ snapshot }: { snapshot: SettlementInput }) {
                 </td>
               </tr>
             ))}
+            {snapshot.expenses.length === 0 && (
+              <tr>
+                <td colSpan={4} className="muted">
+                  No expenses in this snapshot.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
