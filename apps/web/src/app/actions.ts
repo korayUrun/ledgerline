@@ -195,6 +195,18 @@ export async function submitForReview(showId: string): Promise<void> {
   redirect(await callApi(path, () => api.post(`/shows/${showId}/settlement/submit-for-review`)));
 }
 
+// Human-only: the logged-in person approves, and the payout starts (Phase 5).
+export async function approveSettlement(showId: string): Promise<void> {
+  const path = `/shows/${showId}/settlement`;
+  redirect(await callApi(path, () => api.post(`/shows/${showId}/settlement/approve`)));
+}
+
+// After a failed payout: a new attempt with its own idempotency key.
+export async function retryPayment(showId: string): Promise<void> {
+  const path = `/shows/${showId}/settlement`;
+  redirect(await callApi(path, () => api.post(`/shows/${showId}/settlement/retry-payment`)));
+}
+
 // --- Assistant flags (F6) -------------------------------------------------------------------
 
 // A person's decision on a flag the assistant opened. Accepting does not change the

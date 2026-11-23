@@ -441,3 +441,25 @@ legend {
   max-width: 380px;
   margin: 48px auto;
 }
+
+/* --- Approval & payout (Phase 5) ------------------------------------------------------ */
+
+.badge-approved,
+.badge-paying,
+.badge-payout_pending,
+.badge-payout_processing {
+  background: #e7ecf8;
+  color: #2f4a8a;
+}
+
+.badge-paid,
+.badge-payout_succeeded {
+  background: var(--info-bg);
+  color: var(--accent);
+}
+
+.badge-payment_failed,
+.badge-payout_failed {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
