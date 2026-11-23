@@ -124,13 +124,32 @@ enum ExpenseFlagStatus {
 // A human who can confirm terms (and, from Phase 5, approve payouts).
 // Login comes later; for now the seed creates one demo user.
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  // "scrypt$<salt>$<hash>" (packages/db/src/password.ts), never the password itself.
+  // Null = this user cannot log in.
+  passwordHash String?
+  createdAt    DateTime @default(now())
 
   confirmedTerms ContractTerms[]
   resolvedFlags  ExpenseFlag[]
+  sessions       Session[]
+}
+
+// A logged-in browser (Phase 5: approval must be tied to a real person). The token
+// itself is only ever in the person's cookie; the database keeps its SHA-256, so a
+// leaked database row cannot be used to log in.
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Venue {

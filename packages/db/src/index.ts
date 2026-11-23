@@ -5,7 +5,8 @@ import { PrismaClient } from "./generated/prisma/client.js";
 
 // Model types (Show, Expense…), enums and the Prisma namespace (errors, Json types).
 export * from "./generated/prisma/client.js";
-export { DEMO_USER_EMAIL } from "./demo-user.js";
+export { DEMO_USER_EMAIL, DEMO_USER_PASSWORD } from "./demo-user.js";
+export { hashPassword, verifyPassword } from "./password.js";
 
 // Prisma 7 talks to Postgres through a "driver adapter": the plain `pg` driver does
 // the networking and Prisma builds the queries. The caller passes the URL in, so

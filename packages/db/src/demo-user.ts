@@ -1,3 +1,4 @@
-// The one user that exists until login is built. The seed creates this user and
-// the API records it as the actor of every change. Synthetic, not a real person.
+// The seeded user you log in as locally. Synthetic, not a real person; the
+// password only protects a local demo database with synthetic data.
 export const DEMO_USER_EMAIL = "demo@ledgerline.test";
+export const DEMO_USER_PASSWORD = "ledgerline-demo";
