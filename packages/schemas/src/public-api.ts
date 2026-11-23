@@ -158,3 +158,13 @@ export const V1ExpenseFlagSchema = z.object({
   created: z.boolean(),
 });
 export type V1ExpenseFlag = z.infer<typeof V1ExpenseFlagSchema>;
+
+// Errors ---------------------------------------------------------------------------------
+
+// Every error has this shape, on /v1 and elsewhere (ApiErrorDto in api.ts is the same
+// shape as a plain type). Here as a schema so the OpenAPI document can show it.
+export const V1ErrorSchema = z.object({
+  statusCode: z.int(),
+  message: z.string(),
+  issues: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
+});

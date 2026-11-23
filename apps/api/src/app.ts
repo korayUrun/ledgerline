@@ -4,6 +4,7 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule, type AppOptions } from "./app.module.js";
 import { ApiExceptionFilter } from "./common/api-exception.filter.js";
 import type { ApiConfig } from "./config.js";
+import { serveOpenApiDocument } from "./modules/public-api/openapi.js";
 
 // Builds the app without listening on a port. main.ts and the integration tests
 // share this, so the tests run exactly the app that runs in development.
@@ -20,5 +21,7 @@ export async function createApp(
   });
   app.useGlobalFilters(new ApiExceptionFilter());
   app.enableShutdownHooks();
+  // GET /v1/openapi.json and the browsable /v1/docs (F9).
+  serveOpenApiDocument(app);
   return app;
 }
