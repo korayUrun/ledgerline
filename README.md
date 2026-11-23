@@ -1,5 +1,7 @@
 # Ledgerline
 
+[![CI](https://github.com/korayUrun/ledgerline/actions/workflows/ci.yml/badge.svg)](https://github.com/korayUrun/ledgerline/actions/workflows/ci.yml)
+
 Ledgerline turns an artist contract (PDF), ticket sales and show expenses into a correct,
 explainable artist payout, then pays it through Stripe (test mode). **The AI reads and
 explains, the code calculates, a person approves.** Synthetic data only.
@@ -114,7 +116,9 @@ Contract extraction, 25 generated contracts (`packages/evals/baselines/extractio
 | Cost per contract | $0.042 |
 | Time per contract | 5.8 s |
 
-Model `claude-opus-5-5`, prompt `extract-v2`, 2026-11-19. Hard cases are tagged in the
+Model `claude-opus-5-5`, prompt `extract-v2`, 2026-11-19. PRs that touch the prompt, the LLM
+client, the schemas or the evals rerun this live and fail below these numbers
+([`evals.yml`](.github/workflows/evals.yml)). Hard cases are tagged in the
 dataset: money written in words, cents in the guarantee, sub-clauses, a merch percentage and
 a deposit that are not deal terms, and two contracts with a prompt-injection line.
 
