@@ -173,9 +173,12 @@ model Venue {
 }
 
 model Artist {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
+  id              String   @id @default(uuid())
+  name            String
+  // The artist's Stripe connected account (test mode), where payouts are sent.
+  // Null until someone creates it from the app.
+  stripeAccountId String?  @unique
+  createdAt       DateTime @default(now())
 
   shows Show[]
 }
@@ -378,6 +381,15 @@ model Payout {
 
   // Two requests that both try to create attempt N: the database lets exactly one win.
   @@unique([settlementId, attempt])
+}
+
+// Every Stripe webhook event we have handled. Stripe may deliver the same event more
+// than once; the event id is the primary key, so the second insert fails and the
+// duplicate is ignored. Written in the same transaction as the event's effect.
+model ProcessedWebhookEvent {
+  id         String   @id // Stripe's event id, "evt_…"
+  type       String
+  receivedAt DateTime @default(now())
 }
 
 // --- Audit agent (F6) and its traces (F12) --------------------------------------------
