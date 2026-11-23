@@ -8,7 +8,7 @@ import {
 import { Prisma, type PrismaClient, type Settlement } from "@ledgerline/db";
 import type { SettlementViewDto } from "@ledgerline/schemas";
 import { computeSettlement, ENGINE_VERSION } from "@ledgerline/settlement-engine";
-import { SYSTEM_ACTOR_LABEL, type Actor } from "../../common/actor.service.js";
+import { SYSTEM_ACTOR_LABEL, type Actor } from "../../common/actor.js";
 import { PRISMA } from "../../common/tokens.js";
 import { AuditService } from "../audit/audit.service.js";
 import { toSettlementDto } from "./settlement-dto.js";

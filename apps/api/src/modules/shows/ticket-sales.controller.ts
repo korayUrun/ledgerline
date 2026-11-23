@@ -11,7 +11,8 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { TicketSaleDto } from "@ledgerline/schemas";
-import { ActorService } from "../../common/actor.service.js";
+import type { Actor } from "../../common/actor.js";
+import { CurrentActor } from "../auth/auth.guard.js";
 import { ShowsService } from "./shows.service.js";
 import { TicketSalesService } from "./ticket-sales.service.js";
 
@@ -23,7 +24,6 @@ export class TicketSalesController {
   constructor(
     @Inject(TicketSalesService) private readonly ticketSales: TicketSalesService,
     @Inject(ShowsService) private readonly shows: ShowsService,
-    @Inject(ActorService) private readonly actors: ActorService,
   ) {}
 
   @Get()
@@ -39,15 +39,12 @@ export class TicketSalesController {
   async import(
     @Param("showId", ParseUUIDPipe) showId: string,
     @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentActor() actor: Actor,
   ): Promise<TicketSaleDto[]> {
     if (!file) {
       throw new BadRequestException('Send the CSV as multipart field "file"');
     }
     await this.shows.getShow(showId);
-    return this.ticketSales.importCsv(
-      showId,
-      file.buffer.toString("utf8"),
-      await this.actors.current(),
-    );
+    return this.ticketSales.importCsv(showId, file.buffer.toString("utf8"), actor);
   }
 }

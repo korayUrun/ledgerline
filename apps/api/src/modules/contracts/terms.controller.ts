@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Inject, Param, ParseUUIDPipe, Post } from "@nestjs/common";
 import { SaveTermsBodySchema, type ContractTerms, type TermsDto } from "@ledgerline/schemas";
-import { ActorService } from "../../common/actor.service.js";
+import type { Actor } from "../../common/actor.js";
+import { CurrentActor } from "../auth/auth.guard.js";
 import { ZodBodyPipe } from "../../common/zod-body.pipe.js";
 import { ShowsService } from "../shows/shows.service.js";
 import { TermsService } from "./terms.service.js";
@@ -10,7 +11,6 @@ export class TermsController {
   constructor(
     @Inject(TermsService) private readonly terms: TermsService,
     @Inject(ShowsService) private readonly shows: ShowsService,
-    @Inject(ActorService) private readonly actors: ActorService,
   ) {}
 
   @Get()
@@ -26,8 +26,9 @@ export class TermsController {
   async save(
     @Param("showId", ParseUUIDPipe) showId: string,
     @Body(new ZodBodyPipe(SaveTermsBodySchema)) body: ContractTerms,
+    @CurrentActor() actor: Actor,
   ): Promise<TermsDto> {
     await this.shows.getShow(showId);
-    return this.terms.save(showId, body, await this.actors.current());
+    return this.terms.save(showId, body, actor);
   }
 }

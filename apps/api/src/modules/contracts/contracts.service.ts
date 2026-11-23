@@ -16,7 +16,7 @@ import {
   type ContractTerms,
   type TermsDto,
 } from "@ledgerline/schemas";
-import type { Actor } from "../../common/actor.service.js";
+import type { Actor } from "../../common/actor.js";
 import { canonicalJson } from "../../common/canonical-json.js";
 import { PRISMA } from "../../common/tokens.js";
 import { AuditService } from "../audit/audit.service.js";

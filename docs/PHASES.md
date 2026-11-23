@@ -148,7 +148,7 @@ Estimated total: ~4 weeks part-time.
 **Goal:** an approved settlement is paid exactly once, even with crashes and duplicate webhooks.
 
 **Tasks**
-- [ ] Simple login, so approval is tied to a real person (replaces the demo user in `ActorService`, added in Phase 2)
+- [x] Simple login, so approval is tied to a real person (replaces the demo user in `ActorService`, added in Phase 2)
 - [ ] State machine extended: `in_review → approved → paying → paid`, `payment_failed → paying`; human-only approval; no edits from `paying` onwards
 - [ ] Stripe test mode: Express connected accounts for seeded artists; fund the test platform balance
 - [ ] Approval transaction: status change + `Payout(pending, idempotencyKey)` + `AuditLog` together

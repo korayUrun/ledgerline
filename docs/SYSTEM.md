@@ -123,7 +123,7 @@ As built in Phase 2 (deliberate differences from the sketch above):
 - **Tables arrive in the phase that uses them.** Phase 2 has `User`, `Venue`, `Artist`, `Show`, `TicketSale`, `Expense`, `ContractTerms`, `Settlement`, `SettlementLine`, `AuditLog`. `Contract` comes in Phase 3, `AgentRun`/`AgentStep` in Phase 4, `Payout`/`ProcessedWebhookEvent` in Phase 5, `ApiKey` in Phase 6.
 - **`ContractTerms` belongs to `Show`**, not to `Contract`: Phase 2 terms are typed in by hand and there is no PDF. Phase 3 adds an optional `contractId`.
 - **One settlement per show** (`Settlement.showId` is UNIQUE). `version` counts computes and doubles as the optimistic lock.
-- **`User`** exists from Phase 2 so that `AuditLog.actor` and `ContractTerms.confirmedBy` point to a person. Until login exists, the API acts as the seeded demo user.
+- **`User`** exists from Phase 2 so that `AuditLog.actor` and `ContractTerms.confirmedBy` point to a person. Until login exists, the API acts as the seeded demo user. (Replaced by login in Phase 5, see below.)
 - **`SettlementLine.sourceRefs` is JSON**, not foreign keys: a line describes the frozen `inputSnapshot`, and live rows may be edited or deleted later.
 
 As built in Phase 3:
@@ -136,6 +136,11 @@ As built in Phase 4:
 - **`AgentStep`**: one table for both step kinds, ordered by `position` (`UNIQUE(runId, position)`). A `model_call` row keeps the reply's blocks exactly as received (`content` JSON, thinking and `tool_use` blocks included), its stop reason, tokens, cost and duration; a `tool_call` row keeps `toolUseId`, `toolName`, `toolInput`, `toolOutput` (the exact text sent back) and `isError`. The other kind's columns are null. Replay = `ORDER BY position`.
 - **Run totals are updated in the same transaction as each model-call step**, so they always equal the sum of the stored steps, even after a crash. An unknown price makes `costNanoUsd` NULL and it stays NULL (SQL `NULL + x` is `NULL`): never a misleading $0.
 - **`ExpenseFlag`** (`expenseId`, `agentRunId`, `kind: category_not_allowed|over_category_cap|other`, `reason`, `status: open|accepted|dismissed`, `resolvedById`, `resolvedAt`). A flag is a note, not an input: it never changes the expense or makes the settlement stale. Open flags block submit-for-review, like pending expenses.
+
+As built in Phase 5 (login):
+- **`User.passwordHash`** (`scrypt$<salt>$<hash>`, Node's built-in scrypt; null = cannot log in) and **`Session`** (`userId`, `tokenHash` UNIQUE, `expiresAt`, 7 days). The token is 32 random bytes; only its SHA-256 is stored, so a leaked row cannot be used to log in. Logout deletes the row, which kills the token everywhere.
+- **Every API route needs a session unless it is `@Public()`** (health, login). A global `AuthGuard` reads `Authorization: Bearer <token>`, loads the user and attaches the actor; controllers take it with `@CurrentActor()`. Closed by default: a new endpoint is protected without anyone remembering to protect it. Wrong email and wrong password give the same 401 message.
+- **Web:** the login server action stores the token in an httpOnly, SameSite=Lax cookie (page JavaScript cannot read it), and every call from the Next.js server to the API sends it as the bearer token. A 401 from the API redirects to `/login`. The browser still never calls the API.
 
 ---
 

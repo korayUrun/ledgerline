@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { Contract, PrismaClient } from "@ledgerline/db";
 import type { ApiConfig } from "../../../config.js";
-import { SYSTEM_ACTOR_LABEL } from "../../../common/actor.service.js";
+import { SYSTEM_ACTOR_LABEL } from "../../../common/actor.js";
 import { CONFIG, LLM_CLIENT, PRISMA } from "../../../common/tokens.js";
 import type { LlmClient } from "../../llm/llm-client.js";
 import { ContractFileStorage } from "../contract-file-storage.js";

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import type { AgentEventDto, AgentRunKind } from "@ledgerline/schemas";
-import type { Actor } from "../../common/actor.service.js";
+import type { Actor } from "../../common/actor.js";
 import { CONFIG, LLM_CLIENT } from "../../common/tokens.js";
 import type { ApiConfig } from "../../config.js";
 import type { LlmClient } from "../llm/llm-client.js";

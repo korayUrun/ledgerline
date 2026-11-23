@@ -8,8 +8,7 @@ import type {
   ShowDto,
 } from "@ledgerline/schemas";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { Actor } from "../src/common/actor.service.js";
-import { ActorService } from "../src/common/actor.service.js";
+import type { Actor } from "../src/common/actor.js";
 import type { AgentStep } from "../src/modules/agent/agent-loop.js";
 import { AgentTraceService } from "../src/modules/agent/agent-trace.service.js";
 import { ExpenseFlagsService } from "../src/modules/agent/expense-flags.service.js";
@@ -57,8 +56,7 @@ async function createComputedShow(name: string): Promise<{ showId: string }> {
 
 // A computed settlement with two expenses: the agent needs something to look at.
 beforeEach(async () => {
-  await resetDatabase(t.prisma);
-  actor = await t.nest.get(ActorService).current();
+  actor = await resetDatabase(t.prisma);
   ({ showId } = await createComputedShow("Test Night"));
   expenses = [];
   for (const expense of [
@@ -296,7 +294,7 @@ async function postStream(
   urlPath: string,
   body?: unknown,
 ): Promise<{ status: number; contentType: string | null; events: AgentEventDto[] }> {
-  const response = await fetch(`${t.baseUrl}${urlPath}`, {
+  const response = await t.fetch(urlPath, {
     method: "POST",
     headers: body === undefined ? {} : { "content-type": "application/json" },
     body: body === undefined ? null : JSON.stringify(body),

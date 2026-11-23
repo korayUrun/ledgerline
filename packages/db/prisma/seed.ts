@@ -1,7 +1,13 @@
 // Demo data: one venue, three shows with different deal types. All synthetic.
 // Run with `pnpm db:seed`. It wipes every table first, so it is safe to run again.
 import { ContractTermsSchema, type ContractTerms } from "@ledgerline/schemas";
-import { createPrismaClient, DEMO_USER_EMAIL, type Prisma } from "../src/index.js";
+import {
+  createPrismaClient,
+  DEMO_USER_EMAIL,
+  DEMO_USER_PASSWORD,
+  hashPassword,
+  type Prisma,
+} from "../src/index.js";
 
 const databaseUrl = process.env["DATABASE_URL"];
 if (!databaseUrl) {
@@ -191,7 +197,11 @@ const shows: SeedShow[] = [
 
 async function main(): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    // Children before parents, so no foreign key is violated.
+    // Children before parents, so no foreign key is violated. (Sessions go with
+    // their user: that foreign key cascades.)
+    await tx.expenseFlag.deleteMany();
+    await tx.agentStep.deleteMany();
+    await tx.agentRun.deleteMany();
     await tx.settlementLine.deleteMany();
     await tx.settlement.deleteMany();
     await tx.contractTerms.deleteMany();
@@ -204,7 +214,13 @@ async function main(): Promise<void> {
     await tx.auditLog.deleteMany();
     await tx.user.deleteMany();
 
-    const user = await tx.user.create({ data: { email: DEMO_USER_EMAIL, name: "Demo Manager" } });
+    const user = await tx.user.create({
+      data: {
+        email: DEMO_USER_EMAIL,
+        name: "Demo Manager",
+        passwordHash: await hashPassword(DEMO_USER_PASSWORD),
+      },
+    });
     const venue = await tx.venue.create({ data: { name: "The Velvet Room" } });
 
     for (const seedShow of shows) {

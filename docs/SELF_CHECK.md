@@ -218,6 +218,33 @@ could not be trusted either (`packages/evals/src/agent/`).
 
 </details>
 
+## Phase 5 — Approval & payments
+
+**1. Why store the session token's hash instead of the token, and why SHA-256 here but slow scrypt for passwords?**
+
+<details><summary>Answer</summary>
+
+Whoever has the token is logged in. If the database leaks (a backup, a log, a bug), stored
+tokens would let anyone log in as anyone; a hash cannot be sent back as a token. SHA-256 is
+enough because the token is 32 random bytes: nobody can guess it, so there is nothing to
+slow down. A password is chosen by a person and often guessable, so its hash must be slow
+(scrypt, with a random salt) to make trying millions of guesses expensive
+(`apps/api/src/modules/auth/session-token.ts`, `packages/db/src/password.ts`).
+
+</details>
+
+**2. Why is every API route protected by default, with `@Public()` as the exception?**
+
+<details><summary>Answer</summary>
+
+Because forgetting is the common mistake. If each route had to opt in to protection, a new
+endpoint someone forgets about would be open, and nobody would notice. With a global guard
+and an explicit `@Public()` mark, forgetting makes a route closed, which shows up at once
+(a 401 in a test) and is safe. Only the health check and login are public
+(`apps/api/src/modules/auth/auth.guard.ts`).
+
+</details>
+
 ---
 
 # Deferred phase quizzes (after the last phase)

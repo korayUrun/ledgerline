@@ -7,11 +7,12 @@ import {
   type OnApplicationShutdown,
 } from "@nestjs/common";
 import { createPrismaClient, type PrismaClient } from "@ledgerline/db";
-import { ActorService } from "./common/actor.service.js";
 import { CONFIG, LLM_CLIENT, PRISMA } from "./common/tokens.js";
 import type { ApiConfig } from "./config.js";
 import { AgentModule } from "./modules/agent/agent.module.js";
 import { AuditModule } from "./modules/audit/audit.module.js";
+import { AuthModule } from "./modules/auth/auth.module.js";
+import { Public } from "./modules/auth/auth.guard.js";
 import { ContractsModule } from "./modules/contracts/contracts.module.js";
 import { createLlmClient } from "./modules/llm/create-llm-client.js";
 import type { LlmClient } from "./modules/llm/llm-client.js";
@@ -23,6 +24,8 @@ class HealthController {
   constructor(@Inject(PRISMA) private readonly prisma: PrismaClient) {}
 
   // Also touches the database, so "ok" means the API can actually serve requests.
+  // Public: monitoring checks it without logging in.
+  @Public()
   @Get()
   async check(): Promise<{ status: "ok" }> {
     await this.prisma.$queryRaw`SELECT 1`;
@@ -45,10 +48,17 @@ export class AppModule implements OnApplicationShutdown {
   static register(config: ApiConfig, options: AppOptions = {}): DynamicModule {
     return {
       module: AppModule,
-      // global: the config, the Prisma client and ActorService can be injected in
+      // global: the config, the Prisma client and the LLM client can be injected in
       // every feature module without each one importing them.
       global: true,
-      imports: [AuditModule, SettlementsModule, ShowsModule, ContractsModule, AgentModule],
+      imports: [
+        AuthModule,
+        AuditModule,
+        SettlementsModule,
+        ShowsModule,
+        ContractsModule,
+        AgentModule,
+      ],
       controllers: [HealthController],
       providers: [
         { provide: CONFIG, useValue: config },
@@ -59,9 +69,8 @@ export class AppModule implements OnApplicationShutdown {
           provide: LLM_CLIENT,
           useFactory: () => options.llmClient ?? createLlmClient(config.llm),
         },
-        ActorService,
       ],
-      exports: [CONFIG, PRISMA, LLM_CLIENT, ActorService],
+      exports: [CONFIG, PRISMA, LLM_CLIENT],
     };
   }
 
