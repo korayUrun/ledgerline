@@ -1,32 +1,38 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
-import type { Expense, ExpenseFlag, PrismaClient } from "@ledgerline/db";
+import type { Expense, ExpenseFlag, Prisma, PrismaClient } from "@ledgerline/db";
 import type { ExpenseFlagKind } from "@ledgerline/schemas";
-import type { Actor } from "../../common/actor.js";
+import type { Actor, ApiKeyActor } from "../../common/actor.js";
 import { PRISMA } from "../../common/tokens.js";
 import { AuditService } from "../audit/audit.service.js";
+import { SettlementStateMachine } from "../settlements/settlement-state-machine.js";
 
-export type FlagFromAgentInput = {
-  runId: string;
+export type FlagInput = {
   expenseId: string;
   kind: ExpenseFlagKind;
   reason: string;
 };
 
+export type FlagFromAgentInput = FlagInput & { runId: string };
+
+export type FlagResult = { flag: ExpenseFlag; created: boolean };
+
+// Who opened a flag: exactly one of the two columns is set (a CHECK constraint in
+// the database says the same).
+type FlagSource = { agentRunId: string } | { apiKeyId: string };
+
 // Flags are notes on an expense, never changes to it (F6). The agent (through the
-// flag_expense tool) opens them; only a person resolves them. A flag does not touch
-// the engine's inputs, so it never makes the settlement stale.
+// flag_expense tool) and API clients (POST /v1/expenses/:id/flags, e.g. the MCP
+// server) open them; only a person resolves them. A flag does not touch the
+// engine's inputs, so it never makes the settlement stale.
 @Injectable()
 export class ExpenseFlagsService {
   constructor(
     @Inject(PRISMA) private readonly prisma: PrismaClient,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(SettlementStateMachine) private readonly stateMachine: SettlementStateMachine,
   ) {}
 
-  // created = false when the same open flag already existed: running the audit
-  // twice must not pile up duplicate flags for a person to dismiss one by one.
-  async flagFromAgentRun(
-    input: FlagFromAgentInput,
-  ): Promise<{ flag: ExpenseFlag; created: boolean }> {
+  async flagFromAgentRun(input: FlagFromAgentInput): Promise<FlagResult> {
     return this.prisma.$transaction(async (tx) => {
       const run = await tx.agentRun.findUniqueOrThrow({
         where: { id: input.runId },
@@ -38,32 +44,60 @@ export class ExpenseFlagsService {
       if (!expense || expense.showId !== run.settlement.showId) {
         throw new NotFoundException(`There is no expense ${input.expenseId} in this show.`);
       }
-
-      const existing = await tx.expenseFlag.findFirst({
-        where: { expenseId: input.expenseId, kind: input.kind, status: "open" },
-      });
-      if (existing) {
-        return { flag: existing, created: false };
-      }
-
-      const flag = await tx.expenseFlag.create({
-        data: {
-          expenseId: input.expenseId,
-          agentRunId: input.runId,
-          kind: input.kind,
-          reason: input.reason,
-        },
-      });
-      await this.audit.record(tx, {
-        actor: `agent:${input.runId}`,
-        action: "expense.flagged",
-        entity: "expense",
-        entityId: input.expenseId,
-        before: null,
-        after: { flagId: flag.id, kind: flag.kind, reason: flag.reason },
-      });
-      return { flag, created: true };
+      return this.open(tx, input, { agentRunId: input.runId }, `agent:${input.runId}`);
     });
+  }
+
+  // An API key may flag any expense, but not once the settlement is approved: the
+  // numbers are final then, and a note nobody can act on would only block nothing
+  // and confuse. (The agent never gets here: it only runs on computed settlements.)
+  async flagFromApiKey(input: FlagInput, apiKey: ApiKeyActor): Promise<FlagResult> {
+    return this.prisma.$transaction(async (tx) => {
+      const expense = await tx.expense.findUnique({ where: { id: input.expenseId } });
+      if (!expense) {
+        throw new NotFoundException(`Expense ${input.expenseId} not found`);
+      }
+      const settlement = await tx.settlement.findUnique({
+        where: { showId: expense.showId },
+        select: { status: true },
+      });
+      if (settlement && this.stateMachine.hasLockedInputs(settlement.status)) {
+        throw new ConflictException(
+          `The settlement is ${settlement.status.replace("_", " ")}: its expenses can no longer be flagged.`,
+        );
+      }
+      return this.open(tx, input, { apiKeyId: apiKey.apiKeyId }, apiKey.label);
+    });
+  }
+
+  // created = false when the same open flag already existed: running the audit (or
+  // an MCP client) twice must not pile up duplicate flags for a person to dismiss
+  // one by one. Same expense + same kind = same flag, whoever opened it.
+  private async open(
+    tx: Prisma.TransactionClient,
+    input: FlagInput,
+    source: FlagSource,
+    actorLabel: string,
+  ): Promise<FlagResult> {
+    const existing = await tx.expenseFlag.findFirst({
+      where: { expenseId: input.expenseId, kind: input.kind, status: "open" },
+    });
+    if (existing) {
+      return { flag: existing, created: false };
+    }
+
+    const flag = await tx.expenseFlag.create({
+      data: { expenseId: input.expenseId, kind: input.kind, reason: input.reason, ...source },
+    });
+    await this.audit.record(tx, {
+      actor: actorLabel,
+      action: "expense.flagged",
+      entity: "expense",
+      entityId: input.expenseId,
+      before: null,
+      after: { flagId: flag.id, kind: flag.kind, reason: flag.reason },
+    });
+    return { flag, created: true };
   }
 
   // Every flag on the settlement's show, open ones first, then newest first.

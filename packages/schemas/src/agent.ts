@@ -102,7 +102,10 @@ export type ExpenseFlagDto = {
   kind: ExpenseFlagKind;
   reason: string;
   status: ExpenseFlagStatus;
-  agentRunId: string;
+  // Who opened it: exactly one is set. agentRunId = the audit agent, apiKeyId = an
+  // API client such as the MCP server.
+  agentRunId: string | null;
+  apiKeyId: string | null;
   createdAt: string;
   resolvedAt: string | null;
   expense: { id: string; category: string; description: string; amountCents: number };

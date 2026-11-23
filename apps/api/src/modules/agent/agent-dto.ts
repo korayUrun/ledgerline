@@ -56,6 +56,7 @@ export function toExpenseFlagDto(flag: ExpenseFlag & { expense: Expense }): Expe
     reason: flag.reason,
     status: flag.status,
     agentRunId: flag.agentRunId,
+    apiKeyId: flag.apiKeyId,
     createdAt: flag.createdAt.toISOString(),
     resolvedAt: flag.resolvedAt?.toISOString() ?? null,
     expense: {
