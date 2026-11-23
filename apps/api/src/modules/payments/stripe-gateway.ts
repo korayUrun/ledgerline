@@ -40,18 +40,36 @@ export class StripeGateway implements PaymentGateway {
     artistName: string;
   }): Promise<{ accountId: string }> {
     try {
-      const account = await this.stripe.accounts.create(
-        {
-          type: "express",
-          country: "US",
-          business_type: "individual",
-          capabilities: { transfers: { requested: true } },
-          business_profile: { name: input.artistName },
-          metadata: { artistId: input.artistId },
+      // Accounts v2: Stripe refuses v1 account creation for new Connect platforms.
+      // The artist is a "recipient": an account that can receive transfers into its
+      // Stripe balance, with the Express dashboard and onboarding hosted by Stripe.
+      // The transfer itself is still the v1 transfers.create above, with this id.
+      //
+      // No idempotency key on purpose. Stripe replays a key's FIRST answer, errors
+      // included: a fixed key per artist turned one early failure (Connect not yet
+      // enabled) into the same error on every later click, for 24 hours. Double
+      // clicks are handled in the database instead (see the controller).
+      const account = await this.stripe.v2.core.accounts.create({
+        display_name: input.artistName,
+        // Required for a recipient. Artists have no email in Ledgerline (synthetic
+        // data only), so a placeholder on example.com, a domain reserved for examples.
+        contact_email: `artist-${input.artistId.slice(0, 8)}@example.com`,
+        dashboard: "express",
+        identity: { country: "us", entity_type: "individual" },
+        defaults: {
+          currency: "usd",
+          responsibilities: {
+            fees_collector: "application_express",
+            losses_collector: "application",
+          },
         },
-        // A double click must not create two accounts for one artist.
-        { idempotencyKey: `artist-account:${input.artistId}` },
-      );
+        configuration: {
+          recipient: {
+            capabilities: { stripe_balance: { stripe_transfers: { requested: true } } },
+          },
+        },
+        metadata: { artistId: input.artistId },
+      });
       return { accountId: account.id };
     } catch (error) {
       throw toRefusalOrRethrow(error);
@@ -63,11 +81,15 @@ export class StripeGateway implements PaymentGateway {
     returnUrl: string;
   }): Promise<{ url: string }> {
     try {
-      const link = await this.stripe.accountLinks.create({
+      const link = await this.stripe.v2.core.accountLinks.create({
         account: input.accountId,
-        type: "account_onboarding",
-        return_url: input.returnUrl,
-        refresh_url: input.returnUrl, // an expired link sends them back to try again
+        use_case: {
+          type: "account_onboarding",
+          account_onboarding: {
+            return_url: input.returnUrl,
+            refresh_url: input.returnUrl, // an expired link sends them back to try again
+          },
+        },
       });
       return { url: link.url };
     } catch (error) {
