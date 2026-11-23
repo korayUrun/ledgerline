@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
   Res,
+  UseGuards,
 } from "@nestjs/common";
 import {
   V1FlagExpenseBodySchema,
@@ -21,6 +22,7 @@ import type { ApiKeyActor } from "../../common/actor.js";
 import { ZodBodyPipe } from "../../common/zod-body.pipe.js";
 import { ApiKeyAuth, CurrentApiKey } from "../auth/auth.guard.js";
 import { PublicApiService } from "./public-api.service.js";
+import { RateLimitGuard } from "./rate-limit.guard.js";
 
 type StatusResponse = { status(code: number): unknown };
 
@@ -28,7 +30,9 @@ type StatusResponse = { status(code: number): unknown };
 // Read-mostly by design: the only write is a flag, which is a note for a person.
 // There is no approve or pay route here, and there must never be one: those need a
 // person (a session), which an API key is not.
+// Rate-limited per key (RateLimitGuard, after the global AuthGuard found the key).
 @ApiKeyAuth()
+@UseGuards(RateLimitGuard)
 @Controller("v1")
 export class V1Controller {
   constructor(@Inject(PublicApiService) private readonly publicApi: PublicApiService) {}

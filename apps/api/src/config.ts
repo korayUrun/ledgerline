@@ -12,6 +12,13 @@ export type ApiConfig = {
   stripe: StripeConfig;
   // Where people open the web app; Stripe's onboarding page sends them back here.
   webUrl: string;
+  publicApi: PublicApiConfig;
+};
+
+// The /v1 API (F9). Each API key may make this many requests per minute; the next
+// one gets 429 with Retry-After until the minute is over.
+export type PublicApiConfig = {
+  rateLimitPerMinute: number;
 };
 
 // Stripe test mode (F7). Both are optional so the app runs without them: approving
@@ -59,7 +66,21 @@ export function readConfigFromEnv(env: NodeJS.ProcessEnv = process.env): ApiConf
     llm: readLlmConfig(env),
     stripe: readStripeConfig(env),
     webUrl: env["WEB_URL"] ?? "http://localhost:3000",
+    publicApi: { rateLimitPerMinute: readPositiveInt(env, "V1_RATE_LIMIT_PER_MINUTE", 60) },
   };
+}
+
+// A typo such as "6O" must stop startup, not turn into NaN and disable the limit.
+function readPositiveInt(env: NodeJS.ProcessEnv, name: string, fallback: number): number {
+  const text = env[name];
+  if (text === undefined || text === "") {
+    return fallback;
+  }
+  const value = Number(text);
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${name} must be a whole number of 1 or more, got "${text}"`);
+  }
+  return value;
 }
 
 function readStripeConfig(env: NodeJS.ProcessEnv): StripeConfig {
