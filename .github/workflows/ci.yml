@@ -15,14 +15,15 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # Pinned, so a new ubuntu-latest image cannot break a green build overnight.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
       # Reads the pnpm version from "packageManager" in package.json,
       # so CI and laptops run the exact same pnpm.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v5
         with:
