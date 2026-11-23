@@ -20,7 +20,8 @@ import {
   type ExpenseFlagDto,
   type ResolveFlagBody,
 } from "@ledgerline/schemas";
-import { ActorService } from "../../common/actor.service.js";
+import type { Actor } from "../../common/actor.js";
+import { CurrentActor } from "../auth/auth.guard.js";
 import { ZodBodyPipe } from "../../common/zod-body.pipe.js";
 import { toAgentRunDto, toAgentStepDto, toExpenseFlagDto } from "./agent-dto.js";
 import { AUDIT_QUESTION } from "./agent-prompt.js";
@@ -36,7 +37,6 @@ export class AgentController {
     @Inject(AgentService) private readonly agent: AgentService,
     @Inject(AgentTraceService) private readonly traces: AgentTraceService,
     @Inject(ExpenseFlagsService) private readonly flags: ExpenseFlagsService,
-    @Inject(ActorService) private readonly actors: ActorService,
   ) {}
 
   // A person's question about the settlement. The answer streams as Server-Sent
@@ -45,9 +45,9 @@ export class AgentController {
   async ask(
     @Param("settlementId", ParseUUIDPipe) settlementId: string,
     @Body(new ZodBodyPipe(AskBodySchema)) body: AskBody,
+    @CurrentActor() actor: Actor,
     @Res() response: ServerResponse,
   ): Promise<void> {
-    const actor = await this.actors.current();
     const prepared = await this.agent.prepare(settlementId, "question", body.question, actor);
     await this.stream(response, prepared);
   }
@@ -56,9 +56,9 @@ export class AgentController {
   @Post("settlements/:settlementId/audit")
   async audit(
     @Param("settlementId", ParseUUIDPipe) settlementId: string,
+    @CurrentActor() actor: Actor,
     @Res() response: ServerResponse,
   ): Promise<void> {
-    const actor = await this.actors.current();
     const prepared = await this.agent.prepare(settlementId, "audit", AUDIT_QUESTION, actor);
     await this.stream(response, prepared);
   }
@@ -90,8 +90,8 @@ export class AgentController {
   async resolveFlag(
     @Param("flagId", ParseUUIDPipe) flagId: string,
     @Body(new ZodBodyPipe(ResolveFlagBodySchema)) body: ResolveFlagBody,
+    @CurrentActor() actor: Actor,
   ): Promise<ExpenseFlagDto> {
-    const actor = await this.actors.current();
     return toExpenseFlagDto(await this.flags.resolve(flagId, body.resolution, actor));
   }
 

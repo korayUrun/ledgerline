@@ -126,7 +126,7 @@ describe("upload", () => {
     const contract = await uploadContract();
 
     expect(contract).toMatchObject({ status: "uploaded", fileName: "contract.pdf", usage: null });
-    const pdf = await fetch(`${t.baseUrl}/contracts/${contract.id}/pdf`);
+    const pdf = await t.fetch(`/contracts/${contract.id}/pdf`);
     expect(pdf.headers.get("content-type")).toBe("application/pdf");
     expect(Buffer.from(await pdf.arrayBuffer()).equals(PDF)).toBe(true);
     expect(await auditActions(contract.id)).toEqual(["contract.uploaded"]);

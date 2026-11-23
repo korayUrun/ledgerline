@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import type { PrismaClient, TicketSale } from "@ledgerline/db";
 import type { TicketSaleDto } from "@ledgerline/schemas";
-import type { Actor } from "../../common/actor.service.js";
+import type { Actor } from "../../common/actor.js";
 import { PRISMA } from "../../common/tokens.js";
 import { AuditService } from "../audit/audit.service.js";
 import { SettlementStateMachine } from "../settlements/settlement-state-machine.js";

@@ -171,7 +171,7 @@ describe("expenses", () => {
     );
     expect(attached.body.hasReceipt).toBe(true);
 
-    const download = await fetch(`${t.baseUrl}${receiptUrl}`);
+    const download = await t.fetch(receiptUrl);
     expect(download.headers.get("content-type")).toBe("application/pdf");
     expect(await download.text()).toBe("%PDF-1.4 fake");
   });

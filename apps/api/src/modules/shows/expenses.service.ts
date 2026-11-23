@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, NotFoundException } from "@nes
 import type { Expense, Prisma, PrismaClient } from "@ledgerline/db";
 import type { CreateExpenseBodySchema, ExpenseDto, UpdateExpenseBody } from "@ledgerline/schemas";
 import type { z } from "zod";
-import type { Actor } from "../../common/actor.service.js";
+import type { Actor } from "../../common/actor.js";
 import { PRISMA } from "../../common/tokens.js";
 import { AuditService } from "../audit/audit.service.js";
 import { SettlementStateMachine } from "../settlements/settlement-state-machine.js";

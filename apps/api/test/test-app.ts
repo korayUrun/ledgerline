@@ -2,15 +2,29 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { INestApplication } from "@nestjs/common";
-import { createPrismaClient, DEMO_USER_EMAIL, type PrismaClient } from "@ledgerline/db";
+import {
+  createPrismaClient,
+  DEMO_USER_EMAIL,
+  DEMO_USER_PASSWORD,
+  hashPassword,
+  type PrismaClient,
+} from "@ledgerline/db";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { ContractTerms } from "@ledgerline/schemas";
 import { inject } from "vitest";
 import { createApp } from "../src/app.js";
+import { userActor, type Actor } from "../src/common/actor.js";
 import type { ApiConfig } from "../src/config.js";
+import { hashSessionToken } from "../src/modules/auth/session-token.js";
 import { FakeLlmClient } from "../src/modules/llm/fake-llm-client.js";
 
 export type Result<T> = { status: number; body: T };
+
+// Every test request is made as the demo user, through a session that
+// resetDatabase creates with this token. Tests of the login itself send their own
+// headers (or none).
+export const TEST_SESSION_TOKEN = "test-session-token";
+const AUTH_HEADERS = { authorization: `Bearer ${TEST_SESSION_TOKEN}` };
 
 export type TestApp = {
   nest: INestApplication; // to reach services directly (e.g. the state machine)
@@ -20,7 +34,15 @@ export type TestApp = {
   // change rows behind the API's back.
   prisma: PrismaClient;
   // T is the response type the test expects; it is not checked at runtime.
-  request: <T = unknown>(method: string, urlPath: string, body?: unknown) => Promise<Result<T>>;
+  // Logged in as the demo user unless `headers` says otherwise.
+  request: <T = unknown>(
+    method: string,
+    urlPath: string,
+    body?: unknown,
+    headers?: Record<string, string>,
+  ) => Promise<Result<T>>;
+  // A raw fetch against the app, logged in as the demo user (for streams and files).
+  fetch: (urlPath: string, init?: RequestInit) => Promise<Response>;
   upload: <T = unknown>(
     urlPath: string,
     fileName: string,
@@ -75,14 +97,25 @@ export async function startTestApp(): Promise<TestApp> {
     config,
     baseUrl,
     prisma,
-    request: async <T>(method: string, urlPath: string, body?: unknown) =>
+    request: async <T>(
+      method: string,
+      urlPath: string,
+      body?: unknown,
+      headers: Record<string, string> = AUTH_HEADERS,
+    ) =>
       toResult<T>(
         await fetch(`${baseUrl}${urlPath}`, {
           method,
-          headers: body === undefined ? {} : { "content-type": "application/json" },
+          headers:
+            body === undefined ? headers : { ...headers, "content-type": "application/json" },
           body: body === undefined ? null : JSON.stringify(body),
         }),
       ),
+    fetch: (urlPath: string, init: RequestInit = {}) =>
+      fetch(`${baseUrl}${urlPath}`, {
+        ...init,
+        headers: { ...AUTH_HEADERS, ...(init.headers as Record<string, string> | undefined) },
+      }),
     upload: async <T>(
       urlPath: string,
       fileName: string,
@@ -93,7 +126,9 @@ export async function startTestApp(): Promise<TestApp> {
       // A Buffer is copied into a Uint8Array, which Blob accepts on every Node version.
       const part = typeof content === "string" ? content : new Uint8Array(content);
       form.append("file", new Blob([part], { type }), fileName);
-      return toResult<T>(await fetch(`${baseUrl}${urlPath}`, { method: "POST", body: form }));
+      return toResult<T>(
+        await fetch(`${baseUrl}${urlPath}`, { method: "POST", body: form, headers: AUTH_HEADERS }),
+      );
     },
     scriptLlm: (...scripted) => {
       replies = scripted;
@@ -108,14 +143,32 @@ export async function startTestApp(): Promise<TestApp> {
   };
 }
 
-// Empties every table and recreates the demo user, so each test starts clean.
-// TRUNCATE … CASCADE is the fastest way and ignores foreign-key order.
-export async function resetDatabase(prisma: PrismaClient): Promise<void> {
+// scrypt is slow on purpose, so the demo password is hashed once per test file.
+let demoPasswordHash: Promise<string> | null = null;
+
+// Empties every table and recreates the demo user, logged in with
+// TEST_SESSION_TOKEN, so each test starts clean. TRUNCATE … CASCADE is the fastest
+// way and ignores foreign-key order. Returns the demo user as an actor.
+export async function resetDatabase(prisma: PrismaClient): Promise<Actor> {
   await prisma.$executeRawUnsafe(
-    `TRUNCATE "ExpenseFlag", "AgentStep", "AgentRun", "SettlementLine", "Settlement", "ContractTerms", "Contract", "Expense",
+    `TRUNCATE "Session", "ExpenseFlag", "AgentStep", "AgentRun", "SettlementLine", "Settlement", "ContractTerms", "Contract", "Expense",
               "TicketSale", "Show", "Artist", "Venue", "AuditLog", "User" CASCADE`,
   );
-  await prisma.user.create({ data: { email: DEMO_USER_EMAIL, name: "Demo Manager" } });
+  demoPasswordHash ??= hashPassword(DEMO_USER_PASSWORD);
+  const user = await prisma.user.create({
+    data: {
+      email: DEMO_USER_EMAIL,
+      name: "Demo Manager",
+      passwordHash: await demoPasswordHash,
+      sessions: {
+        create: {
+          tokenHash: hashSessionToken(TEST_SESSION_TOKEN),
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        },
+      },
+    },
+  });
+  return userActor(user.id);
 }
 
 // A versus deal: $5,000 guarantee vs 85% of net after expenses, total expense cap $6,000.

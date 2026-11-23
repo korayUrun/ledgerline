@@ -39,6 +39,20 @@ export type ContractStatus = z.infer<typeof ContractStatusSchema>;
 
 const NameSchema = z.string().trim().min(1).max(200);
 
+// --- Login (Phase 5) ---------------------------------------------------------------------
+
+export const LoginBodySchema = z.object({
+  email: z.string().trim().toLowerCase().min(1).max(320),
+  password: z.string().min(1).max(200),
+});
+export type LoginBody = z.infer<typeof LoginBodySchema>;
+
+export type UserDto = { id: string; email: string; name: string };
+
+// The token goes into an httpOnly cookie on the web server and comes back on every
+// API request as "Authorization: Bearer <token>".
+export type LoginResponseDto = { token: string; expiresAt: string; user: UserDto };
+
 export const CreateVenueBodySchema = z.object({ name: NameSchema });
 export type CreateVenueBody = z.infer<typeof CreateVenueBodySchema>;
 
