@@ -48,6 +48,17 @@ enum SettlementStatus {
   computed
   in_review
   stale
+  approved
+  paying
+  paid
+  payment_failed
+}
+
+enum PayoutStatus {
+  pending
+  processing
+  succeeded
+  failed
 }
 
 enum SettlementLineKind {
@@ -135,6 +146,7 @@ model User {
   confirmedTerms ContractTerms[]
   resolvedFlags  ExpenseFlag[]
   sessions       Session[]
+  payouts        Payout[]
 }
 
 // A logged-in browser (Phase 5: approval must be tied to a real person). The token
@@ -313,6 +325,7 @@ model Settlement {
   terms     ContractTerms?   @relation(fields: [termsId], references: [id])
   lines     SettlementLine[]
   agentRuns AgentRun[]
+  payouts   Payout[]
 }
 
 model SettlementLine {
@@ -330,6 +343,41 @@ model SettlementLine {
   settlement Settlement @relation(fields: [settlementId], references: [id])
 
   @@unique([settlementId, position])
+}
+
+// --- Payments (F7) ---------------------------------------------------------------------
+
+// One attempt to send a settlement's payout to the artist (docs/SYSTEM.md §8). It is
+// written in the same transaction as the approval, so "approved" and "we intend to
+// pay" can never disagree: if the process dies right after, the payout row is
+// still there to be picked up.
+//
+// A retry after a failure is a NEW row (attempt + 1) with a new key: Stripe answers a
+// repeated key with the first answer, so reusing a failed attempt's key would only
+// repeat the failure.
+model Payout {
+  id                String       @id @default(uuid())
+  settlementId      String
+  // The settlement version that was approved; part of the idempotency key.
+  settlementVersion Int
+  attempt           Int
+  amountCents       BigInt
+  // "payout:<settlementId>:v<version>:a<attempt>". Sent with every Stripe call for
+  // this attempt: a retried call (timeout, crash) cannot create a second transfer.
+  idempotencyKey    String       @unique
+  status            PayoutStatus @default(pending)
+  stripeTransferId  String?      @unique
+  failureReason     String?
+  // The person who approved (attempt 1) or retried (later attempts).
+  createdById       String
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  settlement Settlement @relation(fields: [settlementId], references: [id])
+  createdBy  User       @relation(fields: [createdById], references: [id])
+
+  // Two requests that both try to create attempt N: the database lets exactly one win.
+  @@unique([settlementId, attempt])
 }
 
 // --- Audit agent (F6) and its traces (F12) --------------------------------------------

@@ -149,9 +149,9 @@ Estimated total: ~4 weeks part-time.
 
 **Tasks**
 - [x] Simple login, so approval is tied to a real person (replaces the demo user in `ActorService`, added in Phase 2)
-- [ ] State machine extended: `in_review → approved → paying → paid`, `payment_failed → paying`; human-only approval; no edits from `paying` onwards
+- [x] State machine extended: `in_review → approved → paying → paid`, `payment_failed → paying`; human-only approval; no edits from `paying` onwards
 - [ ] Stripe test mode: Express connected accounts for seeded artists; fund the test platform balance
-- [ ] Approval transaction: status change + `Payout(pending, idempotencyKey)` + `AuditLog` together
+- [x] Approval transaction: status change + `Payout(pending, idempotencyKey)` + `AuditLog` together
 - [ ] `payouts` queue: re-read the payout, exit if already done, call `transfers.create` with the idempotency key
 - [ ] Webhook endpoint: signature verification, `ProcessedWebhookEvent` dedupe, final status update in one transaction
 - [ ] Sweeper job: find `pending` payouts older than N minutes and re-enqueue them

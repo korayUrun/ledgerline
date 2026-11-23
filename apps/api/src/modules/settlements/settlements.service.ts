@@ -11,7 +11,7 @@ import { computeSettlement, ENGINE_VERSION } from "@ledgerline/settlement-engine
 import { SYSTEM_ACTOR_LABEL, type Actor } from "../../common/actor.js";
 import { PRISMA } from "../../common/tokens.js";
 import { AuditService } from "../audit/audit.service.js";
-import { toSettlementDto } from "./settlement-dto.js";
+import { toPayoutDto, toSettlementDto } from "./settlement-dto.js";
 import { hashSettlementInput, loadLiveInputs } from "./settlement-inputs.js";
 import { SettlementStateMachine } from "./settlement-state-machine.js";
 
@@ -34,8 +34,15 @@ export class SettlementsService {
     const pendingExpenseCount = await this.prisma.expense.count({
       where: { showId, status: "pending" },
     });
+    const payouts = settlement
+      ? await this.prisma.payout.findMany({
+          where: { settlementId: settlement.id },
+          orderBy: { attempt: "desc" },
+        })
+      : [];
     return {
       settlement: settlement ? toSettlementDto(settlement) : null,
+      payouts: payouts.map(toPayoutDto),
       pendingExpenseCount,
     };
   }
@@ -140,7 +147,7 @@ export class SettlementsService {
   }
 
   // Stale detection, layer 2. Layer 1 is the services that change inputs: they call
-  // markStaleIfComputed() in the same transaction. That cannot see changes made
+  // onInputChange() in the same transaction. That cannot see changes made
   // around the API (a manual SQL UPDATE, a bug in some future code path). This check
   // can: it hashes the live rows and compares the result with the stored inputsHash.
   private async detectInputDrift(showId: string): Promise<void> {

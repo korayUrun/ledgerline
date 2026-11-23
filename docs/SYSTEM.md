@@ -161,9 +161,11 @@ draft → computed → in_review → approved → paying → paid
 
 Phase 2 implements `draft → computed → in_review` and `→ stale` (`apps/api/src/modules/settlements/settlement-state-machine.ts`). `computed → computed` (recompute with unchanged inputs) is allowed; `in_review` must go `stale` before it can be recomputed.
 
-Stale detection has two layers. (1) Every service that changes an input (ticket sales, expenses, terms) calls `markStaleIfComputed` in the same transaction. (2) Reading a settlement re-hashes the live inputs and compares with `inputsHash`, which also catches changes made around the API (manual SQL, bugs).
+Stale detection has two layers. (1) Every service that changes an input (ticket sales, expenses, terms) calls `onInputChange` in the same transaction. (2) Reading a settlement re-hashes the live inputs and compares with `inputsHash`, which also catches changes made around the API (manual SQL, bugs).
 
 Pending expenses are included in the math (a preview) but block `computed → in_review` until each one is allowed or disallowed.
+
+Phase 5 adds the payment states (`settlement-state-machine.ts`): `in_review → approved → paying → paid | payment_failed`, `payment_failed → paying` (a person retries), and `approved → paid` only for a $0 payout (Stripe cannot transfer nothing). `paid` has no way out. From `approved` on, the inputs are **locked**: `onInputChange` (called by every input-changing service in the same transaction) answers 409, so the edit rolls back instead of making the settlement stale; recompute is refused by the transition table.
 
 Rules:
 - Transitions happen only through one `SettlementStateMachine` service, never via ad-hoc `UPDATE status`. Each transition writes an `AuditLog` row **in the same DB transaction**.
@@ -327,6 +329,12 @@ sequenceDiagram
 - **Webhook = source of truth for final status.** The API response says "accepted"; the webhook says "done".
 - **Signature verification + event-id dedupe.** Forged and duplicate webhooks are rejected or ignored.
 - **Test mode setup:** create Express connected accounts for test artists; fund the platform's test balance with test charges; forward webhooks locally with `stripe listen`.
+
+As built so far (Phase 5, `apps/api/src/modules/payments/`):
+- **Approval** (`POST /shows/:id/settlement/approve`, logged-in person only) is one transaction: `in_review → approved` (audit `settlement.approved`), the `Payout` row (attempt 1, `pending`), `approved → paying` (audit `settlement.payment_started` with the payout id and key). It re-checks the inputs hash first; the read before it also runs the drift check, so changed data turns the settlement stale and the approval gets a 409.
+- **Two approvals at once:** both read `in_review`; the compare-and-set lets one UPDATE match, the other gets a 409 and its transaction (with its Payout insert) rolls back. Tested with two concurrent requests: exactly one payout.
+- **`Payout`**: one row per attempt, `idempotencyKey = payout:<settlementId>:v<version>:a<attempt>` (UNIQUE), `UNIQUE(settlementId, attempt)`, `amountCents` copied from the approved settlement. A retry (`POST …/retry-payment`, only from `payment_failed`, only after a failed payout) is a new row with a new key, because Stripe answers a repeated key with the first answer.
+- Not yet: the payout job, Stripe, the webhook and the sweeper (next PRs). Until then an approved settlement stays `paying` with a `pending` payout.
 
 ---
 

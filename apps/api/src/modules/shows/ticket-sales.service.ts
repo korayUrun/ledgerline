@@ -46,7 +46,7 @@ export class TicketSalesService {
         before: summarize(before),
         after: summarize(after),
       });
-      await this.stateMachine.markStaleIfComputed(tx, showId, actor.label, "ticket sales imported");
+      await this.stateMachine.onInputChange(tx, showId, actor.label, "ticket sales imported");
     });
     return this.list(showId);
   }

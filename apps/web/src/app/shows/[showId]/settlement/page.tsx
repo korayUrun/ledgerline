@@ -3,6 +3,7 @@ import {
   type AgentRunDto,
   type AuditEntryDto,
   type ExpenseFlagDto,
+  type PayoutDto,
   type SettlementInput,
   type SettlementViewDto,
   type SourceRef,
@@ -11,7 +12,13 @@ import Link from "next/link";
 import { api } from "../../../../lib/api";
 import type { SearchParams } from "../../../../lib/flash";
 import { formatDateTime, humanize } from "../../../../lib/format";
-import { computeSettlement, resolveFlag, submitForReview } from "../../../actions";
+import {
+  approveSettlement,
+  computeSettlement,
+  resolveFlag,
+  retryPayment,
+  submitForReview,
+} from "../../../actions";
 import { ErrorBanner, StatusBadge } from "../../../components";
 import { AssistantPanel } from "./assistant-panel";
 
@@ -43,6 +50,10 @@ export default async function SettlementPage({
     settlement?.status === "computed" && view.pendingExpenseCount === 0 && openFlagCount === 0;
   // The assistant audits a result that matches the data (the API checks it too).
   const canAsk = settlement?.status === "computed" || settlement?.status === "in_review";
+  // From approval on, nothing can be recomputed or resubmitted (the API refuses too).
+  const locked =
+    settlement !== null &&
+    ["approved", "paying", "paid", "payment_failed"].includes(settlement.status);
 
   return (
     <>
@@ -68,21 +79,56 @@ export default async function SettlementPage({
         </div>
       )}
       {settlement?.status === "in_review" && (
-        <div className="banner banner-info">In review. Approval and payment arrive in Phase 5.</div>
+        <div className="banner banner-info">
+          In review. Approving starts the payout to the artist; after that the inputs are locked.
+        </div>
+      )}
+      {settlement?.status === "paying" && (
+        <div className="banner banner-info">
+          Approved. The payout is on its way; the inputs are locked.
+        </div>
+      )}
+      {settlement?.status === "paid" && (
+        <div className="banner banner-info">Paid. This settlement is final.</div>
+      )}
+      {settlement?.status === "payment_failed" && (
+        <div className="banner banner-error">
+          The payout failed ({view.payouts[0]?.failureReason ?? "no reason given"}). Fix the cause,
+          then retry: the retry is a new attempt with its own key.
+        </div>
       )}
 
       <div className="row" style={{ margin: "16px 0" }}>
-        <form action={computeSettlement.bind(null, showId)}>
-          <button type="submit">
-            {settlement && settlement.status !== "draft" ? "Recompute" : "Compute settlement"}
-          </button>
-        </form>
-        <form action={submitForReview.bind(null, showId)}>
-          <button type="submit" className="secondary" disabled={!canSubmit}>
-            Submit for review
-          </button>
-        </form>
+        {!locked && (
+          <>
+            <form action={computeSettlement.bind(null, showId)}>
+              <button type="submit">
+                {settlement && settlement.status !== "draft" ? "Recompute" : "Compute settlement"}
+              </button>
+            </form>
+            <form action={submitForReview.bind(null, showId)}>
+              <button type="submit" className="secondary" disabled={!canSubmit}>
+                Submit for review
+              </button>
+            </form>
+          </>
+        )}
+        {settlement?.status === "in_review" && (
+          <form action={approveSettlement.bind(null, showId)}>
+            <button type="submit">
+              Approve and pay{" "}
+              {settlement.payoutCents === null ? "" : formatCents(settlement.payoutCents)}
+            </button>
+          </form>
+        )}
+        {settlement?.status === "payment_failed" && (
+          <form action={retryPayment.bind(null, showId)}>
+            <button type="submit">Retry payment</button>
+          </form>
+        )}
       </div>
+
+      {view.payouts.length > 0 && <PayoutsTable payouts={view.payouts} />}
 
       {!settlement || settlement.status === "draft" ? (
         <p className="muted">
@@ -241,6 +287,47 @@ function describeChange(entry: AuditEntryDto): string {
   }
   if (after?.reason) parts.push(after.reason);
   return parts.join(" · ");
+}
+
+// Every attempt to send the money, newest first. The idempotency key is shown so a
+// person can find the same attempt in the Stripe dashboard.
+function PayoutsTable({ payouts }: { payouts: PayoutDto[] }) {
+  return (
+    <>
+      <h2>Payout</h2>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Attempt</th>
+              <th className="num">Amount</th>
+              <th>Status</th>
+              <th>Stripe transfer</th>
+              <th>Idempotency key</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payouts.map((payout) => (
+              <tr key={payout.id}>
+                <td>{payout.attempt}</td>
+                <td className="num">{formatCents(payout.amountCents)}</td>
+                <td>
+                  <span className={`badge badge-payout_${payout.status}`}>{payout.status}</span>
+                  {payout.failureReason && <div className="muted">{payout.failureReason}</div>}
+                </td>
+                <td>{payout.stripeTransferId ? <code>{payout.stripeTransferId}</code> : "—"}</td>
+                <td>
+                  <code>{payout.idempotencyKey}</code>
+                </td>
+                <td>{formatDateTime(payout.updatedAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
 }
 
 // Flags the assistant opened. Only a person resolves them; accepting is agreement,

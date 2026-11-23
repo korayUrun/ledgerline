@@ -20,9 +20,22 @@ import {
 
 // --- Settlement status ---------------------------------------------------------------
 
-// Phase 2 states. approved, paying, paid and payment_failed arrive in Phase 5.
-export const SettlementStatusSchema = z.enum(["draft", "computed", "in_review", "stale"]);
+// docs/SYSTEM.md §5. approved, paying, paid and payment_failed are Phase 5.
+export const SettlementStatusSchema = z.enum([
+  "draft",
+  "computed",
+  "in_review",
+  "stale",
+  "approved", // a person approved it; the payout starts in the same transaction
+  "paying", // a Payout is pending or processing
+  "paid", // final: the money arrived (or there was nothing to pay)
+  "payment_failed", // the last Payout failed; a person may retry
+]);
 export type SettlementStatus = z.infer<typeof SettlementStatusSchema>;
+
+// One Payout row per attempt to send the money (docs/SYSTEM.md §8).
+export const PayoutStatusSchema = z.enum(["pending", "processing", "succeeded", "failed"]);
+export type PayoutStatus = z.infer<typeof PayoutStatusSchema>;
 
 // --- Contract status (docs/SYSTEM.md §5) ------------------------------------------------
 
@@ -174,8 +187,21 @@ export type SettlementDto = {
   lines: SettlementLine[]; // worksheet order
 };
 
+export type PayoutDto = {
+  id: string;
+  attempt: number; // 1 for the first try; a retry after a failure is a new payout
+  amountCents: number;
+  status: PayoutStatus;
+  idempotencyKey: string;
+  stripeTransferId: string | null;
+  failureReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type SettlementViewDto = {
   settlement: SettlementDto | null;
+  payouts: PayoutDto[]; // newest attempt first
   // Expenses nobody has reviewed yet. They count in the math, but block review.
   pendingExpenseCount: number;
 };
