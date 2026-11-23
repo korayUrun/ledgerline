@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { api, ApiError } from "../../../lib/api";
 import { StatusBadge } from "../../components";
+import { NavLink } from "../../nav-link";
 
 // Shared header and tabs for every page of one show.
 export default async function ShowLayout({
@@ -25,25 +26,28 @@ export default async function ShowLayout({
 
   return (
     <>
-      <p className="muted">
-        <Link href="/shows">Shows</Link> / {show.showDate}
-      </p>
-      <h1>{show.name}</h1>
-      <p className="muted">
-        {show.artist.name} at {show.venue.name}
-        {show.settlementStatus && (
-          <>
-            {" · settlement "}
-            <StatusBadge status={show.settlementStatus} />
-          </>
-        )}
-      </p>
-      <nav className="tabs">
-        <Link href={`/shows/${showId}`}>Sales &amp; expenses</Link>
-        <Link href={`/shows/${showId}/import`}>Import sales</Link>
-        <Link href={`/shows/${showId}/contract`}>Contract</Link>
-        <Link href={`/shows/${showId}/terms`}>Deal terms</Link>
-        <Link href={`/shows/${showId}/settlement`}>Settlement worksheet</Link>
+      <header className="show-header">
+        <nav className="breadcrumb" aria-label="Breadcrumb">
+          <Link href="/shows">Shows</Link>
+          <span aria-hidden="true">/</span>
+          <span>{show.showDate}</span>
+        </nav>
+        <div className="show-title">
+          <h1>{show.name}</h1>
+          {show.settlementStatus && <StatusBadge status={show.settlementStatus} />}
+        </div>
+        <p className="muted">
+          {show.artist.name} at {show.venue.name}
+        </p>
+      </header>
+      <nav className="tabs" aria-label="Show">
+        <NavLink href={`/shows/${showId}`} exact>
+          Sales &amp; expenses
+        </NavLink>
+        <NavLink href={`/shows/${showId}/import`}>Import sales</NavLink>
+        <NavLink href={`/shows/${showId}/contract`}>Contract</NavLink>
+        <NavLink href={`/shows/${showId}/terms`}>Deal terms</NavLink>
+        <NavLink href={`/shows/${showId}/settlement`}>Settlement</NavLink>
       </nav>
       {children}
     </>
