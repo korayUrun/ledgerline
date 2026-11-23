@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "generate": "tsx src/scripts/generate-dataset.ts",
-    "evals": "tsx src/scripts/run-evals.ts"
+    "evals": "tsx src/scripts/run-evals.ts",
+    "evals:agent": "tsx src/scripts/run-agent-evals.ts"
   },
   "dependencies": {
     "@ledgerline/api": "workspace:*",

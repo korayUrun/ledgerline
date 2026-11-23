@@ -16,7 +16,8 @@
     "format:check": "prettier --check .",
     "db:migrate": "pnpm --filter @ledgerline/db db:migrate",
     "db:seed": "pnpm --filter @ledgerline/db db:seed",
-    "evals": "pnpm --filter @ledgerline/evals evals"
+    "evals": "pnpm --filter @ledgerline/evals evals",
+    "evals:agent": "pnpm --filter @ledgerline/evals evals:agent"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
