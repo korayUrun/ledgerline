@@ -733,7 +733,11 @@ server keeps running, and ask again.
 The next tool call returns `isError: true` with "The Ledgerline API refused the API key
 (missing, unknown or revoked). A person must create a new key…", and the model passes that
 on. Nothing is cached: the API checks the key on every request, so revoking takes effect on
-the very next call, with no restart. The API logs nothing special (a 401), and the
+the very next call, with no restart. But "the next call" is the point: asked the same question again in the
+same chat, Claude may answer from tool results it already has, without calling the server
+at all (seen in the real drill: no tool call, no request after `revokedAt`). Revoking a key
+stops new access; it cannot take back what was already read. Ask for something not yet
+loaded to see the refusal. The API logs nothing special (a 401), and the
 `ApiKey` row stays with `revokedAt` set. Automated in `apps/mcp/src/tools/list-shows.test.ts`
 and `apps/api/test/public-api.test.ts`.
 
