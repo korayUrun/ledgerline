@@ -448,7 +448,7 @@ As built (`packages/evals/`):
 - **Dataset:** 25 cases in `dataset/cNN/` (`case.json` ground truth, `contract.pdf`, `contract.txt`), generated from fixed seeds by `pnpm --filter @ledgerline/evals generate`. Output is byte-for-byte deterministic (pdfkit with a fixed creation date), and a test fails if the committed dataset no longer matches the generator. Deal types rotate (7/6/6/6). Hard features are tagged per case: `deposit_distractor`, `merch_percent_distractor`, `money_in_words`, `cents_in_guarantee`, `sub_clauses`, `no_total_cap`, `prompt_injection` (2 cases). Versus and guarantee-plus guarantees are sized from the show's net box office, so the percentage side decides about half of those payouts; otherwise a wrong percentage would still give the "exact" payout.
 - **Runner:** `pnpm evals` calls the production `extractContractTerms` on every case (4 at a time). 12 fields are scored, each as `correct`, `wrong`, `missed` (contract has it, extraction returned null) or `invented` (a value the contract does not have). Payout exactness runs the extracted terms through the real engine with the case's sales and expenses.
 - **Oracle:** `pnpm evals --oracle` answers with the ground truth instead of calling Claude. It must score 100%; it tests the pipeline (scoring, text ↔ cents, dataset), not the model.
-- **Reports** go to `evals/reports/` (gitignored); `--save-baseline` writes `packages/evals/baselines/extraction.{json,md}` (committed). The CI gate comes in Phase 7.
+- **Reports** go to `evals/reports/` (gitignored); `--save-baseline` writes `packages/evals/baselines/extraction.{json,md}` (committed). The CI gate (`evals.yml`) is part of Phase 7.
 - **Baseline (2026-11-19, `claude-opus-5-5`, `extract-v2`):** 300/300 fields, 25/25 payouts exact, 0 retries, $1.05 for 25 contracts ($0.042 each), 5.8 s each. The dataset is now too easy to separate good prompts from better ones; harder templates are on the Later list.
 - **Agent eval (Phase 4):** `pnpm evals:agent [--model <id>]` runs the production audit (same loop, tools, prompt, limits) on every case. The context is built from the case's ground-truth terms, so an extraction mistake cannot count against the agent; flags go to a list in memory. Scored by expense: **precision** = flagged expenses that are planted violations / all flagged expenses, **recall** = planted violations flagged / all planted, plus whether the flag kind was right. `--oracle` flags exactly the planted violations and must score 100%. Baseline: `packages/evals/baselines/agent.{json,md}`.
 
@@ -489,6 +489,6 @@ Agent misbehaving? Open its `AgentRun` and read the steps. Did it call the right
 5. F12 tracing → F6 agent loop
 6. F7 state machine + Stripe + webhooks, F8 queues
 7. F9 API → F10 MCP
-8. Eval CI gate, README, demo
+8. Eval CI gate, README
 
 **Why this order:** the engine is the foundation and the easiest thing to prove correct. The eval data generator comes before extraction, so extraction is measured from its first version. Payments come after the state machine is solid.

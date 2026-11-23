@@ -197,19 +197,23 @@ Estimated total: ~4 weeks part-time.
 
 ---
 
-## Phase 7 — Hardening & presentation (3–4 days)
+## Phase 7 — Hardening & finish (3–4 days)
 
-**Goal:** the project proves itself to someone who has five minutes.
+**Goal:** the project is in its final state: clean, current and runnable from a fresh clone. No presentation work (scope cut 2026-11-24).
 
 **Tasks**
 - [ ] `evals.yml`: runs on PRs touching prompts/schemas/llm, comments a results table, fails below baseline
 - [ ] Structured logging (pino) with `requestId` / `jobId` / `settlementId`
 - [ ] ~~Go through `DEBUGGING.md`~~ Dropped: the log was removed. Bugs and their fixes are in the PR descriptions and the "as built" notes in `SYSTEM.md`; the Break it drills with what to look for are in `SELF_CHECK.md`.
 - [ ] README: problem, architecture diagram, key decisions (link SYSTEM.md), eval results table, how to run, MCP setup
-- [ ] 2-minute demo video: upload → review → compute → agent flags → approve → paid → MCP question
-- [ ] Final CV bullets
+- [ ] Web UI design pass: consistent layout, typography, tables and states across the existing pages. No new features or screens.
+- [ ] Bind the compose ports to `127.0.0.1` (from Later)
+- [ ] CI runner upkeep: pin the runner image, bump `pnpm/action-setup` if a Node 24 release exists (from Later)
+- [ ] Deferred live runs (API budget, last): the Phase 4 agent eval baseline and the `AGENT_MODEL` choice
+- [ ] ~~2-minute demo video~~ Dropped: no presentation.
+- [ ] ~~Final CV bullets~~ Dropped: no presentation.
 
-**Done when:** a fresh clone runs with `docker compose up` + `pnpm dev` from the README; the demo video is linked; the eval badge/table is current.
+**Done when:** a fresh clone runs with `docker compose up` + `pnpm dev` from the README; the eval badge/table is current.
 
 **Explain it:** pick any file at random and explain why it exists and what would break without it.
 
@@ -219,10 +223,7 @@ Estimated total: ~4 weeks part-time.
 
 Ideas and small follow-ups that came up while building. Not scheduled; pick them up only when a phase needs them.
 
-- Bind the compose ports to `127.0.0.1` so Postgres and Redis are not reachable from the local network.
 - ~~Extend the `toFixed` / `parseFloat` lint ban from `settlement-engine` to `apps/api`~~ Done in Phase 2 (also covers `apps/web`).
-- Bump `pnpm/action-setup` when a release targets Node 24 (CI warns that v4 runs on deprecated Node 20).
-- `ubuntu-latest` moves to Ubuntu 26; pin the runner if CI breaks after the switch.
 - Switch `apps/web` back to Turbopack once it can resolve `./x.js` imports to `x.ts` in workspace packages (today `next dev --webpack` with `experimental.extensionAlias`).
 - `pg` prints "Calling client.query() when the client is already executing a query is deprecated" during tests. It comes from inside `@prisma/adapter-pg`; recheck when upgrading Prisma.
 - Prisma's `latest` npm tag points at 8.0.0-rc; we pin 7.10.1 (stable). Revisit when 8.0 is final.
@@ -232,5 +233,4 @@ Ideas and small follow-ups that came up while building. Not scheduled; pick them
 - Delete or archive the stored PDF of a superseded contract upload (today every upload is kept).
 - MCP output schemas use `type: ["string", "null"]` for nullable fields (Zod's JSON Schema). Valid, and Claude reads it, but MCP Inspector's `--strict` warns that single-`type` dialects (e.g. Gemini function declarations) may reject it. Switch to `anyOf` if a non-Claude client needs it.
 - `formatNanoUsd` exists twice (api and web) because web cannot import api code. Move it to `packages/schemas` next to `formatCents` if a third user appears.
-- Run the eval CI gate (`evals.yml`, Phase 7) against the committed baseline.
 - Harder eval contracts: the baseline is 100%, so the eval can no longer show a prompt getting better. Ideas: terms in a table, an amendment that overrides an earlier clause, a percentage of gross instead of net, a term that is truly missing, scanned (image-only) pages.

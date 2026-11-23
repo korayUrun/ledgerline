@@ -97,7 +97,7 @@ See [`FEATURES.md`](./FEATURES.md) for details.
 | 1 | Foundations + engine | Monorepo running in Docker Compose; Prisma schema; F1; F4 with full unit + property tests |
 | 2 | AI layer | F2 + F3 working end to end; first eval set and runner (F11) |
 | 3 | Agent + payments | F6 hand-written agent loop with traces (F12); F7 Stripe Connect payout with webhooks; F8 |
-| 4 | Surface + polish | F5 worksheet; F9 API; F10 MCP server; eval CI gate; README with an architecture diagram, eval results and a 2-minute demo video |
+| 4 | Surface + polish | F5 worksheet; F9 API; F10 MCP server; eval CI gate; README with an architecture diagram and eval results (demo video dropped: no presentation) |
 
 ## 9. What "done" looks like
 
