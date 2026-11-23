@@ -63,7 +63,6 @@ When something breaks, **don't jump to a fix.** Follow this and narrate each ste
 3. **Hypothesize:** the most likely cause and how to confirm it.
 4. **Verify:** confirm it with a log, a test or a query before changing code.
 5. **Fix + regression test:** a failing test first, then the fix.
-6. **Log it:** add an entry to `DEBUGGING.md` (symptom → layer → root cause → fix → lesson).
 
 ## Non-negotiable rules
 - **Money:** integer cents only; percentages in basis points (8500 = 85%). No floats, `toFixed` or `parseFloat` anywhere money flows. Rounding only via the engine's helpers.

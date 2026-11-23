@@ -476,7 +476,7 @@ A wrong payout can come from exactly four layers. Check them in order:
 
 Agent misbehaving? Open its `AgentRun` and read the steps. Did it call the right tool, with what input, and what did it get back? Common causes are a weak tool description, a tool returning too much or too little, or a missing `tool_result`.
 
-**Practice:** keep a `DEBUGGING.md` log. Every time something breaks, write down the symptom, the layer, the root cause and the fix. Deliberately break things (wrong rounding, a duplicate webhook, a killed worker mid-payout) and confirm the system behaves as designed.
+**Practice:** deliberately break things (wrong rounding, a duplicate webhook, a killed worker mid-payout) and confirm the system behaves as designed. Each phase's "Break it" drill, with what to look for, is in `SELF_CHECK.md`; real bugs and their fixes are described in the PRs and in the "as built" notes of this document.
 
 ---
 
