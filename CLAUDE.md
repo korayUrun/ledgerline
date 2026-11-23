@@ -46,10 +46,11 @@ That means:
 
 ## Who writes what
 
-**I don't write code in this project. You write all of it; I read it, question it and review it until I understand it.** So the code must be small and explicit enough for me to follow, and the walkthrough is part of the task, not optional.
+**You write almost all of the code; I read it, question it and review it until I understand it.** So the code must be small and explicit enough for me to follow, and the walkthrough is part of the task, not optional. **Exception:** the three areas marked "I type it" below. For those I want hands-on experience, so I type the code into the files myself.
 
 | Area | Mode |
 |------|------|
+| Agent tools (`apps/api/src/modules/agent/tools`), the MCP server (`apps/mcp`), and the Zod input/output schemas for tools and MCP tools | **I type it.** Send the code in chat, one small step at a time (a file or a part of one), with its tests and a short explanation of each part. Do not write these files yourself. I type it in and tell you when I'm done; then you review what I wrote (read the files, run lint, typecheck and tests) and point out mistakes without fixing them for me, unless I ask you to. |
 | `packages/settlement-engine` (money math) | **You write it, tests first.** Before each step, explain the domain rule in plain words and what it changes in the code. Write the tests from `docs/domain.md` first, then the implementation, then walk me through it line by line. |
 | Agent loop in `apps/api/src/modules/agent` | **You write it, by hand (no framework).** Explain the API contract (messages, `tool_use`/`tool_result`, `stop_reason`, step limit) before the code, then walk me through the loop line by line. |
 | Payment flow (state machine, payout job, webhooks) | **Design discussion first**, then you write it and walk me through it line by line, especially the failure cases (retries, duplicate webhooks, double payment). |
@@ -119,4 +120,4 @@ stripe listen --forward-to localhost:3001/payments/webhook
 
 ## Current phase
 <!-- Update when a phase is done -->
-**Phase 4 — Audit agent (F12 traces, F6).** Phases 0–3 done (2026-11-18/19); the Phase 3 extraction baseline is in `packages/evals/baselines/`. See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Phase "Explain it" quizzes and "Break it" drills are deferred to the end of the project: when a phase is done, add its questions with answers to `docs/SELF_CHECK.md` instead of quizzing me.
+**Phase 5 — Approval & payments (F7, F8).** Phases 0–4 done (2026-11-18 to 2026-11-23); the Phase 3 extraction baseline is in `packages/evals/baselines/`. Live eval runs (the Phase 4 agent baseline) are deferred to the end of the project because of the API budget. See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Phase "Explain it" quizzes and "Break it" drills are deferred to the end of the project: when a phase is done, add its questions with answers to `docs/SELF_CHECK.md` instead of quizzing me.

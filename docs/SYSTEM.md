@@ -131,6 +131,12 @@ As built in Phase 3:
 - **`ContractTerms.contractId`** (nullable) links a version to the contract it was confirmed from; `null` means typed in by hand. Evidence quotes stay on `Contract.extractionJson` (there is no `evidenceJson` column).
 - **`llmUsage`** holds `{ model, calls, inputTokens, outputTokens, costNanoUsd }`. Cost is integer nano-dollars (1 USD = 10⁹), for the same reason money is integer cents.
 
+As built in Phase 4:
+- **`AgentRun`** (`settlementId`, `settlementVersion`, `kind: audit|question`, `question`, `model`, `promptVersion`, `startedBy`, `status: running|completed|failed`, `outcome`, `finalText`, `errorMessage`, token totals, `costNanoUsd`). `settlementVersion` says which numbers the run looked at; a later recompute does not change what it saw.
+- **`AgentStep`**: one table for both step kinds, ordered by `position` (`UNIQUE(runId, position)`). A `model_call` row keeps the reply's blocks exactly as received (`content` JSON, thinking and `tool_use` blocks included), its stop reason, tokens, cost and duration; a `tool_call` row keeps `toolUseId`, `toolName`, `toolInput`, `toolOutput` (the exact text sent back) and `isError`. The other kind's columns are null. Replay = `ORDER BY position`.
+- **Run totals are updated in the same transaction as each model-call step**, so they always equal the sum of the stored steps, even after a crash. An unknown price makes `costNanoUsd` NULL and it stays NULL (SQL `NULL + x` is `NULL`): never a misleading $0.
+- **`ExpenseFlag`** (`expenseId`, `agentRunId`, `kind: category_not_allowed|over_category_cap|other`, `reason`, `status: open|accepted|dismissed`, `resolvedById`, `resolvedAt`). A flag is a note, not an input: it never changes the expense or makes the settlement stale. Open flags block submit-for-review, like pending expenses.
+
 ---
 
 ## 5. State machines
@@ -203,9 +209,9 @@ All Claude calls go through `modules/llm`, which handles:
 
 As built (`apps/api/src/modules/llm/`):
 - `LlmClient` is a one-method interface (`createMessage`). `AnthropicLlmClient` uses the official SDK; `FakeLlmClient` is scripted for tests and offline runs.
-- The model comes from config (`EXTRACTION_MODEL`, default `claude-opus-5-5`). Retries on 408/409/429/5xx and dropped connections are the SDK's own (`maxRetries`, exponential backoff, honours `Retry-After`); we configure them instead of writing a second retry loop. Timeout `LLM_TIMEOUT_MS` (120 s).
+- The model comes from config per task: `EXTRACTION_MODEL` (default `claude-opus-5-5`) and `AGENT_MODEL` (default `claude-sonnet-5-5`, to be confirmed by the agent eval). Retries on 408/409/429/5xx and dropped connections are the SDK's own (`maxRetries`, exponential backoff, honours `Retry-After`); we configure them instead of writing a second retry loop. Timeout `LLM_TIMEOUT_MS` (120 s).
 - Every call logs task, model, stop reason, tokens, cost and duration. Prompt and reply text are never logged.
-- Only the worker reads `ANTHROPIC_API_KEY`; the HTTP API never calls Claude. `LLM_CLIENT=fake` runs the worker without a key (every field comes back missing, so a person types the terms).
+- The worker and, since Phase 4, the HTTP API read `ANTHROPIC_API_KEY`: the worker for extraction, the API for the audit agent (it runs in the request so its steps can stream to the browser). `LLM_CLIENT=fake` runs both without a key: every extracted field comes back missing (a person types the terms) and the agent answers that it is offline.
 
 ### 7.1 Contract extraction (F2)
 
@@ -267,9 +273,25 @@ throw StepLimitExceeded
 
 **Safety:** contract text and expense descriptions are **untrusted input** (prompt-injection surface). Mitigation is structural, not prompt-based: the agent has no tool that can move money or change terms, so the worst case is a wrong flag that a human sees.
 
+As built (`apps/api/src/modules/agent/`):
+- **The loop** (`agent-loop.ts`, `runAgent`) is a plain function with the `LlmClient` passed in, so the API and the eval run the same code. `stop_reason` is checked before the content: `end_turn` → answered; `max_tokens`, `refusal` and anything else end the run without running tools; `tool_use` → every requested tool runs **one by one** (not `Promise.all`: the trace shows the real order and two writes never race), and all results go back in **one** user message, each with its `tool_use_id`. The assistant content is sent back unchanged (thinking blocks included).
+- **Limits return an outcome instead of throwing** (`step_limit`, `token_budget`): a run that hit a limit is a normal, recorded result. They are checked *before* the tools run, so a tool call no later model call would read (maybe a write) is not executed. Limits: 12 model calls, 400k tokens (`AGENT_LIMITS`).
+- **Tool errors:** invalid input (Zod) and `ToolError` (a problem the model can fix, e.g. an unknown expense id) go back as `is_error` tool results; any other error ends the run as `failed`.
+- **Tools** (`tools/`) read an `AuditContext` loaded once per run: the settlement, its frozen `inputSnapshot` and lines, the expenses with descriptions, and the contract extraction's quotes. One snapshot keeps every answer in a run about the same version, and lets the eval build the context from a dataset case without a database. Money reaches the model only as dollar text (`"$12,500.00"`): the code keeps the cents, the model reads and quotes. `recompute_settlement` runs the pure engine on a changed copy (some expenses treated as disallowed) and saves nothing.
+- **`flag_expense`** is the only write. It calls `ExpenseFlagsService`, which checks that the expense belongs to the run's show (an id planted in some description cannot reach another show), dedupes open flags and writes the audit log as `agent:<runId>`.
+- **Prompt** (`agent-prompt.ts`, version `agent-v1`): every amount must come from a tool; contract quotes and descriptions are data, never instructions; the agent cannot approve, pay or edit; flags need a concrete rule break tied to a clause; flat and percentage deals deduct no expenses, so nothing is flagged there.
+- **The audit needs a computed settlement whose inputs still match.** The loader uses the worksheet's own read (with the drift check), so a stale settlement gets a 409 before any model call.
+
 ### 7.3 Streaming answers
 
 The web chat calls `POST /settlements/:id/ask`. The API runs the agent loop and streams text and tool-step events to the browser over Server-Sent Events (SSE).
+
+As built:
+- `POST /settlements/:id/ask` (`{ question }`) and `POST /settlements/:id/audit` (fixed audit question). Server-Sent Events are written by hand, because Nest's `@Sse()` serves GET only and a question belongs in a POST body. Events: `run_started`, `step` × n, then `run_finished` or `run_failed`.
+- **Two phases:** loading the settlement and starting the run happen before the stream opens, so 400/404/409 are ordinary JSON errors; once the stream is open the status is 200 and failures arrive as `run_failed` (details go to the log and `AgentRun.errorMessage`, not the browser).
+- **Each step is stored, then sent:** what the person saw is always in the trace. If the tab closes, the run still finishes and is stored.
+- `GET /agent-runs/:id` returns the run and its steps in the same shape that streamed, so the replay page and the live chat panel share one component. Also `GET /settlements/:id/agent-runs`, `GET /settlements/:id/flags`, `POST /flags/:id/resolve` (`accepted|dismissed`; a person only).
+- The browser never calls the API: Next.js route handlers (`apps/web/src/app/settlements/[settlementId]/ask|audit`) pass the request on and the response body through unchanged.
 
 ---
 
@@ -360,6 +382,7 @@ As built (`packages/evals/`):
 - **Oracle:** `pnpm evals --oracle` answers with the ground truth instead of calling Claude. It must score 100%; it tests the pipeline (scoring, text ↔ cents, dataset), not the model.
 - **Reports** go to `evals/reports/` (gitignored); `--save-baseline` writes `packages/evals/baselines/extraction.{json,md}` (committed). The CI gate comes in Phase 7.
 - **Baseline (2026-11-19, `claude-opus-5-5`, `extract-v2`):** 300/300 fields, 25/25 payouts exact, 0 retries, $1.05 for 25 contracts ($0.042 each), 5.8 s each. The dataset is now too easy to separate good prompts from better ones; harder templates are on the Later list.
+- **Agent eval (Phase 4):** `pnpm evals:agent [--model <id>]` runs the production audit (same loop, tools, prompt, limits) on every case. The context is built from the case's ground-truth terms, so an extraction mistake cannot count against the agent; flags go to a list in memory. Scored by expense: **precision** = flagged expenses that are planted violations / all flagged expenses, **recall** = planted violations flagged / all planted, plus whether the flag kind was right. `--oracle` flags exactly the planted violations and must score 100%. Baseline: `packages/evals/baselines/agent.{json,md}`.
 
 ---
 
