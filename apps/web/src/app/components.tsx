@@ -38,3 +38,41 @@ export function NextStep({ href, children }: { href: string; children: React.Rea
     </p>
   );
 }
+
+// A padlock drawn in the text color. Decoration only: it always sits next to words
+// that say "locked", so screen readers skip it.
+export function LockIcon() {
+  return (
+    <svg
+      className="icon"
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect
+        x="3"
+        y="7"
+        width="10"
+        height="7"
+        rx="1.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+// Why a form is missing on a page whose settlement is approved: said where the form
+// used to be, so nobody hunts for it.
+export function LockedNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="locked-note">
+      <LockIcon />
+      <span>{children}</span>
+    </p>
+  );
+}

@@ -3,14 +3,16 @@ import {
   ExpenseStatusSchema,
   formatCents,
   type ExpenseDto,
+  type ShowDto,
   type TicketSaleDto,
 } from "@ledgerline/schemas";
 import Link from "next/link";
 import type { SearchParams } from "../../../lib/flash";
 import { api } from "../../../lib/api";
 import { centsToInput, humanize } from "../../../lib/format";
+import { inputsLocked } from "../../../lib/show-steps";
 import { createExpense, deleteExpense, updateExpense, uploadReceipt } from "../../actions";
-import { ErrorBanner, NextStep, StatusBadge } from "../../components";
+import { ErrorBanner, LockedNote, NextStep, StatusBadge } from "../../components";
 import { SubmitButton } from "../../submit-button";
 
 // Option texts for the expense status. The option values stay the API's enum values;
@@ -30,20 +32,34 @@ export default async function ShowDetailPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { showId } = await params;
-  const [ticketSales, expenses] = await Promise.all([
+  // The show is the same fetch as the layout's (deduped within the render): it
+  // carries the settlement status that decides whether the inputs are locked.
+  const [show, ticketSales, expenses] = await Promise.all([
+    api.get<ShowDto>(`/shows/${showId}`),
     api.get<TicketSaleDto[]>(`/shows/${showId}/ticket-sales`),
     api.get<ExpenseDto[]>(`/shows/${showId}/expenses`),
   ]);
+  const locked = inputsLocked(show.settlementStatus);
 
   return (
     <>
       <ErrorBanner searchParams={await searchParams} />
 
-      <h2>Ticket sales</h2>
+      <div className="section-head">
+        <h2>Ticket sales</h2>
+        {/* The import replaces the sales: the main button while there are none, a quiet
+            one once there are. */}
+        {!locked && (
+          <Link
+            href={`/shows/${showId}/import`}
+            className={ticketSales.length === 0 ? "button-link" : "button-link secondary"}
+          >
+            Import sales CSV
+          </Link>
+        )}
+      </div>
       {ticketSales.length === 0 ? (
-        <p className="muted">
-          No ticket sales yet. <Link href={`/shows/${showId}/import`}>Import a CSV</Link>.
-        </p>
+        <p className="muted">No ticket sales yet.</p>
       ) : (
         <div className="table-wrap">
           <table>
@@ -74,6 +90,76 @@ export default async function ShowDetailPage({
       )}
 
       <h2>Expenses</h2>
+      {locked ? (
+        <LockedExpenses expenses={expenses} />
+      ) : (
+        <EditableExpenses showId={showId} expenses={expenses} />
+      )}
+
+      {locked ? (
+        <NextStep href={`/shows/${showId}/settlement`}>See the settlement</NextStep>
+      ) : (
+        <NextStep href={`/shows/${showId}/contract`}>Upload the contract</NextStep>
+      )}
+    </>
+  );
+}
+
+// Once the settlement is approved: the expenses as text, the way the payout used them.
+function LockedExpenses({ expenses }: { expenses: ExpenseDto[] }) {
+  return (
+    <>
+      <p className="muted">These are the expenses the approved settlement was computed from.</p>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Description</th>
+              <th className="num">Amount</th>
+              <th>Status</th>
+              <th>Receipt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {expenses.map((expense) => (
+              <tr key={expense.id}>
+                <td>{humanize(expense.category)}</td>
+                <td>{expense.description}</td>
+                <td className="num">{formatCents(expense.amountCents)}</td>
+                <td>
+                  <StatusBadge status={expense.status} />
+                </td>
+                <td>
+                  {expense.hasReceipt ? (
+                    <a href={`/receipts/${expense.id}`} target="_blank" rel="noreferrer">
+                      View receipt
+                    </a>
+                  ) : (
+                    <span className="muted">None</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {expenses.length === 0 && (
+              <tr>
+                <td colSpan={5} className="muted">
+                  No expenses.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <LockedNote>Expenses can no longer be added, changed or removed.</LockedNote>
+    </>
+  );
+}
+
+// Before approval: every expense is a row of inputs, plus the form to add one.
+function EditableExpenses({ showId, expenses }: { showId: string; expenses: ExpenseDto[] }) {
+  return (
+    <>
       <p className="muted">
         Changing an expense means the settlement must be recomputed. Pending expenses count in the
         math but block review until someone allows or disallows them.
@@ -211,8 +297,6 @@ export default async function ShowDetailPage({
         </label>
         <SubmitButton pendingLabel="Adding…">Add expense</SubmitButton>
       </form>
-
-      <NextStep href={`/shows/${showId}/contract`}>Upload the contract</NextStep>
     </>
   );
 }

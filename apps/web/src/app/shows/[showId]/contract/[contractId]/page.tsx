@@ -1,11 +1,13 @@
-import type { ContractDetailDto } from "@ledgerline/schemas";
+import type { ContractDetailDto, ShowDto, TermsDto } from "@ledgerline/schemas";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { api, ApiError } from "../../../../../lib/api";
 import type { SearchParams } from "../../../../../lib/flash";
-import { evidenceFromExtraction } from "../../../../../lib/terms-form";
+import { formatDateTime } from "../../../../../lib/format";
+import { inputsLocked } from "../../../../../lib/show-steps";
+import { evidenceFromExtraction, termsToDraft } from "../../../../../lib/terms-form";
 import { confirmContract } from "../../../../actions";
-import { ErrorBanner, StatusBadge } from "../../../../components";
+import { ErrorBanner, LockIcon, StatusBadge } from "../../../../components";
 import { SubmitButton } from "../../../../submit-button";
 import { TermsFields } from "../../terms-fields";
 import { UsageNote } from "../usage-note";
@@ -30,7 +32,24 @@ export default async function ContractReviewPage({
     }
     throw error;
   }
-  const canConfirm = contract.status === "needs_review";
+  // Same fetches as the layout's (deduped within the render): the settlement status,
+  // and the terms version this contract became when it was confirmed.
+  const [show, terms] = await Promise.all([
+    api.get<ShowDto>(`/shows/${showId}`),
+    api.get<TermsDto>(`/shows/${showId}/terms`),
+  ]);
+  const locked = inputsLocked(show.settlementStatus);
+  const canConfirm = contract.status === "needs_review" && !locked;
+  const confirmedAs =
+    contract.status === "confirmed"
+      ? (terms.versions.find((version) => version.contractId === contract.id) ?? null)
+      : null;
+  // The reviewer may have corrected Claude's draft before confirming, so a confirmed
+  // contract shows the terms as confirmed. The API returns the terms of the latest
+  // version only; for an older version, Claude's draft is all there is to show.
+  const showsConfirmedTerms = confirmedAs !== null && terms.latest?.id === confirmedAs.id;
+  const draft =
+    showsConfirmedTerms && terms.latest ? termsToDraft(terms.latest.terms) : contract.draft;
   const missingCount = contract.extraction
     ? Object.values(evidenceFromExtraction(contract.extraction)).filter((e) => e === "missing")
         .length
@@ -56,8 +75,8 @@ export default async function ContractReviewPage({
             src={`/contracts/${contractId}/pdf`}
             title={`Contract ${contract.fileName}`}
           />
-          <form action={confirmContract.bind(null, showId, contractId)}>
-            {canConfirm ? (
+          {canConfirm ? (
+            <form action={confirmContract.bind(null, showId, contractId)}>
               <div className="banner banner-info">
                 <strong>Check each field against its quote from the PDF.</strong> The contract text
                 is untrusted: Claude was told to ignore instructions inside it, and nothing counts
@@ -65,20 +84,47 @@ export default async function ContractReviewPage({
                 {missingCount > 0 &&
                   ` ${missingCount} field(s) were not found; fill them in if the contract has them.`}
               </div>
-            ) : (
-              <div className="banner banner-warn">
-                This contract is {contract.status.replaceAll("_", " ")} and can no longer be
-                confirmed.
-              </div>
-            )}
-            <TermsFields
-              draft={contract.draft}
-              evidence={evidenceFromExtraction(contract.extraction)}
-            />
-            <SubmitButton disabled={!canConfirm} pendingLabel="Confirming…">
-              Confirm terms (creates a new version)
-            </SubmitButton>
-          </form>
+              <TermsFields draft={draft} evidence={evidenceFromExtraction(contract.extraction)} />
+              <SubmitButton pendingLabel="Confirming…">
+                Confirm terms (creates a new version)
+              </SubmitButton>
+            </form>
+          ) : (
+            // Nothing left to decide here: the same fields, read-only, with the reason.
+            <div>
+              {contract.status === "confirmed" ? (
+                <div className="banner banner-success">
+                  <strong>
+                    <span aria-hidden="true">✓ </span>
+                    {confirmedAs ? `Confirmed as terms v${confirmedAs.version}` : "Confirmed"}
+                  </strong>
+                  {confirmedAs &&
+                    ` by ${confirmedAs.confirmedByName} on ${formatDateTime(confirmedAs.confirmedAt)}`}
+                  .{" "}
+                  {showsConfirmedTerms
+                    ? "The fields show the terms as confirmed."
+                    : "The fields show what Claude extracted; the current terms are on the Deal terms tab."}
+                  {!locked && " To change a term, save a new version on the Deal terms tab."}
+                </div>
+              ) : locked ? (
+                <div className="banner banner-locked">
+                  <LockIcon />
+                  <span>
+                    The settlement was approved before this contract was confirmed, so it can no
+                    longer be confirmed.
+                  </span>
+                </div>
+              ) : (
+                <div className="banner banner-warn">
+                  This contract is {contract.status.replaceAll("_", " ")} and can no longer be
+                  confirmed.
+                </div>
+              )}
+              <fieldset disabled className="fieldset-plain">
+                <TermsFields draft={draft} evidence={evidenceFromExtraction(contract.extraction)} />
+              </fieldset>
+            </div>
+          )}
         </div>
       )}
     </>

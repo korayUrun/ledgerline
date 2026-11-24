@@ -1,6 +1,9 @@
+import type { ShowDto } from "@ledgerline/schemas";
+import { api } from "../../../../lib/api";
 import type { SearchParams } from "../../../../lib/flash";
+import { inputsLocked } from "../../../../lib/show-steps";
 import { importTicketSales } from "../../../actions";
-import { ErrorBanner, NextStep } from "../../../components";
+import { ErrorBanner, LockedNote, NextStep } from "../../../components";
 import { SubmitButton } from "../../../submit-button";
 
 export default async function ImportPage({
@@ -11,6 +14,22 @@ export default async function ImportPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { showId } = await params;
+  // Same fetch as the layout's (deduped): only for the settlement status.
+  const show = await api.get<ShowDto>(`/shows/${showId}`);
+
+  if (inputsLocked(show.settlementStatus)) {
+    return (
+      <>
+        <h2>Import ticket sales</h2>
+        <LockedNote>
+          Importing is closed. An import replaces the ticket sales, and the approved settlement was
+          computed from the ones already here.
+        </LockedNote>
+        <NextStep href={`/shows/${showId}`}>Back to the sales and expenses</NextStep>
+      </>
+    );
+  }
+
   return (
     <>
       <ErrorBanner searchParams={await searchParams} />

@@ -1,11 +1,12 @@
-import type { ContractTerms, TermsDto } from "@ledgerline/schemas";
+import type { ContractTerms, ShowDto, TermsDto } from "@ledgerline/schemas";
 import Link from "next/link";
 import { api } from "../../../../lib/api";
 import type { SearchParams } from "../../../../lib/flash";
 import { formatDateTime } from "../../../../lib/format";
+import { inputsLocked } from "../../../../lib/show-steps";
 import { termsToDraft } from "../../../../lib/terms-form";
 import { saveTerms } from "../../../actions";
-import { ErrorBanner, NextStep } from "../../../components";
+import { ErrorBanner, LockedNote, NextStep } from "../../../components";
 import { SubmitButton } from "../../../submit-button";
 import { TermsFields } from "../terms-fields";
 
@@ -19,23 +20,48 @@ export default async function TermsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { showId } = await params;
-  const { latest, versions } = await api.get<TermsDto>(`/shows/${showId}/terms`);
+  // Both are the same fetches as the layout's (deduped within the render).
+  const [show, { latest, versions }] = await Promise.all([
+    api.get<ShowDto>(`/shows/${showId}`),
+    api.get<TermsDto>(`/shows/${showId}/terms`),
+  ]);
   const terms: ContractTerms | null = latest?.terms ?? null;
+  const locked = inputsLocked(show.settlementStatus);
 
   return (
     <>
       <ErrorBanner searchParams={await searchParams} />
       <h2>Deal terms</h2>
-      <p className="muted">
-        {latest
-          ? `Showing version ${latest.version}, confirmed by ${latest.confirmedByName} on ${formatDateTime(latest.confirmedAt)}. Saving creates version ${latest.version + 1}; old versions are kept.`
-          : "No terms yet. Upload the contract on the Contract tab, or type the terms in here."}
-      </p>
-
-      <form action={saveTerms.bind(null, showId)}>
-        <TermsFields draft={terms ? termsToDraft(terms) : null} />
-        <SubmitButton pendingLabel="Saving…">Save as new version</SubmitButton>
-      </form>
+      {locked ? (
+        <>
+          {latest && (
+            <p className="muted">
+              Version {latest.version}, confirmed by {latest.confirmedByName} on{" "}
+              {formatDateTime(latest.confirmedAt)}.
+            </p>
+          )}
+          <LockedNote>
+            These terms can no longer be changed: the settlement was approved with them.
+          </LockedNote>
+          {/* A disabled fieldset disables every field inside it: the same layout as the
+              form, readable, but nothing to type into and nothing to submit. */}
+          <fieldset disabled className="fieldset-plain">
+            <TermsFields draft={terms ? termsToDraft(terms) : null} />
+          </fieldset>
+        </>
+      ) : (
+        <>
+          <p className="muted">
+            {latest
+              ? `Showing version ${latest.version}, confirmed by ${latest.confirmedByName} on ${formatDateTime(latest.confirmedAt)}. Saving creates version ${latest.version + 1}; old versions are kept.`
+              : "No terms yet. Upload the contract on the Contract tab, or type the terms in here."}
+          </p>
+          <form action={saveTerms.bind(null, showId)}>
+            <TermsFields draft={terms ? termsToDraft(terms) : null} />
+            <SubmitButton pendingLabel="Saving…">Save as new version</SubmitButton>
+          </form>
+        </>
+      )}
 
       {versions.length > 0 && (
         <>

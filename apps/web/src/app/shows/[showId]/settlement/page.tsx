@@ -15,6 +15,7 @@ import Link from "next/link";
 import { api } from "../../../../lib/api";
 import type { SearchParams } from "../../../../lib/flash";
 import { formatDateTime, humanize } from "../../../../lib/format";
+import { inputsLocked } from "../../../../lib/show-steps";
 import {
   approveSettlement,
   computeSettlement,
@@ -62,9 +63,7 @@ export default async function SettlementPage({
   // The assistant audits a result that matches the data (the API checks it too).
   const canAsk = settlement?.status === "computed" || settlement?.status === "in_review";
   // From approval on, nothing can be recomputed or resubmitted (the API refuses too).
-  const locked =
-    settlement !== null &&
-    ["approved", "paying", "paid", "payment_failed"].includes(settlement.status);
+  const locked = inputsLocked(settlement?.status ?? null);
   // One filled button per state, the step that moves the settlement forward: compute
   // while there is no current result, submit once there is one. In review, the filled
   // button is "Approve and pay", so Recompute steps back too.
@@ -106,14 +105,8 @@ export default async function SettlementPage({
           In review. Approving starts the payout to the artist; after that the inputs are locked.
         </div>
       )}
-      {(settlement?.status === "approved" || settlement?.status === "paying") && (
-        <div className="banner banner-info">
-          Approved. The payout is on its way; the inputs are locked.
-        </div>
-      )}
-      {settlement?.status === "paid" && (
-        <div className="banner banner-info">Paid. This settlement is final.</div>
-      )}
+      {/* Approved, paying and paid need no banner here: the show layout's "inputs are
+          locked" banner above already says it, with what happens to the money. */}
       {settlement?.status === "payment_failed" && (
         <div className="banner banner-error">
           The payout failed ({view.payouts[0]?.failureReason ?? "no reason given"}). Fix the cause,

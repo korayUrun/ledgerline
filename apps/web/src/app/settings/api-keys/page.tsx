@@ -8,6 +8,14 @@ import { CreateKeyForm } from "./create-key-form";
 
 // API keys for the public /v1 API (F9) and the MCP server (F10). A key can read
 // settlements and flag expenses; it can never approve or pay.
+function KeyStatus({ apiKey }: { apiKey: ApiKeyDto }) {
+  return apiKey.revokedAt ? (
+    <span className="badge badge-disallowed">Revoked</span>
+  ) : (
+    <span className="badge badge-allowed">Active</span>
+  );
+}
+
 export default async function ApiKeysPage({
   searchParams,
 }: {
@@ -37,14 +45,20 @@ export default async function ApiKeysPage({
               <th>Key</th>
               <th>Created</th>
               <th>Last used</th>
-              <th>Status</th>
+              <th className="wide-only">Status</th>
               <th />
             </tr>
           </thead>
           <tbody>
             {keys.map((key) => (
               <tr key={key.id}>
-                <td>{key.name}</td>
+                <td>
+                  {key.name}
+                  {/* On a phone the Status column is off-screen: shown under the name. */}
+                  <span className="narrow-only cell-below">
+                    <KeyStatus apiKey={key} />
+                  </span>
+                </td>
                 <td>
                   <code>ll_{key.prefix}_…</code>
                 </td>
@@ -59,12 +73,8 @@ export default async function ApiKeysPage({
                     <span className="muted">never</span>
                   )}
                 </td>
-                <td>
-                  {key.revokedAt ? (
-                    <span className="badge badge-disallowed">Revoked</span>
-                  ) : (
-                    <span className="badge badge-allowed">Active</span>
-                  )}
+                <td className="wide-only">
+                  <KeyStatus apiKey={key} />
                 </td>
                 <td>
                   {!key.revokedAt && (

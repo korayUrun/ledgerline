@@ -1,10 +1,11 @@
-import type { ContractDto } from "@ledgerline/schemas";
+import type { ContractDto, ShowDto } from "@ledgerline/schemas";
 import Link from "next/link";
 import { api } from "../../../../lib/api";
 import type { SearchParams } from "../../../../lib/flash";
 import { formatDateTime } from "../../../../lib/format";
+import { inputsLocked } from "../../../../lib/show-steps";
 import { uploadContract } from "../../../actions";
-import { ErrorBanner, NextStep, StatusBadge } from "../../../components";
+import { ErrorBanner, LockedNote, NextStep, StatusBadge } from "../../../components";
 import { SubmitButton } from "../../../submit-button";
 import { UsageNote } from "./usage-note";
 
@@ -18,7 +19,12 @@ export default async function ContractPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { showId } = await params;
-  const contracts = await api.get<ContractDto[]>(`/shows/${showId}/contracts`);
+  // Both are the same fetches as the layout's (deduped within the render).
+  const [show, contracts] = await Promise.all([
+    api.get<ShowDto>(`/shows/${showId}`),
+    api.get<ContractDto[]>(`/shows/${showId}/contracts`),
+  ]);
+  const locked = inputsLocked(show.settlementStatus);
   const latest = contracts[0];
   const inProgress = latest?.status === "uploaded" || latest?.status === "extracting";
   const hasEarlier = contracts.length > 1;
@@ -37,7 +43,13 @@ export default async function ContractPage({
             <span className="muted">uploaded {formatDateTime(latest.createdAt)}</span>
           </p>
           {inProgress && <p className="muted">Claude is reading the contract…</p>}
-          {latest.status === "needs_review" && (
+          {latest.status === "needs_review" && locked && (
+            <p>
+              This upload was not confirmed before the settlement was approved.{" "}
+              <Link href={`/shows/${showId}/contract/${latest.id}`}>See what was extracted</Link>.
+            </p>
+          )}
+          {latest.status === "needs_review" && !locked && (
             <>
               <p>The terms are extracted. Check each one against the PDF before it is used.</p>
               {/* The one thing to do on this page now, so it looks like the main button. */}
@@ -55,29 +67,42 @@ export default async function ContractPage({
           )}
           {latest.status === "failed" && (
             <div className="banner banner-error">
-              Extraction failed: {latest.failureReason}. Upload the PDF again, or type the terms in
-              on the <Link href={`/shows/${showId}/terms`}>Deal terms</Link> tab.
+              Extraction failed: {latest.failureReason}.
+              {!locked && (
+                <>
+                  {" "}
+                  Upload the PDF again, or type the terms in on the{" "}
+                  <Link href={`/shows/${showId}/terms`}>Deal terms</Link> tab.
+                </>
+              )}
             </div>
           )}
           <UsageNote usage={latest.usage} />
         </div>
       )}
 
-      <form action={uploadContract.bind(null, showId)} className="card">
-        <p className="muted">
-          {latest
-            ? `Upload a new PDF to extract the terms again.${hasEarlier ? " Earlier uploads are kept below." : ""}`
-            : "Upload the artist contract (PDF, max 10 MB). Claude extracts the deal terms; you review them before anything is computed."}
-        </p>
-        {/* Bottom-aligned so the button lines up with the file input, not its label. */}
-        <div className="row" style={{ alignItems: "flex-end" }}>
-          <label>
-            Contract PDF
-            <input type="file" name="file" accept="application/pdf" required />
-          </label>
-          <SubmitButton pendingLabel="Uploading…">Upload and extract</SubmitButton>
-        </div>
-      </form>
+      {locked ? (
+        <LockedNote>
+          Uploading a new contract is closed: the settlement was approved with the terms already
+          confirmed.
+        </LockedNote>
+      ) : (
+        <form action={uploadContract.bind(null, showId)} className="card">
+          <p className="muted">
+            {latest
+              ? `Upload a new PDF to extract the terms again.${hasEarlier ? " Earlier uploads are kept below." : ""}`
+              : "Upload the artist contract (PDF, max 10 MB). Claude extracts the deal terms; you review them before anything is computed."}
+          </p>
+          {/* Bottom-aligned so the button lines up with the file input, not its label. */}
+          <div className="row" style={{ alignItems: "flex-end" }}>
+            <label>
+              Contract PDF
+              <input type="file" name="file" accept="application/pdf" required />
+            </label>
+            <SubmitButton pendingLabel="Uploading…">Upload and extract</SubmitButton>
+          </div>
+        </form>
+      )}
 
       {hasEarlier && (
         <>
@@ -111,7 +136,11 @@ export default async function ContractPage({
         </>
       )}
 
-      <NextStep href={`/shows/${showId}/terms`}>Check the deal terms</NextStep>
+      {locked ? (
+        <NextStep href={`/shows/${showId}/settlement`}>See the settlement</NextStep>
+      ) : (
+        <NextStep href={`/shows/${showId}/terms`}>Check the deal terms</NextStep>
+      )}
     </>
   );
 }
