@@ -176,6 +176,23 @@ describe("stale detection", () => {
     });
     expect((await getView()).body.settlement!.status).toBe("computed");
   });
+
+  it("layer 1 agrees: a description-only edit through the API is audited but not stale", async () => {
+    await compute();
+    const expense = expenses[0]!;
+
+    // The web form sends every field, so the unchanged ones come along too.
+    const edit = await t.request("PATCH", `/expenses/${expense.id}`, {
+      category: expense.category,
+      description: "Crew (load-in and load-out)",
+      amountCents: expense.amountCents,
+      status: expense.status,
+    });
+
+    expect(edit.status).toBe(200);
+    expect((await getView()).body.settlement!.status).toBe("computed");
+    expect(await t.prisma.auditLog.count({ where: { action: "expense.updated" } })).toBe(1);
+  });
 });
 
 describe("review", () => {
