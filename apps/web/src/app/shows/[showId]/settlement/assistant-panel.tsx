@@ -1,10 +1,10 @@
 "use client";
 
-import type { AgentRunDto, AgentStepDto, ApiErrorDto } from "@ledgerline/schemas";
+import type { AgentRunDto, AgentStepDto } from "@ledgerline/schemas";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { readEvents } from "../../../../lib/sse";
-import { AgentSteps, RunSummary } from "./agent-steps";
+import { postForEvents } from "../../../../lib/sse";
+import { AgentSteps, RunSummary } from "../../../agent-steps";
 
 // The assistant (F6) next to the worksheet. The only client component on the page:
 // it has to read the event stream as it arrives. Requests go to this web server's
@@ -25,22 +25,14 @@ export function AssistantPanel({ settlementId }: { settlementId: string }) {
     setError(null);
     setRunning(true);
     try {
-      const response = await fetch(path, {
-        method: "POST",
-        headers: body === undefined ? {} : { "content-type": "application/json" },
-        body: body === undefined ? null : JSON.stringify(body),
-      });
-      // Before the stream starts, the API answers errors (404, 409, 400) as JSON.
-      if (!response.headers.get("content-type")?.startsWith("text/event-stream")) {
-        const problem = (await response.json().catch(() => null)) as ApiErrorDto | null;
-        setError(problem?.message ?? `The request failed (${response.status}).`);
-        return;
-      }
-      await readEvents(response, (event) => {
+      // Before the stream starts, the API answers errors (404, 409, 400) as JSON:
+      // postForEvents returns that message instead of reading events.
+      const refused = await postForEvents(path, body, (event) => {
         if (event.type === "step") setSteps((previous) => [...previous, event.step]);
         if (event.type === "run_finished") setRun(event.run);
         if (event.type === "run_failed") setError(event.message);
       });
+      if (refused !== null) setError(refused);
     } catch {
       setError("Lost the connection to the assistant. The run may still finish; reload to see it.");
     } finally {

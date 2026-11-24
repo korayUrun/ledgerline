@@ -2,7 +2,7 @@ import type { AgentRunDetailDto } from "@ledgerline/schemas";
 import Link from "next/link";
 import { api } from "../../../../../../lib/api";
 import { formatDateTime, humanize } from "../../../../../../lib/format";
-import { AgentSteps, RunSummary } from "../../agent-steps";
+import { AgentSteps, RunSummary } from "../../../../../agent-steps";
 
 // F12: the replay of one assistant run, read back from AgentStep. It shows the same
 // steps the chat panel showed while the run streamed.

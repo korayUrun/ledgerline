@@ -1,9 +1,9 @@
 import type { AgentOutcome, AgentRunDto, AgentStepDto } from "@ledgerline/schemas";
-import { formatNanoUsd } from "../../../../lib/format";
+import { formatNanoUsd } from "../lib/format";
 
 // One run's steps: the assistant's text, and each tool call it made (folded, with
-// the exact input and output). Used by the live chat panel and by the replay page,
-// so a stored run looks exactly like it did while it streamed.
+// the exact input and output). Used by the settlement chat panel, its replay page and
+// the Assistant page, so a stored run looks exactly like it did while it streamed.
 export function AgentSteps({ steps }: { steps: AgentStepDto[] }) {
   return (
     <div className="agent-steps">

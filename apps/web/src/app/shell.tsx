@@ -2,7 +2,15 @@ import type { UserDto } from "@ledgerline/schemas";
 import Link from "next/link";
 import { logout } from "./actions";
 import { initials } from "../lib/directory";
-import { ArtistsIcon, GuideIcon, KeyIcon, LogOutIcon, ShowsIcon, VenuesIcon } from "./icons";
+import {
+  ArtistsIcon,
+  GuideIcon,
+  KeyIcon,
+  LogOutIcon,
+  ShowsIcon,
+  SparkleIcon,
+  VenuesIcon,
+} from "./icons";
 import { MobileMenu } from "./mobile-menu";
 import { NavLink } from "./nav-link";
 
@@ -23,8 +31,9 @@ export function Brand() {
 // The same links in the sidebar and in the phone menu. NavLink marks the current one
 // with aria-current="page", which is also what the CSS styles as active, so the active
 // look and what a screen reader announces can never disagree. Three groups, by how
-// often they are used: the daily work (shows, and who and where they are with), the
-// developer settings (keys for other tools), and the Guide, read once.
+// often they are used: the daily work (shows, the assistant that answers about them,
+// and who and where they are with), the developer settings (keys for other tools),
+// and the Guide, read once.
 function PrimaryNav() {
   return (
     <nav className="sidenav" aria-label="Main">
@@ -32,6 +41,10 @@ function PrimaryNav() {
       <NavLink href="/shows">
         <ShowsIcon />
         <span>Shows</span>
+      </NavLink>
+      <NavLink href="/assistant">
+        <SparkleIcon />
+        <span>Assistant</span>
       </NavLink>
       <NavLink href="/artists">
         <ArtistsIcon />
