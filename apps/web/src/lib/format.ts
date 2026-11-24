@@ -21,6 +21,19 @@ export function formatShowDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString("en-US", { dateStyle: "medium", timeZone: "UTC" });
 }
 
+// "just now", "5 min ago", "3 h ago", "2 days ago", then the date. `now` is passed in
+// so the function stays pure and testable. Time only, never money.
+export function formatRelativeTime(iso: string, now: Date): string {
+  const minutes = Math.floor((now.getTime() - new Date(iso).getTime()) / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return days === 1 ? "1 day ago" : `${days} days ago`;
+  return new Date(iso).toLocaleDateString("en-US", { dateStyle: "medium" });
+}
+
 export function humanize(value: string): string {
   return value.replaceAll("_", " ");
 }

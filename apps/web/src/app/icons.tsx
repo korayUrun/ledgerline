@@ -151,3 +151,13 @@ export function WarningIcon(props: IconProps) {
     </Svg>
   );
 }
+
+// Assistant: a four-point sparkle with a small one beside it.
+export function SparkleIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M9 4c.55 3.2 2.3 4.95 5.5 5.5-3.2.55-4.95 2.3-5.5 5.5-.55-3.2-2.3-4.95-5.5-5.5C6.7 8.95 8.45 7.2 9 4Z" />
+      <path d="M15.5 2.75v3M14 4.25h3" />
+    </Svg>
+  );
+}

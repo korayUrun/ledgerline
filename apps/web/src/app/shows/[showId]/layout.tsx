@@ -1,6 +1,8 @@
 import type { ContractDto, ShowDto, TermsDto, TicketSaleDto } from "@ledgerline/schemas";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { api, ApiError } from "../../../lib/api";
+import { assistantHref, showQuestion } from "../../../lib/assistant";
 import { formatShowDate } from "../../../lib/format";
 import {
   contractStep,
@@ -11,6 +13,7 @@ import {
   type StepState,
 } from "../../../lib/show-steps";
 import { StatusBadge } from "../../components";
+import { SparkleIcon } from "../../icons";
 import { PageHeader } from "../../page-header";
 import { ShowStepper } from "./stepper";
 
@@ -61,6 +64,14 @@ export default async function ShowLayout({
         breadcrumb={[{ label: "Shows", href: "/shows" }, { label: formatShowDate(show.showDate) }]}
         badge={status && <StatusBadge status={status} />}
         subtitle={`${show.artist.name} at ${show.venue.name}`}
+        actions={
+          // On every page of the show. It only pre-fills the question: the person
+          // still presses Ask, since each question costs an API call.
+          <Link href={assistantHref({ question: showQuestion(show) })} className="ask-link">
+            <SparkleIcon size={16} />
+            Ask the assistant about this show
+          </Link>
+        }
       />
       <ShowStepper showId={showId} states={states} />
       {children}

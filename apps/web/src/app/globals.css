@@ -2196,7 +2196,8 @@ legend {
 .badge-confirmed,
 .badge-paid,
 .badge-payout_succeeded,
-.badge-flag_accepted {
+.badge-flag_accepted,
+.badge-answered {
   background: var(--success-bg);
   border-color: transparent;
   color: var(--success);
@@ -2207,7 +2208,8 @@ legend {
 .badge-approved,
 .badge-paying,
 .badge-payout_pending,
-.badge-payout_processing {
+.badge-payout_processing,
+.badge-running {
   background: var(--info-bg);
   border-color: transparent;
   color: var(--info);
@@ -2219,7 +2221,8 @@ legend {
 .badge-needs_review,
 .badge-uploaded,
 .badge-extracting,
-.badge-flag_open {
+.badge-flag_open,
+.badge-stopped {
   background: var(--warn-bg);
   border-color: transparent;
   color: var(--warn);
@@ -2342,6 +2345,292 @@ legend {
 
 .agent-tool-error {
   border-color: var(--danger);
+}
+
+/* --- Assistant page (workspace assistant) ---------------------------------------------- */
+
+/* Chat and history side by side once both fit; below that one column, the history
+   under the chat (it is second in the page, so also second for screen readers). */
+.assistant-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4) var(--space-6);
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .assistant-layout {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Empty chat: what to ask, and a few questions to start from. */
+.chat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.chat-empty-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chat-empty-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.chat-empty-text {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+
+.chat-suggestions-label {
+  margin: var(--space-4) 0 var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.chat-suggestions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A suggestion is a sentence, not a filter: even padding, and it may wrap, since a
+   long show name would otherwise push the page sideways on a phone. */
+button.chip.chip-suggestion {
+  padding: 5px 14px;
+  border-color: var(--border-strong); /* a control outline, 3:1 like the inputs */
+  border-radius: var(--radius);
+  white-space: normal;
+  text-align: left;
+  line-height: 1.4;
+}
+
+/* The conversation: the question on the right, the answer on the left, like any chat.
+   The words "You asked" and "Assistant" say who is talking, not only the position. */
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-turn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow-wrap: anywhere;
+}
+
+.chat-meta {
+  margin: 0;
+  align-self: center;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.chat-question {
+  align-self: flex-end;
+  max-width: 85%;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) var(--space-1) var(--radius);
+  background: var(--surface-2);
+  white-space: pre-wrap;
+}
+
+.chat-answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.chat-answer-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.chat-answer .agent-message {
+  border-radius: var(--space-1) var(--radius) var(--radius) var(--radius);
+}
+
+.chat-answer > p.muted {
+  margin: 0;
+}
+
+.chat-thinking,
+.chat-no-answer {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+
+/* The steps behind an answer, folded: most people read the answer, some check it. */
+.chat-trail > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.chat-trail[open] > summary {
+  margin-bottom: var(--space-2);
+}
+
+/* Inside the chat the tool outputs scroll in their own box instead of widening it. */
+.chat-trail pre {
+  overflow-wrap: normal;
+}
+
+.chat-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.chat-composer label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.chat-composer textarea {
+  width: 100%;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.chat-composer-foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.chat-composer-foot .muted {
+  margin: 0;
+}
+
+.chat-composer-foot button {
+  flex: none;
+  min-width: 96px;
+}
+
+/* Recent questions: each one a link to its replay. The open one is marked like the
+   current page in the sidebar (tint and a bar), and by aria-current for screen readers. */
+.assistant-history h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-base);
+}
+
+.assistant-history > p.muted {
+  margin: 0;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 calc(-1 * var(--space-2));
+  padding: 0;
+  list-style: none;
+}
+
+.history-list a {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.history-list a:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.history-list a[aria-current="true"] {
+  background: var(--accent-soft);
+}
+
+.history-list a[aria-current="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+
+/* Two lines of the question at most; the replay shows all of it. */
+.history-question {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: var(--text-md);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+/* "Ask the assistant about this show" in a show's header: a quiet link, not a button,
+   so it never competes with the "What to do now" card's next step. */
+.ask-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  font-size: var(--text-md);
+  font-weight: 500;
 }
 
 /* --- Login ----------------------------------------------------------------------------- */

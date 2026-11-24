@@ -92,3 +92,16 @@ status badge update **without a reload** (bug fixed in #68).
 - [ ] Copy the curl example, put the key in it, run it: it returns your shows. "Last used" then says "just now" / "x minutes ago".
 - [ ] **Revoke** opens a confirmation; Escape closes it; confirming revokes and the row turns muted.
 - [ ] The same curl now answers 401.
+
+## 10. Assistant
+
+With `LLM_CLIENT=fake` every answer says the assistant is offline (free). For real answers,
+start `pnpm dev` **without** `LLM_CLIENT=fake` (uses `ANTHROPIC_API_KEY` from `.env`, Haiku,
+about 1 cent per question).
+
+- [ ] Sidebar → **Assistant**: the suggestion chips use real show names; a chip only fills the box, it does not send.
+- [ ] Ask "Which shows need action?": the answer streams, "How I found this" shows `list_shows`, and the question appears under Recent questions.
+- [ ] Ask about one show by name: the answer names its step ("Step 2 of 4: Contract") and the next action, matching the stepper on that show's page.
+- [ ] Ask it to approve or pay something: it says it cannot, and where a person does it.
+- [ ] A show page's "Ask the assistant about this show" link fills the question without sending it.
+- [ ] Clicking a recent question replays it with its steps.
