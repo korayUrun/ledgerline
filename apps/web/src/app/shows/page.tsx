@@ -4,7 +4,8 @@ import { api } from "../../lib/api";
 import type { SearchParams } from "../../lib/flash";
 import { formatShowDate } from "../../lib/format";
 import { createArtist, createShow, createVenue } from "../actions";
-import { ErrorBanner, StatusBadge } from "../components";
+import { EmptyState, ErrorBanner, StatusBadge } from "../components";
+import { PageHeader } from "../page-header";
 
 // The settlement status, or "Not started" while a show has none.
 function SettlementState({ show }: { show: ShowDto }) {
@@ -24,10 +25,16 @@ export default async function ShowsPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <h1>Shows</h1>
-      <p className="muted">
-        Pick a show to import sales, enter deal terms and compute its settlement.
-      </p>
+      <PageHeader
+        title="Shows"
+        subtitle="Pick a show to import sales, enter deal terms and compute its settlement."
+        actions={
+          // Jumps to the form further down the page; nothing new is sent.
+          <a href="#new-show" className="button-link">
+            New show
+          </a>
+        }
+      />
       <ErrorBanner searchParams={await searchParams} />
 
       <div className="table-wrap">
@@ -62,8 +69,10 @@ export default async function ShowsPage({ searchParams }: { searchParams: Promis
             ))}
             {shows.length === 0 && (
               <tr>
-                <td colSpan={5} className="muted">
-                  No shows yet — create one below.
+                <td colSpan={5} className="empty-cell">
+                  <EmptyState title="No shows yet">
+                    Create one with the form below, then import its ticket sales.
+                  </EmptyState>
                 </td>
               </tr>
             )}
@@ -71,7 +80,9 @@ export default async function ShowsPage({ searchParams }: { searchParams: Promis
         </table>
       </div>
 
-      <h2>New show</h2>
+      <h2 id="new-show" className="anchor-target">
+        New show
+      </h2>
       <form action={createShow} className="card form-grid">
         <label>
           Name

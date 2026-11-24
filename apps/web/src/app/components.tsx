@@ -26,6 +26,17 @@ export function StatusBadge({ status }: { status: string }) {
   return <span className={`badge badge-${status}`}>{humanize(status)}</span>;
 }
 
+// What a list says when it has nothing in it yet: what is missing, then what to do
+// about it. One look everywhere, inside a table cell or on its own.
+export function EmptyState({ title, children }: { title: string; children?: React.ReactNode }) {
+  return (
+    <div className="empty-state">
+      <p className="empty-state-title">{title}</p>
+      {children && <p className="empty-state-text">{children}</p>}
+    </div>
+  );
+}
+
 // The one link that ends a step of the flow (sales, contract, terms, settlement), so
 // the person always knows where to go next without reading the tabs.
 export function NextStep({ href, children }: { href: string; children: React.ReactNode }) {

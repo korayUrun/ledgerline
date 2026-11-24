@@ -5,7 +5,6 @@ import type {
   TermsDto,
   TicketSaleDto,
 } from "@ledgerline/schemas";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { api, ApiError } from "../../../lib/api";
 import { formatShowDate } from "../../../lib/format";
@@ -20,6 +19,7 @@ import {
 } from "../../../lib/show-steps";
 import { LockIcon, StatusBadge } from "../../components";
 import { NavLink } from "../../nav-link";
+import { PageHeader } from "../../page-header";
 
 // The second sentence of the "inputs are locked" banner: what happens to the money now.
 const LOCKED_DETAIL: Partial<Record<SettlementStatus, string>> = {
@@ -62,20 +62,12 @@ export default async function ShowLayout({
 
   return (
     <>
-      <header className="show-header">
-        <nav className="breadcrumb" aria-label="Breadcrumb">
-          <Link href="/shows">Shows</Link>
-          <span aria-hidden="true">/</span>
-          <span>{formatShowDate(show.showDate)}</span>
-        </nav>
-        <div className="show-title">
-          <h1>{show.name}</h1>
-          {status && <StatusBadge status={status} />}
-        </div>
-        <p className="muted">
-          {show.artist.name} at {show.venue.name}
-        </p>
-      </header>
+      <PageHeader
+        title={show.name}
+        breadcrumb={[{ label: "Shows", href: "/shows" }, { label: formatShowDate(show.showDate) }]}
+        badge={status && <StatusBadge status={status} />}
+        subtitle={`${show.artist.name} at ${show.venue.name}`}
+      />
       <nav className="tabs" aria-label="Show steps">
         {/* The CSV import has no tab: it is an action of the sales step, reached from
             that page, and keeps this tab lit while it is open. */}

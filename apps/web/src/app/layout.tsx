@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
-import Link from "next/link";
 import { currentUser } from "../lib/api";
-import { logout } from "./actions";
-import { NavLink } from "./nav-link";
+import { AppShell } from "./shell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,34 +23,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable}`}>
       <body>
-        <header className="topbar">
-          <div className="topbar-inner">
-            <Link href="/shows" className="brand">
-              <span className="brand-mark" aria-hidden="true" />
-              Ledgerline
-            </Link>
-            {user && (
-              <nav className="topnav" aria-label="Main">
-                <NavLink href="/shows">Shows</NavLink>
-                <NavLink href="/settings/api-keys">API keys</NavLink>
-              </nav>
-            )}
-            <div className="topbar-end">
-              <span className="env-pill" title="All data is synthetic; Stripe runs in test mode">
-                Test mode
-              </span>
-              {user && (
-                <form action={logout} className="user">
-                  <span className="user-name">{user.name}</span>
-                  <button type="submit" className="ghost">
-                    Log out
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        </header>
-        <main className="page">{children}</main>
+        {/* Logged in: the sidebar shell. Logged out (the login page, or an error before
+            login): no navigation, since none of its links would work yet. */}
+        {user ? (
+          <AppShell user={user}>{children}</AppShell>
+        ) : (
+          <main className="page-public">{children}</main>
+        )}
       </body>
     </html>
   );

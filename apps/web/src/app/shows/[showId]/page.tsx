@@ -12,7 +12,7 @@ import { api } from "../../../lib/api";
 import { centsToInput, humanize } from "../../../lib/format";
 import { inputsLocked } from "../../../lib/show-steps";
 import { createExpense, deleteExpense, updateExpense, uploadReceipt } from "../../actions";
-import { ErrorBanner, LockedNote, NextStep, StatusBadge } from "../../components";
+import { EmptyState, ErrorBanner, LockedNote, NextStep, StatusBadge } from "../../components";
 import { SubmitButton } from "../../submit-button";
 
 // Option texts for the expense status. The option values stay the API's enum values;
@@ -59,7 +59,9 @@ export default async function ShowDetailPage({
         )}
       </div>
       {ticketSales.length === 0 ? (
-        <p className="muted">No ticket sales yet.</p>
+        <EmptyState title="No ticket sales yet">
+          Import the box office CSV to see the tiers and counts here.
+        </EmptyState>
       ) : (
         <div className="table-wrap">
           <table>
