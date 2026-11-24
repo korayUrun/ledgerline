@@ -91,3 +91,13 @@ export function PlusIcon(props: IconProps) {
     </Svg>
   );
 }
+
+// Guide: an open book, for "How Ledgerline works".
+export function GuideIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M10 5.5C8.5 4.5 6.5 4 3.5 4v11c3 0 5 .5 6.5 1.5 1.5-1 3.5-1.5 6.5-1.5V4c-3 0-5 .5-6.5 1.5Z" />
+      <path d="M10 5.5v11" />
+    </Svg>
+  );
+}

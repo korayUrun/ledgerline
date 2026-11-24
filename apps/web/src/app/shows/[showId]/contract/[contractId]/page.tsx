@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import { api, ApiError } from "../../../../../lib/api";
 import type { SearchParams } from "../../../../../lib/flash";
 import { formatDateTime } from "../../../../../lib/format";
+import { contractReviewGuidance } from "../../../../../lib/show-guidance";
 import { inputsLocked } from "../../../../../lib/show-steps";
 import { evidenceFromExtraction, termsToDraft } from "../../../../../lib/terms-form";
 import { confirmContract } from "../../../../actions";
 import { ErrorBanner, LockIcon, StatusBadge } from "../../../../components";
 import { SubmitButton } from "../../../../submit-button";
+import { GuidanceCard } from "../../guidance-card";
 import { TermsFields } from "../../terms-fields";
 import { UsageNote } from "../usage-note";
 
@@ -55,9 +57,16 @@ export default async function ContractReviewPage({
         .length
     : 0;
 
+  const guidance = contractReviewGuidance({
+    showId,
+    status: show.settlementStatus,
+    contractStatus: contract.status,
+  });
+
   return (
     <>
       <ErrorBanner searchParams={await searchParams} />
+      <GuidanceCard guidance={guidance} />
       <h2>
         Review contract <StatusBadge status={contract.status} />
       </h2>

@@ -10,11 +10,14 @@ import {
   type SettlementViewDto,
   type ShowDto,
   type SourceRef,
+  type TermsDto,
+  type TicketSaleDto,
 } from "@ledgerline/schemas";
 import Link from "next/link";
 import { api } from "../../../../lib/api";
 import type { SearchParams } from "../../../../lib/flash";
 import { formatDateTime, humanize } from "../../../../lib/format";
+import { settlementGuidance } from "../../../../lib/show-guidance";
 import { inputsLocked } from "../../../../lib/show-steps";
 import {
   approveSettlement,
@@ -26,6 +29,7 @@ import {
 } from "../../../actions";
 import { ErrorBanner, StatusBadge } from "../../../components";
 import { SubmitButton } from "../../../submit-button";
+import { GuidanceCard } from "../guidance-card";
 import { AssistantPanel } from "./assistant-panel";
 
 // F5: the worksheet. Every line shows the contract clause it applies and the
@@ -42,7 +46,13 @@ export default async function SettlementPage({
   const { showId } = await params;
   const view = await api.get<SettlementViewDto>(`/shows/${showId}/settlement`);
   const settlement = view.settlement;
-  const show = await api.get<ShowDto>(`/shows/${showId}`);
+  // The show, sales and terms are the layout's fetches (deduped within the render, so
+  // no extra API call): the card uses the counts to say what is missing before compute.
+  const [show, ticketSales, terms] = await Promise.all([
+    api.get<ShowDto>(`/shows/${showId}`),
+    api.get<TicketSaleDto[]>(`/shows/${showId}/ticket-sales`),
+    api.get<TermsDto>(`/shows/${showId}/terms`),
+  ]);
   const artistAccount = show.artist.stripeAccountId;
   // Approval and retry need somewhere to send the money (the API checks too).
   const needsAccount =
@@ -64,133 +74,112 @@ export default async function SettlementPage({
   const canAsk = settlement?.status === "computed" || settlement?.status === "in_review";
   // From approval on, nothing can be recomputed or resubmitted (the API refuses too).
   const locked = inputsLocked(settlement?.status ?? null);
-  // One filled button per state, the step that moves the settlement forward: compute
-  // while there is no current result, submit once there is one. In review, the filled
-  // button is "Approve and pay", so Recompute steps back too.
+  const guidance = settlementGuidance({
+    showId,
+    status: settlement?.status ?? null,
+    ticketSaleCount: ticketSales.length,
+    hasTerms: terms.latest !== null,
+    pendingExpenseCount: view.pendingExpenseCount,
+    openFlagCount,
+    artistName: show.artist.name,
+    artistHasAccount: artistAccount !== null,
+    failureReason: view.payouts[0]?.failureReason ?? null,
+  });
+  // One filled button per state, the step that moves the settlement forward. When the
+  // card above has a button (decide pending expenses, go to the flags…), that is the
+  // filled one and the forms here stay quiet. Otherwise the card points down here:
+  // compute while there is no current result, submit once it is clean, approve in
+  // review, retry after a failed payout.
+  const cardLeads = guidance.action !== null;
   const needsCompute =
     !settlement || settlement.status === "draft" || settlement.status === "stale";
-  const submitPrimary = settlement?.status === "computed";
+  const computePrimary = needsCompute && !cardLeads;
+  // Approved, paying and paid have no button here; an empty row would only add a gap.
+  const hasActions = !locked || settlement?.status === "payment_failed";
   const submitBlockedReason = submitBlocked(settlement, view.pendingExpenseCount, openFlagCount);
 
   return (
     <>
       <ErrorBanner searchParams={await searchParams} />
 
-      {settlement?.status === "stale" && (
-        <div className="banner banner-warn">
-          <strong>Stale:</strong> the inputs changed after this was computed. The numbers below are
-          the old result. Recompute to update them.
-        </div>
-      )}
-      {view.pendingExpenseCount > 0 && (
-        <div className="banner banner-warn">
-          {view.pendingExpenseCount} expense(s) are still pending. They are included in the math as
-          a preview, but the settlement cannot go to review until each one is allowed or disallowed
-          on the <Link href={`/shows/${showId}`}>expenses tab</Link>.
-        </div>
-      )}
-      {openFlagCount > 0 && (
-        <div className="banner banner-warn">
-          The assistant flagged {openFlagCount} expense(s). Accept or dismiss each flag below before
-          submitting for review.
-        </div>
-      )}
-      {canSubmit && (
-        <div className="banner banner-info">
-          Computed. Check the worksheet below, then submit it for review.
-        </div>
-      )}
-      {settlement?.status === "in_review" && (
-        <div className="banner banner-info">
-          In review. Approving starts the payout to the artist; after that the inputs are locked.
-        </div>
-      )}
-      {/* Approved, paying and paid need no banner here: the show layout's "inputs are
-          locked" banner above already says it, with what happens to the money. */}
-      {settlement?.status === "payment_failed" && (
-        <div className="banner banner-error">
-          The payout failed ({view.payouts[0]?.failureReason ?? "no reason given"}). Fix the cause,
-          then retry: the retry is a new attempt with its own key.
-        </div>
-      )}
+      {/* The card says what the settlement needs now, including why it is stale, what
+          blocks review and why a payout failed; the buttons it points to come next. */}
+      <GuidanceCard guidance={guidance} />
 
-      {needsAccount && (
-        <div className="banner banner-warn">
-          {show.artist.name} has no Stripe account to receive the payout yet. Connect one (Stripe
-          test mode: fill in the onboarding page with test data), then approve.
-        </div>
-      )}
-
-      <div className="row actions">
-        {!locked && (
-          <>
-            <form action={computeSettlement.bind(null, showId)}>
-              <SubmitButton
-                className={needsCompute ? undefined : "secondary"}
-                pendingLabel="Computing…"
-              >
-                {settlement && settlement.status !== "draft" ? "Recompute" : "Compute settlement"}
-              </SubmitButton>
-            </form>
-            <div className="action-group">
-              <form action={submitForReview.bind(null, showId)}>
+      {hasActions && (
+        <div className="row actions">
+          {!locked && (
+            <>
+              <form action={computeSettlement.bind(null, showId)}>
                 <SubmitButton
-                  className={submitPrimary ? undefined : "secondary"}
-                  disabled={!canSubmit}
-                  describedBy={submitBlockedReason ? "submit-blocked-reason" : undefined}
-                  pendingLabel="Submitting…"
+                  className={computePrimary ? undefined : "secondary"}
+                  pendingLabel="Computing…"
                 >
-                  Submit for review
+                  {settlement && settlement.status !== "draft" ? "Recompute" : "Compute settlement"}
                 </SubmitButton>
               </form>
-              {/* Why the button is greyed out, in words, next to it. */}
-              {submitBlockedReason && (
-                <p id="submit-blocked-reason" className="action-reason">
-                  {submitBlockedReason}
-                </p>
-              )}
-            </div>
-          </>
-        )}
-        {(needsAccount || (artistAccount !== null && settlement?.status === "in_review")) && (
-          <form action={connectStripeAccount.bind(null, showId, show.artist.id)}>
-            <button type="submit" className="secondary">
-              {artistAccount === null ? "Connect Stripe account" : "Finish Stripe onboarding"}
-            </button>
-          </form>
-        )}
-        {settlement?.status === "in_review" && (
-          <form action={approveSettlement.bind(null, showId)} className="approve-form">
-            {/* Approving moves (test) money and cannot be undone, so the person confirms
+              <div className="action-group">
+                <form action={submitForReview.bind(null, showId)}>
+                  <SubmitButton
+                    className={canSubmit ? undefined : "secondary"}
+                    disabled={!canSubmit}
+                    describedBy={submitBlockedReason ? "submit-blocked-reason" : undefined}
+                    pendingLabel="Submitting…"
+                  >
+                    Submit for review
+                  </SubmitButton>
+                </form>
+                {/* Why the button is greyed out, in words, next to it. */}
+                {submitBlockedReason && (
+                  <p id="submit-blocked-reason" className="action-reason">
+                    {submitBlockedReason}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+          {(needsAccount || (artistAccount !== null && settlement?.status === "in_review")) && (
+            <form action={connectStripeAccount.bind(null, showId, show.artist.id)}>
+              <button type="submit" className="secondary">
+                {artistAccount === null ? "Connect Stripe account" : "Finish Stripe onboarding"}
+              </button>
+            </form>
+          )}
+          {settlement?.status === "in_review" && (
+            <form action={approveSettlement.bind(null, showId)} className="approve-form">
+              {/* Approving moves (test) money and cannot be undone, so the person confirms
                 the amount and the payee first. The checkbox has no name, so the form
                 sends exactly what it did before; `required` makes the browser block the
                 submit until it is ticked. */}
-            <label className="inline">
-              <input type="checkbox" required />I have checked the worksheet. Pay{" "}
-              {settlement.payoutCents === null ? "the payout" : formatCents(settlement.payoutCents)}{" "}
-              to {show.artist.name}.
-            </label>
-            <SubmitButton
-              disabled={needsAccount}
-              describedBy={needsAccount ? "approve-blocked-reason" : undefined}
-              pendingLabel="Approving…"
-            >
-              Approve and pay{" "}
-              {settlement.payoutCents === null ? "" : formatCents(settlement.payoutCents)}
-            </SubmitButton>
-            {needsAccount && (
-              <p id="approve-blocked-reason" className="action-reason">
-                Connect a Stripe account for {show.artist.name} first.
-              </p>
-            )}
-          </form>
-        )}
-        {settlement?.status === "payment_failed" && (
-          <form action={retryPayment.bind(null, showId)}>
-            <SubmitButton pendingLabel="Retrying…">Retry payment</SubmitButton>
-          </form>
-        )}
-      </div>
+              <label className="inline">
+                <input type="checkbox" required />I have checked the worksheet. Pay{" "}
+                {settlement.payoutCents === null
+                  ? "the payout"
+                  : formatCents(settlement.payoutCents)}{" "}
+                to {show.artist.name}.
+              </label>
+              <SubmitButton
+                disabled={needsAccount}
+                describedBy={needsAccount ? "approve-blocked-reason" : undefined}
+                pendingLabel="Approving…"
+              >
+                Approve and pay{" "}
+                {settlement.payoutCents === null ? "" : formatCents(settlement.payoutCents)}
+              </SubmitButton>
+              {needsAccount && (
+                <p id="approve-blocked-reason" className="action-reason">
+                  Connect a Stripe account for {show.artist.name} first.
+                </p>
+              )}
+            </form>
+          )}
+          {settlement?.status === "payment_failed" && (
+            <form action={retryPayment.bind(null, showId)}>
+              <SubmitButton pendingLabel="Retrying…">Retry payment</SubmitButton>
+            </form>
+          )}
+        </div>
+      )}
 
       {!settlement || settlement.status === "draft" ? (
         <p className="muted">
@@ -502,7 +491,8 @@ function PaymentDetails({
 function FlagsTable({ showId, flags }: { showId: string; flags: ExpenseFlagDto[] }) {
   return (
     <>
-      <h2>Assistant flags</h2>
+      {/* The target of the card's "Go to the flags" link. */}
+      <h2 id="flags">Assistant flags</h2>
       <div className="table-wrap">
         <table>
           <thead>

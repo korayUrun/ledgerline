@@ -1,10 +1,12 @@
 import type { ShowDto } from "@ledgerline/schemas";
 import { api } from "../../../../lib/api";
 import type { SearchParams } from "../../../../lib/flash";
+import { importGuidance } from "../../../../lib/show-guidance";
 import { inputsLocked } from "../../../../lib/show-steps";
 import { importTicketSales } from "../../../actions";
 import { ErrorBanner, LockedNote, NextStep } from "../../../components";
 import { SubmitButton } from "../../../submit-button";
+import { GuidanceCard } from "../guidance-card";
 
 export default async function ImportPage({
   params,
@@ -16,10 +18,12 @@ export default async function ImportPage({
   const { showId } = await params;
   // Same fetch as the layout's (deduped): only for the settlement status.
   const show = await api.get<ShowDto>(`/shows/${showId}`);
+  const guidance = importGuidance({ showId, status: show.settlementStatus });
 
   if (inputsLocked(show.settlementStatus)) {
     return (
       <>
+        <GuidanceCard guidance={guidance} />
         <h2>Import ticket sales</h2>
         <LockedNote>
           Importing is closed. An import replaces the ticket sales, and the approved settlement was
@@ -33,6 +37,7 @@ export default async function ImportPage({
   return (
     <>
       <ErrorBanner searchParams={await searchParams} />
+      <GuidanceCard guidance={guidance} />
       <h2>Import ticket sales</h2>
       <p>
         Upload the ticketing system&apos;s CSV export, one row per ticket tier. The import{" "}

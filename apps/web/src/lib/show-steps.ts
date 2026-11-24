@@ -92,3 +92,55 @@ export function settlementStep(status: SettlementStatus | null): StepState {
       return { tone: "progress", label };
   }
 }
+
+// --- The stepper ---------------------------------------------------------------------
+
+// The four steps of a show, in order: what the stepper shows and links to. `path` is
+// added to /shows/<id>; the first step is the show page itself.
+export type ShowStep = { number: number; title: string; description: string; path: string };
+
+export const SHOW_STEPS: readonly ShowStep[] = [
+  {
+    number: 1,
+    title: "Sales & expenses",
+    description: "Import ticket sales and record show expenses",
+    path: "",
+  },
+  {
+    number: 2,
+    title: "Contract",
+    description: "Upload the contract PDF; Claude extracts the deal terms with quotes",
+    path: "/contract",
+  },
+  {
+    number: 3,
+    title: "Deal terms",
+    description: "Check and confirm the terms the payout uses",
+    path: "/terms",
+  },
+  {
+    number: 4,
+    title: "Settlement",
+    description: "Compute, review and approve the payout",
+    path: "/settlement",
+  },
+];
+
+// Which step a page belongs to (0-based), or null for a path outside the show. The CSV
+// import has no step of its own: it is an action of step 1. Pages below a step (a
+// contract review, an assistant run replay) belong to that step.
+export function currentStepIndex(pathname: string, showId: string): number | null {
+  const base = `/shows/${showId}`;
+  if (pathname === base || pathname === `${base}/import`) return 0;
+  for (let index = 1; index < SHOW_STEPS.length; index += 1) {
+    const stepPath = `${base}${SHOW_STEPS[index]?.path ?? ""}`;
+    if (pathname === stepPath || pathname.startsWith(`${stepPath}/`)) return index;
+  }
+  return null;
+}
+
+// Whether a step counts as finished on the progress track. A locked input step counts:
+// the settlement could only be approved because sales and terms were in place.
+export function stepComplete(state: StepState): boolean {
+  return state.tone === "done" || state.tone === "locked";
+}
