@@ -4,7 +4,9 @@ import {
   type AuditEntryDto,
   type ExpenseFlagDto,
   type PayoutDto,
+  type SettlementDto,
   type SettlementInput,
+  type SettlementLine,
   type SettlementViewDto,
   type ShowDto,
   type SourceRef,
@@ -86,12 +88,17 @@ export default async function SettlementPage({
           submitting for review.
         </div>
       )}
+      {canSubmit && (
+        <div className="banner banner-info">
+          Computed. Check the worksheet below, then submit it for review.
+        </div>
+      )}
       {settlement?.status === "in_review" && (
         <div className="banner banner-info">
           In review. Approving starts the payout to the artist; after that the inputs are locked.
         </div>
       )}
-      {settlement?.status === "paying" && (
+      {(settlement?.status === "approved" || settlement?.status === "paying") && (
         <div className="banner banner-info">
           Approved. The payout is on its way; the inputs are locked.
         </div>
@@ -150,89 +157,64 @@ export default async function SettlementPage({
         )}
       </div>
 
-      {artistAccount !== null && locked && (
-        <p className="muted">
-          Paid to {show.artist.name}&apos;s Stripe account <code>{artistAccount}</code> (test mode).
-        </p>
-      )}
-      {view.payouts.length > 0 && <PayoutsTable payouts={view.payouts} />}
-
       {!settlement || settlement.status === "draft" ? (
         <p className="muted">
           Not computed yet. Make sure the show has ticket sales and deal terms, then compute.
         </p>
       ) : (
         <>
-          <div className="card summary">
-            <div className="summary-total">
-              <span className="muted">Artist payout</span>
-              <strong>
-                {settlement.payoutCents === null ? "—" : formatCents(settlement.payoutCents)}
-              </strong>
-            </div>
-            <div>
-              <span className="muted">Status</span>
-              <span>
-                <StatusBadge status={settlement.status} />
-              </span>
-            </div>
-            <div>
-              <span className="muted">Version · terms</span>
-              <span>
-                v{settlement.version} · terms v{settlement.termsVersion}
-              </span>
-            </div>
-            <div>
-              <span className="muted">Computed</span>
-              <span>{settlement.computedAt ? formatDateTime(settlement.computedAt) : "—"}</span>
-            </div>
-            <div>
-              <span className="muted">Engine · inputs hash</span>
-              <span>
-                {settlement.engineVersion} ·{" "}
-                <code title={settlement.inputsHash ?? ""}>
-                  {settlement.inputsHash?.slice(0, 12)}
-                </code>
-              </span>
-            </div>
-          </div>
+          <PayoutSummary settlement={settlement} />
 
           <h2>Worksheet</h2>
-          <div className="table-wrap">
+          <div className="table-wrap worksheet">
             <table>
               <thead>
                 <tr>
                   <th>Step</th>
                   <th className="num">Amount</th>
-                  <th>Clause</th>
-                  <th>Computed from</th>
+                  <th className="wide-only">Clause</th>
+                  <th className="wide-only">Computed from</th>
                 </tr>
               </thead>
               <tbody>
                 {settlement.lines.map((line, index) => (
                   <tr key={index} className={lineClass(line.kind)}>
-                    <td>{line.label}</td>
-                    <td className="num">{formatCents(line.amountCents)}</td>
                     <td>
-                      {line.clauseRef ?? (
-                        <span className="muted">{noClauseLabel(line.sourceRefs)}</span>
-                      )}
+                      {line.label}
+                      {/* On a phone the two right columns are hidden, so the clause and
+                          sources move under the label instead of off-screen. */}
+                      <div className="line-meta narrow-only">
+                        {/* The total has neither a clause nor sources: no lone "—" here. */}
+                        {(line.clauseRef !== null || line.sourceRefs.length > 0) && (
+                          <div>
+                            <LineClause line={line} />
+                          </div>
+                        )}
+                        <LineSources line={line} snapshot={settlement.inputSnapshot} />
+                      </div>
                     </td>
-                    <td>
-                      {line.sourceRefs.length === 0 && <span className="muted">lines above</span>}
-                      {line.sourceRefs.map((ref) => (
-                        <div key={`${ref.type}-${ref.id}`}>
-                          <a href={`#src-${ref.id}`} className="source-ref">
-                            {describeSource(ref, settlement.inputSnapshot)}
-                          </a>
-                        </div>
-                      ))}
+                    <td className="num">{formatCents(line.amountCents)}</td>
+                    <td className="wide-only">
+                      <LineClause line={line} />
+                    </td>
+                    <td className="wide-only">
+                      <LineSources line={line} snapshot={settlement.inputSnapshot} />
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {view.payouts.length > 0 && (
+            <PaymentDetails
+              payouts={view.payouts}
+              artistName={show.artist.name}
+              artistAccount={artistAccount}
+              // Open only when the payout failed: then the person must read why and act.
+              open={settlement.status === "payment_failed"}
+            />
+          )}
 
           <h2>Assistant</h2>
           {canAsk ? (
@@ -298,12 +280,20 @@ function noClauseLabel(sourceRefs: SourceRef[]): string {
   return firstRef.type === "ticket_sale" ? "Sales data" : "Expense data";
 }
 
-function describeSource(ref: SourceRef, snapshot: SettlementInput | null): string {
+// What a source row contributes to *this* line. The tax and fee lines are explained by
+// each tier's stored tax or fee total, not by qty × price (that explains the gross).
+// Only stored cents are formatted here; nothing is added up in the browser.
+function describeSource(
+  ref: SourceRef,
+  snapshot: SettlementInput | null,
+  lineKind: SettlementLine["kind"],
+): string {
   if (ref.type === "ticket_sale") {
     const sale = snapshot?.ticketSales.find((row) => row.id === ref.id);
-    return sale
-      ? `${sale.tierName}: ${sale.qtySold} × ${formatCents(sale.priceCents)}`
-      : `ticket sale ${ref.id}`;
+    if (!sale) return `ticket sale ${ref.id}`;
+    if (lineKind === "ticket_tax") return `${sale.tierName}: tax ${formatCents(sale.taxCents)}`;
+    if (lineKind === "ticket_fees") return `${sale.tierName}: fees ${formatCents(sale.feeCents)}`;
+    return `${sale.tierName}: ${sale.qtySold} × ${formatCents(sale.priceCents)}`;
   }
   const expense = snapshot?.expenses.find((row) => row.id === ref.id);
   return expense
@@ -341,12 +331,82 @@ function describeChange(entry: AuditEntryDto): string {
   return parts.join(" · ");
 }
 
-// Every attempt to send the money, newest first. The idempotency key is shown so a
-// person can find the same attempt in the Stripe dashboard.
-function PayoutsTable({ payouts }: { payouts: PayoutDto[] }) {
+// The payout comes first and is the biggest thing on the page. The status is not
+// repeated here (the header badge and the banner say it). On a stale settlement the
+// old figure is greyed and labelled, so it never reads as the current amount.
+function PayoutSummary({ settlement }: { settlement: SettlementDto }) {
+  const outdated = settlement.status === "stale";
+  return (
+    <div className="card summary">
+      <span className="muted">Artist payout</span>
+      <div className="summary-figure">
+        <strong className={outdated ? "payout-amount payout-outdated" : "payout-amount"}>
+          {settlement.payoutCents === null ? "—" : formatCents(settlement.payoutCents)}
+        </strong>
+        {outdated && (
+          <span className="outdated-label">
+            <span aria-hidden="true">{"\u26A0\uFE0E"}</span> Outdated
+          </span>
+        )}
+      </div>
+      {/* Audit details: useful to trace a result, not to read the payout. */}
+      <p className="summary-meta muted">
+        v{settlement.version} · terms v{settlement.termsVersion} · computed{" "}
+        {settlement.computedAt ? formatDateTime(settlement.computedAt) : "—"} · engine{" "}
+        {settlement.engineVersion} · inputs{" "}
+        <code title={settlement.inputsHash ?? ""}>{settlement.inputsHash?.slice(0, 12)}</code>
+      </p>
+    </div>
+  );
+}
+
+function LineClause({ line }: { line: SettlementLine }) {
+  return <>{line.clauseRef ?? <span className="muted">{noClauseLabel(line.sourceRefs)}</span>}</>;
+}
+
+function LineSources({
+  line,
+  snapshot,
+}: {
+  line: SettlementLine;
+  snapshot: SettlementInput | null;
+}) {
+  if (line.sourceRefs.length === 0) return <span className="muted">lines above</span>;
   return (
     <>
-      <h2>Payout</h2>
+      {line.sourceRefs.map((ref) => (
+        <div key={`${ref.type}-${ref.id}`}>
+          <a href={`#src-${ref.id}`} className="source-ref">
+            {describeSource(ref, snapshot, line.kind)}
+          </a>
+        </div>
+      ))}
+    </>
+  );
+}
+
+// Every attempt to send the money, newest first. The idempotency key is shown so a
+// person can find the same attempt in the Stripe dashboard. Tucked away once paid:
+// it is for tracing a payment, not for reading the settlement.
+function PaymentDetails({
+  payouts,
+  artistName,
+  artistAccount,
+  open,
+}: {
+  payouts: PayoutDto[];
+  artistName: string;
+  artistAccount: string | null;
+  open: boolean;
+}) {
+  return (
+    <details className="payment-details" open={open}>
+      <summary>Payment details</summary>
+      {artistAccount !== null && (
+        <p className="muted">
+          Paid to {artistName}&apos;s Stripe account <code>{artistAccount}</code> (test mode).
+        </p>
+      )}
       <div className="table-wrap">
         <table>
           <thead>
@@ -378,7 +438,7 @@ function PayoutsTable({ payouts }: { payouts: PayoutDto[] }) {
           </tbody>
         </table>
       </div>
-    </>
+    </details>
   );
 }
 

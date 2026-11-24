@@ -12,6 +12,15 @@ import { centsToInput, humanize } from "../../../lib/format";
 import { createExpense, deleteExpense, updateExpense, uploadReceipt } from "../../actions";
 import { ErrorBanner, StatusBadge } from "../../components";
 
+// Option texts for the expense status. The option values stay the API's enum values;
+// only what a person reads changes. Keyed by the enum, so a new status fails to compile
+// until it has a label.
+const EXPENSE_STATUS_LABELS: Record<(typeof ExpenseStatusSchema.options)[number], string> = {
+  pending: "Pending (not decided)",
+  allowed: "Allowed",
+  disallowed: "Disallowed",
+};
+
 export default async function ShowDetailPage({
   params,
   searchParams,
@@ -65,8 +74,8 @@ export default async function ShowDetailPage({
 
       <h2>Expenses</h2>
       <p className="muted">
-        Changing an expense makes a computed settlement stale. Pending expenses count in the math
-        but block review until someone allows or disallows them.
+        Changing an expense means the settlement must be recomputed. Pending expenses count in the
+        math but block review until someone allows or disallows them.
       </p>
       <div className="table-wrap">
         <table>
@@ -119,7 +128,7 @@ export default async function ShowDetailPage({
                     >
                       {ExpenseStatusSchema.options.map((status) => (
                         <option key={status} value={status}>
-                          {status}
+                          {EXPENSE_STATUS_LABELS[status]}
                         </option>
                       ))}
                     </select>{" "}
@@ -194,7 +203,7 @@ export default async function ShowDetailPage({
           <select name="status" defaultValue="pending">
             {ExpenseStatusSchema.options.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {EXPENSE_STATUS_LABELS[status]}
               </option>
             ))}
           </select>
