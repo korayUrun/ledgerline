@@ -362,6 +362,93 @@ pre {
   margin: 20px 0;
 }
 
+/* Top-aligned: a button with its reason underneath is taller than the others. Two
+   classes, because .row (later in this file) centers its items. */
+.row.actions {
+  align-items: flex-start;
+}
+
+/* A button and the sentence that says why it is disabled. */
+.action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 320px;
+}
+
+/* Muted, not warn: it explains a state, the banners above already raise it. 13px
+   muted is 5.1:1 light and 6.6:1 dark. */
+.action-reason {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* "Approve and pay": the confirmation checkbox sits above the button it unlocks. */
+.approve-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.approve-form label.inline {
+  align-items: flex-start;
+  font-size: 14px;
+  white-space: normal;
+}
+
+.approve-form input[type="checkbox"] {
+  flex: none;
+  margin-top: 3px;
+}
+
+/* A link that is the main thing to do on its page, drawn like a primary button. */
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.button-link:hover {
+  background: var(--accent-hover);
+  color: var(--on-accent);
+}
+
+/* The one link that ends a step of the flow: below a rule, after everything else. */
+.next-step {
+  margin: 32px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.next-step a {
+  font-weight: 600;
+}
+
+/* error.tsx: a calm card in place of the page that failed, never a stack trace. */
+.error-page {
+  margin-top: 20px;
+}
+
+.error-page h2 {
+  margin-top: 0;
+}
+
 /* --- Cards & tables ------------------------------------------------------------------ */
 
 .card {

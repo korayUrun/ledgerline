@@ -10,7 +10,8 @@ import type { SearchParams } from "../../../lib/flash";
 import { api } from "../../../lib/api";
 import { centsToInput, humanize } from "../../../lib/format";
 import { createExpense, deleteExpense, updateExpense, uploadReceipt } from "../../actions";
-import { ErrorBanner, StatusBadge } from "../../components";
+import { ErrorBanner, NextStep, StatusBadge } from "../../components";
+import { SubmitButton } from "../../submit-button";
 
 // Option texts for the expense status. The option values stay the API's enum values;
 // only what a person reads changes. Keyed by the enum, so a new status fails to compile
@@ -155,7 +156,7 @@ export default async function ShowDetailPage({
                   <td>
                     <div className="row">
                       <form id={formId} action={updateExpense.bind(null, showId, expense.id)}>
-                        <button type="submit">Save</button>
+                        <SubmitButton pendingLabel="Saving…">Save</SubmitButton>
                       </form>
                       <form action={deleteExpense.bind(null, showId, expense.id)}>
                         <button type="submit" className="danger">
@@ -208,8 +209,10 @@ export default async function ShowDetailPage({
             ))}
           </select>
         </label>
-        <button type="submit">Add expense</button>
+        <SubmitButton pendingLabel="Adding…">Add expense</SubmitButton>
       </form>
+
+      <NextStep href={`/shows/${showId}/contract`}>Upload the contract</NextStep>
     </>
   );
 }

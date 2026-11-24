@@ -4,7 +4,8 @@ import { api } from "../../../../lib/api";
 import type { SearchParams } from "../../../../lib/flash";
 import { formatDateTime } from "../../../../lib/format";
 import { uploadContract } from "../../../actions";
-import { ErrorBanner, StatusBadge } from "../../../components";
+import { ErrorBanner, NextStep, StatusBadge } from "../../../components";
+import { SubmitButton } from "../../../submit-button";
 import { UsageNote } from "./usage-note";
 
 // Upload the contract PDF (F2) and follow its extraction. The worker does the
@@ -37,13 +38,15 @@ export default async function ContractPage({
           </p>
           {inProgress && <p className="muted">Claude is reading the contract…</p>}
           {latest.status === "needs_review" && (
-            <p>
-              The terms are extracted.{" "}
-              <Link href={`/shows/${showId}/contract/${latest.id}`}>
-                Review them against the PDF
-              </Link>{" "}
-              before they are used.
-            </p>
+            <>
+              <p>The terms are extracted. Check each one against the PDF before it is used.</p>
+              {/* The one thing to do on this page now, so it looks like the main button. */}
+              <p>
+                <Link href={`/shows/${showId}/contract/${latest.id}`} className="button-link">
+                  Review terms
+                </Link>
+              </p>
+            </>
           )}
           {latest.status === "confirmed" && (
             <p>
@@ -72,7 +75,7 @@ export default async function ContractPage({
             Contract PDF
             <input type="file" name="file" accept="application/pdf" required />
           </label>
-          <button type="submit">Upload and extract</button>
+          <SubmitButton pendingLabel="Uploading…">Upload and extract</SubmitButton>
         </div>
       </form>
 
@@ -107,6 +110,8 @@ export default async function ContractPage({
           </div>
         </>
       )}
+
+      <NextStep href={`/shows/${showId}/terms`}>Check the deal terms</NextStep>
     </>
   );
 }

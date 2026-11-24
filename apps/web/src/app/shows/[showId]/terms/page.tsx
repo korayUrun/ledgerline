@@ -5,7 +5,8 @@ import type { SearchParams } from "../../../../lib/flash";
 import { formatDateTime } from "../../../../lib/format";
 import { termsToDraft } from "../../../../lib/terms-form";
 import { saveTerms } from "../../../actions";
-import { ErrorBanner } from "../../../components";
+import { ErrorBanner, NextStep } from "../../../components";
+import { SubmitButton } from "../../../submit-button";
 import { TermsFields } from "../terms-fields";
 
 // Typing terms in by hand. Usually they come from the contract PDF instead
@@ -33,7 +34,7 @@ export default async function TermsPage({
 
       <form action={saveTerms.bind(null, showId)}>
         <TermsFields draft={terms ? termsToDraft(terms) : null} />
-        <button type="submit">Save as new version</button>
+        <SubmitButton pendingLabel="Saving…">Save as new version</SubmitButton>
       </form>
 
       {versions.length > 0 && (
@@ -71,6 +72,8 @@ export default async function TermsPage({
           </div>
         </>
       )}
+
+      <NextStep href={`/shows/${showId}/settlement`}>Go to the settlement</NextStep>
     </>
   );
 }
