@@ -43,7 +43,7 @@ window to about 390 px).
 
 - [ ] The four cards count correctly, and clicking one filters the list.
 - [ ] Search `harbor` filters by show, artist and venue; "Clear filters" resets.
-- [ ] Status chips filter; changing Sort and pressing **Apply** re-sorts.
+- [ ] Status chips, the Sort control (Newest · Oldest · A–Z) and Search update the list **without reloading the page**: the sidebar does not flash and the scroll position stays. Back undoes the last filter.
 - [ ] `/shows?q=zzz` shows the "no match" empty state.
 - [ ] **New show** opens the panel; create a show for "Stripe Test Band". Note whether the panel stays open afterwards (known possible quirk).
 - [ ] Adding a venue or an artist from the panel works (it returns to `/shows`).

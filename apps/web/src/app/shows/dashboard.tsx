@@ -1,10 +1,12 @@
 import type { ArtistDto, ShowDto, VenueDto } from "@ledgerline/schemas";
+import Form from "next/form";
 import Link from "next/link";
 import { formatShowDate } from "../../lib/format";
 import {
   nextAction,
   showsHref,
   SORT_LABELS,
+  SORT_SHORT_LABELS,
   STATUS_CHIPS,
   STATUS_FILTER_LABELS,
   SUMMARY_GROUPS,
@@ -18,8 +20,11 @@ import { StatusBadge } from "../components";
 import { SearchIcon } from "../icons";
 
 // The pieces of the shows dashboard (page.tsx puts them together). All server
-// components: the filters are a GET form and links, so the page works with JavaScript
-// off and its state is the URL, which can be bookmarked and shared.
+// components: the filters are links and one GET form, so the state is the URL (it can
+// be bookmarked and shared, and Back undoes a filter) and the page works with
+// JavaScript off. With JavaScript on, Next.js turns both into client-side
+// navigations: only the page's content is fetched again, the sidebar and the scroll
+// position stay. (A plain <form method="get"> would reload the whole document.)
 
 // --- Summary cards --------------------------------------------------------------------
 
@@ -93,54 +98,69 @@ export function ShowsToolbar({
   const chips = STATUS_CHIPS.filter(
     (chip) => chip === "all" || chip === query.status || chipCounts[chip] > 0,
   );
+  const sorts = Object.keys(SORT_LABELS) as ShowSort[];
   return (
-    <form method="get" action="/shows" className="toolbar" role="search" aria-label="Shows">
+    <div className="toolbar">
       <div className="toolbar-row">
-        <div className="search-field">
-          <label htmlFor="show-search" className="visually-hidden">
-            Search shows
-          </label>
-          <SearchIcon size={16} />
-          <input
-            id="show-search"
-            type="search"
-            name="q"
-            defaultValue={query.q}
-            placeholder="Search show, artist or venue"
-            maxLength={100}
-          />
-        </div>
-        <div className="sort-field">
-          <label htmlFor="show-sort">Sort</label>
-          <select id="show-sort" name="sort" defaultValue={query.sort}>
-            {(Object.keys(SORT_LABELS) as ShowSort[]).map((sort) => (
-              <option key={sort} value={sort}>
-                {SORT_LABELS[sort]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button type="submit" name="status" value={query.status} className="secondary">
-          Apply
-        </button>
+        {/* next/form: a GET form that navigates on the client. The hidden fields keep
+            the status and sort, so a new search does not drop them. */}
+        <Form action="/shows" scroll={false} className="search-form" role="search" aria-label="Shows">
+          <div className="search-field">
+            <label htmlFor="show-search" className="visually-hidden">
+              Search shows
+            </label>
+            <SearchIcon size={16} />
+            <input
+              id="show-search"
+              type="search"
+              name="q"
+              defaultValue={query.q}
+              placeholder="Search show, artist or venue"
+              maxLength={100}
+            />
+          </div>
+          <input type="hidden" name="status" value={query.status} />
+          <input type="hidden" name="sort" value={query.sort} />
+          <button type="submit" className="secondary">
+            Search
+          </button>
+        </Form>
+
+        {/* A segmented control of links: one click applies the sort, no Apply button. */}
+        <nav className="segmented" aria-label="Sort shows">
+          <span className="segmented-label" aria-hidden="true">
+            Sort
+          </span>
+          {sorts.map((sort) => (
+            <Link
+              key={sort}
+              href={showsHref({ ...query, sort })}
+              scroll={false}
+              className="segment"
+              aria-current={query.sort === sort ? "true" : undefined}
+              aria-label={`Sort by ${SORT_LABELS[sort]}`}
+            >
+              {SORT_SHORT_LABELS[sort]}
+            </Link>
+          ))}
+        </nav>
       </div>
 
-      <div className="chips" role="group" aria-label="Settlement status">
+      <nav className="chips" aria-label="Filter by settlement status">
         {chips.map((chip) => (
-          <button
+          <Link
             key={chip}
-            type="submit"
-            name="status"
-            value={chip}
+            href={showsHref({ ...query, status: chip })}
+            scroll={false}
             className="chip"
-            aria-pressed={query.status === chip}
+            aria-current={query.status === chip ? "true" : undefined}
           >
             {STATUS_FILTER_LABELS[chip]}
             <span className="chip-count">{chipCounts[chip]}</span>
-          </button>
+          </Link>
         ))}
-      </div>
-    </form>
+      </nav>
+    </div>
   );
 }
 

@@ -114,6 +114,13 @@ export const SORT_LABELS: Record<ShowSort, string> = {
   name: "Show name, A–Z",
 };
 
+// What the sort control shows; SORT_LABELS is what a screen reader hears.
+export const SORT_SHORT_LABELS: Record<ShowSort, string> = {
+  newest: "Newest",
+  oldest: "Oldest",
+  name: "A–Z",
+};
+
 // "2026-11-07" strings sort correctly as text, so no Date parsing (and no time zone)
 // is needed.
 function byDate(a: ShowDto, b: ShowDto): number {
