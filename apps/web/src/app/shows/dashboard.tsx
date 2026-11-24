@@ -104,7 +104,13 @@ export function ShowsToolbar({
       <div className="toolbar-row">
         {/* next/form: a GET form that navigates on the client. The hidden fields keep
             the status and sort, so a new search does not drop them. */}
-        <Form action="/shows" scroll={false} className="search-form" role="search" aria-label="Shows">
+        <Form
+          action="/shows"
+          scroll={false}
+          className="search-form"
+          role="search"
+          aria-label="Shows"
+        >
           <div className="search-field">
             <label htmlFor="show-search" className="visually-hidden">
               Search shows
