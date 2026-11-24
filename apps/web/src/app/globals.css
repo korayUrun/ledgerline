@@ -59,19 +59,31 @@
   /* A row under the pointer: one step darker than the surface. */
   --surface-hover: #f3f2ed;
 
-  /* The login page's brand panel: a deep green with light text, in both themes. Text
-     is at least 5.3:1 even under the glow in the top corner (7.2:1 elsewhere), the
-     quieter text 5.1:1; in dark mode 7.6:1 and 6.8:1. */
+  /* The login page's brand panel: a deep green with light text, in both themes. The
+     contrast is checked at the worst spot: the mint aurora at its brightest over the
+     lightest green. There text is still 5.8:1 and the quieter text 4.7:1 (7.2:1 and
+     5.9:1 elsewhere); in dark mode 8.0:1 and 4.9:1. The second aurora colour is darker
+     than the panel, so wherever it drifts it only raises the contrast. */
   --hero-bg: #133a2f;
   --hero-bg-2: #1f5c4a;
   --hero-text: #f2f6f4;
-  --hero-muted: #c3d6cd;
+  --hero-muted: #d3e3dc;
   --hero-line: rgb(255 255 255 / 0.07);
-  --hero-glow: rgb(108 196 161 / 0.2);
+  --hero-aurora-1: rgb(108 196 161 / 0.14);
+  --hero-aurora-2: rgb(10 36 58 / 0.45);
   --hero-chip-bg: rgb(255 255 255 / 0.1);
   --hero-chip-text: #9fe0c4;
   --hero-mark: #6cc4a1;
   --hero-mark-line: #0d1a15;
+
+  /* The login page's moving background on the form side: accent and info tints for
+     the aurora, ruled lines a little quieter than a control outline, and a glow behind
+     the card. Mixed from the tokens above, so they follow the theme by themselves.
+     Only decoration sits on them; the card carries its own surface. */
+  --aurora-1: color-mix(in srgb, var(--accent) 13%, transparent);
+  --aurora-2: color-mix(in srgb, var(--info) 11%, transparent);
+  --ledger-line: color-mix(in srgb, var(--border-strong) 18%, transparent);
+  --card-glow: color-mix(in srgb, var(--accent) 18%, transparent);
 
   /* Elevation: sm for controls, the default for cards, lg for things that float
      (the phone menu, the login card). */
@@ -115,11 +127,18 @@
     --hero-text: #e6e9e7;
     --hero-muted: #a9bdb4;
     --hero-line: rgb(108 196 161 / 0.07);
-    --hero-glow: rgb(108 196 161 / 0.18);
+    --hero-aurora-1: rgb(108 196 161 / 0.16);
+    --hero-aurora-2: rgb(20 48 74 / 0.5);
     --hero-chip-bg: rgb(108 196 161 / 0.14);
     --hero-chip-text: #6cc4a1;
     --hero-mark: #6cc4a1;
     --hero-mark-line: #0d1a15;
+
+    /* On the near-black page the tints need a little more strength to show at all. */
+    --aurora-1: color-mix(in srgb, var(--accent) 17%, transparent);
+    --aurora-2: color-mix(in srgb, var(--info) 10%, transparent);
+    --ledger-line: color-mix(in srgb, var(--border-strong) 22%, transparent);
+    --card-glow: color-mix(in srgb, var(--accent) 26%, transparent);
 
     /* Shadows barely show on a dark page; the borders do the separating. They stay
        for the floating things, so a menu still lifts off the page. */
@@ -253,8 +272,8 @@ pre {
   border-bottom: 1px solid var(--border);
 }
 
-/* The pill sits right of the brand, the menu button at the far end. */
-.mobile-bar .env-pill {
+/* The brand on the left, the menu button at the far end. */
+.mobile-bar .mobile-menu {
   margin-left: auto;
 }
 
@@ -333,29 +352,6 @@ pre {
   width: 3px;
   border-radius: 0 3px 3px 0;
   background: var(--accent);
-}
-
-.env-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: var(--text-xs);
-  font-weight: 600;
-  line-height: 20px;
-  color: var(--warn);
-  background: var(--warn-bg);
-  white-space: nowrap;
-}
-
-/* A dot, so the pill reads as a status at a glance; the words say what it is. */
-.env-pill::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
 }
 
 /* Who is logged in, and Log out. */
@@ -492,7 +488,7 @@ button.logout {
     padding: var(--space-1) var(--space-3);
   }
 
-  /* Bottom of the column: the test-mode pill, then who is logged in. */
+  /* Bottom of the column: who is logged in. */
   .sidebar-foot {
     display: flex;
     flex-direction: column;
@@ -501,10 +497,6 @@ button.logout {
     margin-top: auto;
     padding-top: var(--space-4);
     border-top: 1px solid var(--border);
-  }
-
-  .sidebar-foot .env-pill {
-    margin-left: var(--space-3);
   }
 
   .sidebar-foot .user-block {
@@ -2105,22 +2097,120 @@ legend {
   gap: var(--space-6);
   padding: var(--space-6) var(--space-5);
   color: var(--hero-text);
-  background:
-    radial-gradient(120% 80% at 0% 0%, var(--hero-glow), transparent 60%),
-    linear-gradient(160deg, var(--hero-bg-2), var(--hero-bg) 70%);
+  background: linear-gradient(160deg, var(--hero-bg-2), var(--hero-bg) 70%);
 }
 
-/* The pattern: ruled ledger lines with a margin rule, fading out towards the bottom.
-   Drawn behind the text (z-index -1 inside the isolated panel). */
-.auth-brand::before {
-  content: "";
+/* The moving background (AuthMotion in login/page.tsx), one per half of the page.
+   Drawn behind the content: z-index -1 inside a panel that isolates its own stacking,
+   so it can never cover the text or the card. Only transform and opacity animate,
+   which the browser hands to the GPU instead of repainting every frame. The colours
+   come in through these variables, so one set of rules serves both halves. */
+.auth-motion {
+  --motion-aurora-1: var(--aurora-1);
+  --motion-aurora-2: var(--aurora-2);
+  --motion-line: var(--ledger-line);
   position: absolute;
   inset: 0;
   z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.auth-motion-hero {
+  --motion-aurora-1: var(--hero-aurora-1);
+  --motion-aurora-2: var(--hero-aurora-2);
+  --motion-line: var(--hero-line);
+}
+
+/* The aurora: two soft layers, larger than the panel so their edges never show, that
+   drift and turn slowly. Different lengths (26s, 34s) keep them from lining up, so
+   the mix of colours never repeats the same way. */
+.auth-aurora {
+  position: absolute;
+  inset: -25%;
+}
+
+.auth-aurora::before,
+.auth-aurora::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.auth-aurora::before {
   background:
-    linear-gradient(to right, transparent 0 63px, var(--hero-line) 63px 64px, transparent 64px),
-    repeating-linear-gradient(to bottom, transparent 0 31px, var(--hero-line) 31px 32px);
+    radial-gradient(38% 32% at 28% 26%, var(--motion-aurora-1), transparent 70%),
+    radial-gradient(30% 26% at 72% 78%, var(--motion-aurora-1), transparent 70%);
+  animation: auth-aurora-a 26s ease-in-out infinite alternate;
+}
+
+.auth-aurora::after {
+  background:
+    radial-gradient(42% 36% at 70% 30%, var(--motion-aurora-2), transparent 70%),
+    radial-gradient(34% 30% at 30% 72%, var(--motion-aurora-2), transparent 70%);
+  animation: auth-aurora-b 34s ease-in-out infinite alternate;
+}
+
+@keyframes auth-aurora-a {
+  from {
+    transform: translate3d(-5%, -4%, 0) rotate(-6deg) scale(1);
+  }
+  to {
+    transform: translate3d(6%, 5%, 0) rotate(8deg) scale(1.12);
+  }
+}
+
+@keyframes auth-aurora-b {
+  from {
+    transform: translate3d(5%, 3%, 0) rotate(5deg) scale(1.08);
+  }
+  to {
+    transform: translate3d(-6%, -5%, 0) rotate(-7deg) scale(1);
+  }
+}
+
+/* The ruled ledger lines, fading out towards the bottom. The mask sits on this still
+   frame and the lines move inside it, so the fade stays put while the paper moves. */
+.auth-rules {
+  position: absolute;
+  inset: 0;
   mask-image: linear-gradient(to bottom, black 30%, transparent 95%);
+}
+
+/* The brand panel's page also has a margin rule, like the brand mark. */
+.auth-motion-hero .auth-rules {
+  background: linear-gradient(
+    to right,
+    transparent 0 63px,
+    var(--motion-line) 63px 64px,
+    transparent 64px
+  );
+}
+
+/* One line every 32px, and the layer is one line taller than its frame. It moves up
+   exactly one line per loop, so the last frame looks like the first and the loop has
+   no visible jump. Both halves use the same 32px from the top of the page, so on a
+   wide screen the lines run straight across the split. */
+.auth-rules-lines {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: -32px;
+  left: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 31px,
+    var(--motion-line) 31px 32px
+  );
+  will-change: transform;
+  animation: auth-rules-feed 12s linear infinite;
+}
+
+@keyframes auth-rules-feed {
+  to {
+    transform: translate3d(0, -32px, 0);
+  }
 }
 
 .auth-brand-top {
@@ -2195,15 +2285,164 @@ legend {
   color: var(--hero-muted);
 }
 
-.auth-footnote {
+/* The worksheet illustration (WorksheetPreview). Hidden until the two-column layout:
+   on a phone or tablet the panel sits above the form, and a picture there would only
+   push the form further down. */
+.auth-preview {
   display: none;
-  margin: 0;
-  max-width: 52ch;
-  font-size: var(--text-sm);
-  color: var(--hero-muted);
 }
 
+/* Painted with the app's own surface and text tokens, so it looks like the real
+   worksheet in either theme and its text has the app's checked contrast. */
+.auth-preview-card {
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--text-sm);
+  animation: auth-preview-in 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 250ms both;
+}
+
+.auth-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.auth-preview-title {
+  font-weight: 600;
+}
+
+/* Says in words that this is a picture, not data. */
+.auth-preview-example {
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.auth-preview-lines {
+  display: grid;
+}
+
+.auth-preview-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 6px 0;
+  color: var(--muted);
+  animation: auth-fade-up 450ms ease-out both;
+}
+
+/* The lines arrive one after another, the way the worksheet is read. */
+.auth-preview-row:nth-child(1) {
+  animation-delay: 500ms;
+}
+
+.auth-preview-row:nth-child(2) {
+  animation-delay: 600ms;
+}
+
+.auth-preview-row:nth-child(3) {
+  animation-delay: 700ms;
+}
+
+.auth-preview-row:nth-child(4) {
+  animation-delay: 850ms;
+}
+
+.auth-preview-amount {
+  color: var(--text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.auth-preview-total {
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.auth-preview-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* Both chips carry a check and words, so neither relies on its colour. */
+.auth-preview-clause,
+.auth-preview-approved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 9px 1px 7px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.auth-preview-clause {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* The approval comes last, as it does in the product. */
+.auth-preview-approved {
+  background: var(--success-bg);
+  color: var(--success);
+  animation: auth-pop 400ms cubic-bezier(0.2, 0.7, 0.2, 1.3) 1150ms both;
+}
+
+/* Entrance animations name only their start ("from"), so the element's own styles
+   are its end state: with the animation off (reduced motion) it simply shows. */
+@keyframes auth-preview-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.98);
+  }
+}
+
+@keyframes auth-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 4px, 0);
+  }
+}
+
+@keyframes auth-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+/* After it has arrived, the card floats a few pixels up and down. The float is on the
+   wrapper and the entrance on the card, so the two transforms never fight. */
+@keyframes auth-float {
+  to {
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+/* The form half: its own stacking context and clip, for the moving background. */
 .auth-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -2211,10 +2450,35 @@ legend {
 }
 
 .login {
+  position: relative;
   width: 100%;
   max-width: 420px;
   margin: 0;
   padding: var(--space-6);
+}
+
+/* A soft light behind the card that slowly breathes. z-index -1 puts it under the
+   card (the panel is the stacking context) but above the moving background, which
+   comes earlier in the page. */
+.login::before {
+  content: "";
+  position: absolute;
+  inset: -18% -22%;
+  z-index: -1;
+  background: radial-gradient(closest-side, var(--card-glow), transparent);
+  will-change: transform, opacity;
+  animation: auth-glow 9s ease-in-out infinite alternate;
+}
+
+@keyframes auth-glow {
+  from {
+    opacity: 0.6;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.04);
+  }
 }
 
 .login h1 {
@@ -2292,7 +2556,7 @@ legend {
     padding: var(--space-10) var(--space-12);
   }
 
-  /* Vertically centred between the brand row and the footnote. */
+  /* Vertically centred below the brand row. */
   .auth-brand-body {
     margin: auto 0;
   }
@@ -2317,8 +2581,14 @@ legend {
     font-size: var(--text-md);
   }
 
-  .auth-footnote {
+  /* Under the benefits and pushed to the right, so the tagline and the picture make
+     one diagonal across the panel. */
+  .auth-preview {
     display: block;
+    width: 320px;
+    max-width: 100%;
+    margin: var(--space-10) 0 0 auto;
+    animation: auth-float 7s ease-in-out 1.2s infinite alternate;
   }
 
   .auth-panel {
@@ -2333,6 +2603,30 @@ legend {
 
   .login h1 {
     font-size: var(--text-2xl);
+  }
+}
+
+/* A short laptop screen: the picture would push the panel past the fold and pull the
+   form off centre, so the panel keeps to its words. */
+@media (min-width: 960px) and (max-height: 760px) {
+  .auth-preview {
+    display: none;
+  }
+}
+
+/* Some people get dizzy or distracted by motion and ask their system for less. For
+   them every animation on this page stops: the backgrounds hold still and the
+   illustration is simply there. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-aurora::before,
+  .auth-aurora::after,
+  .auth-rules-lines,
+  .login::before,
+  .auth-preview,
+  .auth-preview-card,
+  .auth-preview-row,
+  .auth-preview-approved {
+    animation: none;
   }
 }
 
