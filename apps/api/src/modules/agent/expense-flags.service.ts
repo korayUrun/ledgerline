@@ -86,6 +86,12 @@ export class ExpenseFlagsService {
     source: FlagSource,
     actorLabel: string,
   ): Promise<FlagResult> {
+    // "Find, then insert" races: two transactions can both find nothing and both
+    // insert. This lock is held until our transaction ends, so a second caller with
+    // the same expense and kind waits here, then finds our committed flag. A partial
+    // unique index would also work, but Prisma's schema cannot express one, so a
+    // hand-made index risks being dropped by a later `prisma migrate dev`.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`expense-flag:${input.expenseId}:${input.kind}`}))`;
     const existing = await tx.expenseFlag.findFirst({
       where: { expenseId: input.expenseId, kind: input.kind, status: "open" },
     });
