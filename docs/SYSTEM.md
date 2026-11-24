@@ -168,7 +168,7 @@ draft → computed → in_review → approved → paying → paid
 
 Phase 2 implements `draft → computed → in_review` and `→ stale` (`apps/api/src/modules/settlements/settlement-state-machine.ts`). `computed → computed` (recompute with unchanged inputs) is allowed; `in_review` must go `stale` before it can be recomputed.
 
-Stale detection has two layers. (1) Every service that changes an input (ticket sales, expenses, terms) calls `onInputChange` in the same transaction. (2) Reading a settlement re-hashes the live inputs and compares with `inputsHash`, which also catches changes made around the API (manual SQL, bugs).
+Stale detection has two layers. (1) Every service that changes an input (ticket sales, expenses, terms) calls `onInputChange` in the same transaction, but only when a value the engine reads changed: an expense edit that only fixes the description is audited and leaves the settlement as it is (also after approval). (2) Reading a settlement re-hashes the live inputs and compares with `inputsHash`, which also catches changes made around the API (manual SQL, bugs).
 
 Pending expenses are included in the math (a preview) but block `computed → in_review` until each one is allowed or disallowed.
 

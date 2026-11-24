@@ -84,7 +84,16 @@ export class ExpensesService {
         before: auditFields(before),
         after: auditFields(updated),
       });
-      await this.stateMachine.onInputChange(tx, updated.showId, actor.label, "expense changed");
+      // Only what the engine reads can make the result outdated (or must stay locked
+      // once approved). A description is not one of them: the web form sends every
+      // field, so compare values instead of checking which fields were sent.
+      const engineInputChanged =
+        updated.category !== before.category ||
+        updated.amountCents !== before.amountCents ||
+        updated.status !== before.status;
+      if (engineInputChanged) {
+        await this.stateMachine.onInputChange(tx, updated.showId, actor.label, "expense changed");
+      }
       return updated;
     });
     return toExpenseDto(expense);
