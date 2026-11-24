@@ -217,6 +217,8 @@ Estimated total: ~4 weeks part-time.
 
 **Explain it:** pick any file at random and explain why it exists and what would break without it.
 
+**Status:** done 2026-11-24 (PRs #44–#51). Built: structured logging with pino, the web design pass, the README, compose ports on localhost, CI upkeep, the eval gate (`evals.yml`, first run 300/300 fields and 25/25 payouts for $1.06, posted on #51) and the live agent baseline (Haiku, 100% precision and recall, $0.046; Haiku is the default `AGENT_MODEL`). Fresh clone, checked in a new directory with the README steps (`cp .env.example .env`, `docker compose up -d`, install, migrate, seed, `LLM_CLIENT=fake pnpm dev`): API, worker and web start, the demo login works, a seeded show computes ($2,700.00). The first try found a real bug: turbo's strict env mode dropped `LLM_CLIENT`, so the apps crashed asking for an API key; fixed with `envMode: "loose"` and a CI check (#49). The first eval gate run failed on a mistyped GitHub secret (401 on every call, no cost) and passed after the secret was rewritten from `.env`. The Explain it answers and a Break it drill are in `SELF_CHECK.md`.
+
 ---
 
 ## Later

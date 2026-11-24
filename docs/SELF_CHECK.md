@@ -409,6 +409,88 @@ JSON-RPC message, so one log line breaks the connection. Logs go to stderr
 
 </details>
 
+## Phase 7 — Hardening & finish
+
+**1. A service logs a line deep inside a payout job. How does that line get the job's `jobId` and `settlementId` when neither was passed to the service?**
+
+<details><summary>Answer</summary>
+
+`AsyncLocalStorage` (`apps/api/src/common/logging.ts`). The job handler runs inside
+`withLogContext({ jobId })`, and Node carries that context object through every `await`
+started inside it. The processor adds `settlementId` with `addLogContext` once it has read
+the payout (it mutates the same context object). pino's `mixin` runs for every line and
+copies the current context into it. For HTTP the middleware starts the context with a
+`requestId` and the interceptor adds the route's `:settlementId`. Two traps: the
+middleware is Nest module middleware, not `app.use`, because the body parser calls `next()`
+from a stream event outside a context started before it; and the "request finished"
+listener is wrapped in `AsyncResource.bind`, because an event listener runs in the context
+of whoever emits the event.
+
+</details>
+
+**2. `LLM_CLIENT=fake pnpm dev` crashed in a fresh clone with "ANTHROPIC_API_KEY is not set". Why, and why had nobody noticed?**
+
+<details><summary>Answer</summary>
+
+Turbo 2 runs tasks in strict env mode by default: a task gets only the environment
+variables declared in `turbo.json`, and none were, so `LLM_CLIENT` never reached the API or
+the worker, and config fell back to `anthropic`, which needs a key. It went unnoticed
+because the local `.env` had a real key, and the apps read `.env` themselves
+(`process.loadEnvFile`), not through turbo. The fix is `"envMode": "loose"` (the shell's
+environment passes through, like a plain pnpm script); listing variables one by one was
+rejected because a forgotten one brings the bug back silently. A CI step checks the mode.
+Only a run from a clean machine could find it: that is what the fresh-clone check is for.
+
+</details>
+
+**3. The eval gate compares `299/300` with the baseline `300/300`. Why does it cross-multiply instead of comparing percentages, and why does it refuse `--compare-baseline` together with `--save-baseline`?**
+
+<details><summary>Answer</summary>
+
+`a/b >= c/d` is the same as `a·d >= c·b` for positive totals, and that uses integers only,
+so float rounding can never decide whether a PR passes; it also judges a run on fewer cases
+by its rate, not its count (`packages/evals/src/runner/compare.ts`). Saving writes the
+baseline file before the comparison reads it, so with both flags the run would be compared
+with itself and always pass.
+
+</details>
+
+**4. The audit agent now runs on Haiku. What does the eval prove, and what does it not?**
+
+<details><summary>Answer</summary>
+
+On the 25 generated shows, Haiku flagged all 26 planted violations, nothing else, each with
+the right kind, for $0.0018 an audit (`packages/evals/baselines/agent.md`). It does not
+prove Haiku is as good as Sonnet in general: Sonnet and Opus were not run, the dataset is
+easy enough that a 100% score cannot separate models, and free-form answers ("why is the
+payout X?") are not scored at all. A harder dataset (Later list) is what would make a model
+comparison meaningful.
+
+</details>
+
+**5. The first eval gate run failed with 401 "Invalid bearer token" on every call. How was the cause found, and what did it cost?**
+
+<details><summary>Answer</summary>
+
+The same code with the same key worked locally hours earlier, so the difference had to be
+the GitHub secret's value, not the code. The key type (`sk-ant-usr…`) is sent as a bearer
+token, which explains the wording. Rewriting the secret straight from `.env`
+(`sed … .env | tr -d '\r\n' | gh secret set ANTHROPIC_API_KEY`, no copy-paste) and rerunning
+only the failed job fixed it. It cost nothing: a rejected request never reaches the model.
+
+</details>
+
+**6. Why is `NavLink` a client component when every page around it is a server component?**
+
+<details><summary>Answer</summary>
+
+It needs the current path to mark the active tab (`usePathname`), and that is known in the
+browser. Keeping only this small link on the client leaves the pages as server components:
+they still fetch from the API with the session cookie on the server, and no data-loading
+code ships to the browser (`apps/web/src/app/nav-link.tsx`).
+
+</details>
+
 ---
 
 # Deferred phase quizzes (after the last phase)
@@ -740,5 +822,48 @@ stops new access; it cannot take back what was already read. Ask for something n
 loaded to see the refusal. The API logs nothing special (a 401), and the
 `ApiKey` row stays with `revokedAt` set. Automated in `apps/mcp/src/tools/list-shows.test.ts`
 and `apps/api/test/public-api.test.ts`.
+
+</details>
+
+## Phase 7 — Hardening & finish
+
+**Explain it: pick any file at random and explain why it exists and what would break without it.** Three worked examples to check the shape of a good answer:
+
+<details><summary><code>apps/api/src/modules/payments/payout-sweeper.ts</code></summary>
+
+Approval commits the `Payout` row and then enqueues the job. If Redis is down between the
+two, the payout sits in `pending` with no job. The sweeper runs on a schedule, finds
+`pending` payouts older than a few minutes and enqueues them again. Without it, such a
+payout would wait forever; with it, a second enqueue is harmless because the job re-reads
+the payout and every Stripe call carries the same idempotency key.
+
+</details>
+
+<details><summary><code>turbo.json</code></summary>
+
+It tells Turborepo which tasks exist (`dev`, `dev:worker`, `test`, …), which may be cached
+and in which order to build. `pnpm dev` runs web, API and worker together through it.
+Without it there is no single command for the three processes; without its `envMode:
+"loose"` line, variables set on the command line (`LLM_CLIENT=fake`) never reach the apps.
+
+</details>
+
+<details><summary><code>packages/evals/baselines/extraction.json</code></summary>
+
+The numbers of the last accepted live extraction run. The eval gate compares every
+matching PR with it. Without it the gate has nothing to compare with, so a prompt change
+that makes extraction worse would merge with a green build.
+
+</details>
+
+**Break it (Phase 7), free:** in a branch, delete the `"envMode": "loose"` line from
+`turbo.json`, rename `.env` for a minute, and run `LLM_CLIENT=fake pnpm dev`.
+
+<details><summary>What to look for</summary>
+
+API and worker exit with "ANTHROPIC_API_KEY is not set … or set LLM_CLIENT=fake", even
+though you did set it: the variable never reached the process. `pnpm exec turbo run dev
+--dry=json | jq .envMode` says `strict`, and CI's "Dev tasks get the shell's environment"
+step fails. Put the line back, restore `.env`: the worker's start line logs `"llm":"fake"`.
 
 </details>
