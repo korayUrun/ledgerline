@@ -908,3 +908,58 @@ flags and the flag path reads `in_review`, and both commit. Closing the window w
 accepted because a person clicks Approve and the window is tiny; `docs/SYSTEM.md` §8 says so.
 
 </details>
+
+## Payout audit row (fix/payout-processing-audit)
+
+**Explain it: why does `markProcessing` write its audit row only when `count === 1`?**
+
+<details><summary>Answer</summary>
+
+`updateMany … WHERE status = 'pending'` is a compare-and-set: `count` is 1 only for the call
+that really moved the payout to `processing`. A retried job finds it already `processing`,
+changes nothing (`count` is 0) and must not log a change that did not happen. The audit row
+is written in the same transaction as the update, so they commit or roll back together.
+
+</details>
+
+## Description edits (fix/expense-description-not-stale)
+
+**Explain it: why compare old and new values instead of checking which fields the request sent?**
+
+<details><summary>Answer</summary>
+
+The web form sends all four fields every time, so "was `amountCents` sent?" is always yes.
+Only a changed value the engine reads (category, amount, status) can make the result wrong.
+A description is not an engine input and not part of `inputsHash`, so fixing a typo is
+audited but no longer sends the settlement back to `stale`.
+
+</details>
+
+## Login timing (fix/login-timing)
+
+**Explain it: the error message was already the same for every failure. How could an attacker still tell which emails have an account?**
+
+<details><summary>Answer</summary>
+
+By the time it took. A known email paid for one scrypt check (slow on purpose, tens of ms);
+an unknown email was answered at once. Now an unknown email is checked against a dummy hash,
+so both cost one scrypt. The unit test checks that `verifyPassword` runs in both cases
+instead of measuring time, because timing tests are flaky in CI.
+
+</details>
+
+## Flag dedupe (fix/flag-dedupe-unique-index)
+
+**Explain it: what does `pg_advisory_xact_lock` do here, and why not a unique index?**
+
+<details><summary>Answer</summary>
+
+It is a lock on a number (here a hash of expense id + kind) that Postgres holds until the
+transaction ends. Two callers flagging the same expense at once: the second waits at the lock,
+and when it continues (READ COMMITTED reads the latest committed rows) it finds the first
+caller's flag and returns it. A partial unique index (`WHERE status = 'open'`) would also work,
+but Prisma's schema cannot express it, so a later `prisma migrate dev` could see it as drift
+and drop it. The test fired two flags with `Promise.all` and got two rows 3 times out of 3
+before the fix.
+
+</details>
