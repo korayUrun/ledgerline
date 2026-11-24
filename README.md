@@ -265,3 +265,7 @@ log). Tool errors are worded for the model, so the chat usually says what happen
 - *"answered, but not in the shape of the Ledgerline API"*: `LEDGERLINE_API_URL` points at
   another server.
 - *"Rate limit reached"*: wait the number of seconds given (`V1_RATE_LIMIT_PER_MINUTE`).
+
+## License
+
+[MIT](LICENSE). All contracts, sales and payouts in this repository are synthetic.
