@@ -1,7 +1,7 @@
 import type { UserDto } from "@ledgerline/schemas";
 import Link from "next/link";
 import { logout } from "./actions";
-import { KeyIcon, LogOutIcon, ShowsIcon } from "./icons";
+import { GuideIcon, KeyIcon, LogOutIcon, ShowsIcon } from "./icons";
 import { MobileMenu } from "./mobile-menu";
 import { NavLink } from "./nav-link";
 
@@ -19,9 +19,10 @@ export function Brand() {
   );
 }
 
-// The same two links in the sidebar and in the phone menu. NavLink marks the current
-// one with aria-current="page", which is also what the CSS styles as active, so the
-// active look and what a screen reader announces can never disagree.
+// The same links in the sidebar and in the phone menu. NavLink marks the current one
+// with aria-current="page", which is also what the CSS styles as active, so the active
+// look and what a screen reader announces can never disagree. The work comes first;
+// the Guide sits apart under "Help", since it is read once, not used every day.
 function PrimaryNav() {
   return (
     <nav className="sidenav" aria-label="Main">
@@ -32,6 +33,11 @@ function PrimaryNav() {
       <NavLink href="/settings/api-keys">
         <KeyIcon />
         <span>API keys</span>
+      </NavLink>
+      <p className="sidenav-label">Help</p>
+      <NavLink href="/guide">
+        <GuideIcon />
+        <span>Guide</span>
       </NavLink>
     </nav>
   );

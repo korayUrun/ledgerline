@@ -3,11 +3,13 @@ import Link from "next/link";
 import { api } from "../../../../lib/api";
 import type { SearchParams } from "../../../../lib/flash";
 import { formatDateTime } from "../../../../lib/format";
+import { termsGuidance } from "../../../../lib/show-guidance";
 import { inputsLocked } from "../../../../lib/show-steps";
 import { termsToDraft } from "../../../../lib/terms-form";
 import { saveTerms } from "../../../actions";
 import { ErrorBanner, LockedNote, NextStep } from "../../../components";
 import { SubmitButton } from "../../../submit-button";
+import { GuidanceCard } from "../guidance-card";
 import { TermsFields } from "../terms-fields";
 
 // Typing terms in by hand. Usually they come from the contract PDF instead
@@ -27,10 +29,16 @@ export default async function TermsPage({
   ]);
   const terms: ContractTerms | null = latest?.terms ?? null;
   const locked = inputsLocked(show.settlementStatus);
+  const guidance = termsGuidance({
+    showId,
+    status: show.settlementStatus,
+    latestVersion: latest?.version ?? null,
+  });
 
   return (
     <>
       <ErrorBanner searchParams={await searchParams} />
+      <GuidanceCard guidance={guidance} />
       <h2>Deal terms</h2>
       {locked ? (
         <>
@@ -58,7 +66,11 @@ export default async function TermsPage({
           </p>
           <form action={saveTerms.bind(null, showId)}>
             <TermsFields draft={terms ? termsToDraft(terms) : null} />
-            <SubmitButton pendingLabel="Saving…">Save as new version</SubmitButton>
+            {/* Saving the first terms is the step's action; once a version exists, editing
+                is an option, and the card's "Next: Settlement" is the filled button. */}
+            <SubmitButton className={latest ? "secondary" : undefined} pendingLabel="Saving…">
+              Save as new version
+            </SubmitButton>
           </form>
         </>
       )}

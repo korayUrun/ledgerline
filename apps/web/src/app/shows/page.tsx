@@ -55,7 +55,8 @@ export default async function ShowsPage({ searchParams }: { searchParams: Promis
 
       {shows.length === 0 ? (
         <EmptyState title="No shows yet">
-          <a href="#new-show">Create a show</a>, then import its ticket sales.
+          <a href="#new-show">Create a show</a>, then import its ticket sales. New here?{" "}
+          <Link href="/guide">Learn how it works</Link>.
         </EmptyState>
       ) : (
         <>

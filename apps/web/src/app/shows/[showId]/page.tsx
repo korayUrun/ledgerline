@@ -10,10 +10,12 @@ import Link from "next/link";
 import type { SearchParams } from "../../../lib/flash";
 import { api } from "../../../lib/api";
 import { centsToInput, humanize } from "../../../lib/format";
+import { salesGuidance } from "../../../lib/show-guidance";
 import { inputsLocked } from "../../../lib/show-steps";
 import { createExpense, deleteExpense, updateExpense, uploadReceipt } from "../../actions";
 import { EmptyState, ErrorBanner, LockedNote, NextStep, StatusBadge } from "../../components";
 import { SubmitButton } from "../../submit-button";
+import { GuidanceCard } from "./guidance-card";
 
 // Option texts for the expense status. The option values stay the API's enum values;
 // only what a person reads changes. Keyed by the enum, so a new status fails to compile
@@ -40,20 +42,24 @@ export default async function ShowDetailPage({
     api.get<ExpenseDto[]>(`/shows/${showId}/expenses`),
   ]);
   const locked = inputsLocked(show.settlementStatus);
+  const guidance = salesGuidance({
+    showId,
+    status: show.settlementStatus,
+    ticketSaleCount: ticketSales.length,
+    pendingExpenseCount: expenses.filter((expense) => expense.status === "pending").length,
+  });
 
   return (
     <>
       <ErrorBanner searchParams={await searchParams} />
+      <GuidanceCard guidance={guidance} />
 
       <div className="section-head">
         <h2>Ticket sales</h2>
-        {/* The import replaces the sales: the main button while there are none, a quiet
-            one once there are. */}
+        {/* Always the quiet button: while there are no sales, the "What to do now"
+            card above carries the filled one, and a page has one primary action. */}
         {!locked && (
-          <Link
-            href={`/shows/${showId}/import`}
-            className={ticketSales.length === 0 ? "button-link" : "button-link secondary"}
-          >
+          <Link href={`/shows/${showId}/import`} className="button-link secondary">
             Import sales CSV
           </Link>
         )}
@@ -91,7 +97,8 @@ export default async function ShowDetailPage({
         </div>
       )}
 
-      <h2>Expenses</h2>
+      {/* The target of the card's "Go to the expenses" link. */}
+      <h2 id="expenses">Expenses</h2>
       {locked ? (
         <LockedExpenses expenses={expenses} />
       ) : (

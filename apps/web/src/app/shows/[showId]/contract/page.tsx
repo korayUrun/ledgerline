@@ -1,12 +1,14 @@
-import type { ContractDto, ShowDto } from "@ledgerline/schemas";
+import type { ContractDto, ShowDto, TermsDto } from "@ledgerline/schemas";
 import Link from "next/link";
 import { api } from "../../../../lib/api";
 import type { SearchParams } from "../../../../lib/flash";
 import { formatDateTime } from "../../../../lib/format";
+import { contractGuidance } from "../../../../lib/show-guidance";
 import { inputsLocked } from "../../../../lib/show-steps";
 import { uploadContract } from "../../../actions";
 import { ErrorBanner, LockedNote, NextStep, StatusBadge } from "../../../components";
 import { SubmitButton } from "../../../submit-button";
+import { GuidanceCard } from "../guidance-card";
 import { UsageNote } from "./usage-note";
 
 // Upload the contract PDF (F2) and follow its extraction. The worker does the
@@ -19,21 +21,30 @@ export default async function ContractPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { showId } = await params;
-  // Both are the same fetches as the layout's (deduped within the render).
-  const [show, contracts] = await Promise.all([
+  // All three are the same fetches as the layout's (deduped within the render). The
+  // terms only tell the card whether terms were typed in without a contract.
+  const [show, contracts, terms] = await Promise.all([
     api.get<ShowDto>(`/shows/${showId}`),
     api.get<ContractDto[]>(`/shows/${showId}/contracts`),
+    api.get<TermsDto>(`/shows/${showId}/terms`),
   ]);
   const locked = inputsLocked(show.settlementStatus);
   const latest = contracts[0];
   const inProgress = latest?.status === "uploaded" || latest?.status === "extracting";
   const hasEarlier = contracts.length > 1;
+  const guidance = contractGuidance({
+    showId,
+    status: show.settlementStatus,
+    latestContract: latest ? { id: latest.id, status: latest.status } : null,
+    hasTerms: terms.latest !== null,
+  });
 
   return (
     <>
       {/* A plain meta refresh: no client JavaScript needed to poll the status. */}
       {inProgress && <meta httpEquiv="refresh" content="2" />}
       <ErrorBanner searchParams={await searchParams} />
+      <GuidanceCard guidance={guidance} />
 
       <h2>Contract</h2>
       {latest && (
@@ -50,15 +61,11 @@ export default async function ContractPage({
             </p>
           )}
           {latest.status === "needs_review" && !locked && (
-            <>
-              <p>The terms are extracted. Check each one against the PDF before it is used.</p>
-              {/* The one thing to do on this page now, so it looks like the main button. */}
-              <p>
-                <Link href={`/shows/${showId}/contract/${latest.id}`} className="button-link">
-                  Review terms
-                </Link>
-              </p>
-            </>
+            // The filled "Review terms" button is in the card above; a plain link here.
+            <p>
+              The terms are extracted. Check each one against the PDF before it is used:{" "}
+              <Link href={`/shows/${showId}/contract/${latest.id}`}>review the terms</Link>.
+            </p>
           )}
           {latest.status === "confirmed" && (
             <p>
@@ -99,7 +106,11 @@ export default async function ContractPage({
               Contract PDF
               <input type="file" name="file" accept="application/pdf" required />
             </label>
-            <SubmitButton pendingLabel="Uploading…">Upload and extract</SubmitButton>
+            {/* The first upload is the step's action; a re-upload is an option, and the
+                card above holds the filled button. */}
+            <SubmitButton className={latest ? "secondary" : undefined} pendingLabel="Uploading…">
+              Upload and extract
+            </SubmitButton>
           </div>
         </form>
       )}
