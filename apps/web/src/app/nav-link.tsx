@@ -10,17 +10,24 @@ import { usePathname } from "next/navigation";
 // `exact`: active only on this exact path (the show's first tab, whose path is a
 // prefix of every other tab). Otherwise also active on pages below it, so the
 // replay page of an agent run keeps the "Settlement" tab lit.
+//
+// `alsoActiveOn`: one more path that lights this link, for a page that has no tab of
+// its own (the CSV import is an action of the Sales & expenses step).
 export function NavLink({
   href,
   exact = false,
+  alsoActiveOn,
   children,
 }: {
   href: string;
   exact?: boolean;
+  alsoActiveOn?: string | undefined;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const active =
+    (exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)) ||
+    pathname === alsoActiveOn;
   return (
     <Link href={href} aria-current={active ? "page" : undefined}>
       {children}

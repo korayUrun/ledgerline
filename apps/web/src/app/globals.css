@@ -122,6 +122,25 @@ h2 {
   font-size: 13px;
 }
 
+/* Text for screen readers only, e.g. "Step 1:" in a tab that shows a bare number. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Inline SVG icons (the padlock): sized to the text and drawn in its color. */
+.icon {
+  flex: none;
+  vertical-align: -2px;
+}
+
 code,
 pre {
   font-family: var(--font-mono, ui-monospace), ui-monospace, "SF Mono", Menlo, monospace;
@@ -323,7 +342,10 @@ pre {
 }
 
 .tabs a {
-  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px 10px;
   margin-bottom: -1px;
   border-bottom: 2px solid transparent;
   text-decoration: none;
@@ -331,6 +353,58 @@ pre {
   font-weight: 500;
   font-size: 14px;
   white-space: nowrap;
+}
+
+/* Each tab is a step of the flow: its number and name, then its state underneath. */
+.step-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabs a[aria-current="page"] .step-number {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* The state is always a word with a symbol; the color only repeats it. Indented to
+   line up with the name, past the number. */
+.step-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 28px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.step-done {
+  color: var(--success);
+}
+
+.step-attention {
+  color: var(--warn);
+}
+
+.step-progress {
+  color: var(--info);
+}
+
+.step-todo,
+.step-locked {
+  color: var(--muted);
 }
 
 .tabs a:hover {
@@ -348,13 +422,18 @@ pre {
   outline-offset: -2px;
 }
 
-/* On a phone the five tabs do not fit on one line. A hidden sideways scroll left
-   "Settlement" off-screen with nothing to say it was there, so they wrap to a second
-   line instead: every tab stays visible, no gesture to discover. */
+/* On a phone the four steps do not fit on one line. A hidden sideways scroll left
+   "Settlement" off-screen with nothing to say it was there, so they sit two by two
+   instead: every step and its state stays visible, in reading order. */
 @media (max-width: 640px) {
   .tabs {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     overflow-x: visible;
+  }
+  .tabs a {
+    padding: 8px 6px 10px;
+    white-space: normal;
   }
 }
 
@@ -425,6 +504,47 @@ pre {
 .button-link:hover {
   background: var(--accent-hover);
   color: var(--on-accent);
+}
+
+/* A section title with its action on the right ("Ticket sales" · "Import sales CSV"). */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 36px 0 12px;
+}
+
+.section-head h2 {
+  margin: 0;
+}
+
+/* A link-button that is an option, not the next step: outlined like button.secondary. */
+.button-link.secondary {
+  background: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--border-strong);
+}
+
+.button-link.secondary:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Said where a form used to be, once the settlement's inputs are locked. */
+.locked-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 0 16px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.locked-note .icon {
+  margin-top: 3px;
 }
 
 /* The one link that ends a step of the flow: below a rule, after everything else. */
@@ -623,9 +743,15 @@ tr.total .source-ref {
 
 /* --- Worksheet ----------------------------------------------------------------------- */
 
-/* The clause and sources under a line's label exist only for phones (see below). */
+/* Shown only on a phone (the worksheet's clause and sources, a list's status under the
+   name) or only wider (the column they replace). See the media query below. */
 .narrow-only {
   display: none;
+}
+
+/* A second line inside a table cell, e.g. a status badge under a show name. */
+.cell-below {
+  margin-top: 6px;
 }
 
 .line-meta {
@@ -682,6 +808,31 @@ label {
   font-size: 13px;
   font-weight: 500;
   color: var(--muted);
+}
+
+/* A field whose label line also holds a link ("Venue" · "Add venue"). The label is
+   tied to the control by for/id, since the link must not be part of its name. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.field-head a {
+  font-weight: 500;
+}
+
+/* A form an "Add …" link jumps to: clear of the sticky top bar. */
+.anchor-target {
+  scroll-margin-top: 80px;
 }
 
 label.inline {
@@ -817,6 +968,54 @@ button.ghost:hover:not(:disabled) {
   color: var(--text);
 }
 
+/* Read-only fields (a disabled fieldset on locked terms, a confirmed contract): the
+   values are the content, so they keep full text contrast instead of the browser's
+   faded look, on a quieter background with a lighter outline. */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  opacity: 1;
+  cursor: default;
+}
+
+/* A placeholder is an example to type over; in a field nobody can type in, "§6" would
+   only pass for a value. Empty stays empty. */
+input:disabled::placeholder {
+  color: transparent;
+  /* The disabled rule's text-fill-color also paints the placeholder, and wins over color. */
+  -webkit-text-fill-color: transparent;
+}
+
+/* The browser greys a disabled checkbox until checked and unchecked look alike, and
+   which expense categories are allowed is the point of the table. Drawn by hand: a
+   filled box with a tick when checked, an empty outline when not. */
+input[type="checkbox"]:disabled {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+}
+
+input[type="checkbox"]:disabled:checked {
+  background: var(--muted);
+  border-color: var(--muted);
+}
+
+input[type="checkbox"]:disabled:checked::before {
+  content: "";
+  width: 8px;
+  height: 4px;
+  border-left: 2px solid var(--surface);
+  border-bottom: 2px solid var(--surface);
+  transform: translateY(-1px) rotate(-45deg);
+}
+
 button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -868,6 +1067,14 @@ legend {
   padding: 0 6px;
 }
 
+/* A fieldset used only to disable everything inside it: no box of its own. */
+.fieldset-plain {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: none;
+}
+
 /* --- Banners & badges ---------------------------------------------------------------- */
 
 .banner {
@@ -901,6 +1108,27 @@ legend {
 .banner-info {
   background: var(--accent-soft);
   color: var(--accent);
+}
+
+.banner-success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+/* Inputs locked: a fact, not an alarm. Neutral, in the text color, with a padlock. */
+.banner-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+}
+
+.banner-locked .icon {
+  margin-top: 3px;
+  color: var(--muted);
 }
 
 .badge {

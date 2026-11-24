@@ -6,6 +6,15 @@ import { formatShowDate } from "../../lib/format";
 import { createArtist, createShow, createVenue } from "../actions";
 import { ErrorBanner, StatusBadge } from "../components";
 
+// The settlement status, or "Not started" while a show has none.
+function SettlementState({ show }: { show: ShowDto }) {
+  return show.settlementStatus ? (
+    <StatusBadge status={show.settlementStatus} />
+  ) : (
+    <span className="muted">Not started</span>
+  );
+}
+
 export default async function ShowsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const [shows, venues, artists] = await Promise.all([
     api.get<ShowDto[]>("/shows"),
@@ -29,7 +38,7 @@ export default async function ShowsPage({ searchParams }: { searchParams: Promis
               <th>Show</th>
               <th>Artist</th>
               <th>Venue</th>
-              <th>Settlement</th>
+              <th className="wide-only">Settlement</th>
             </tr>
           </thead>
           <tbody>
@@ -38,15 +47,16 @@ export default async function ShowsPage({ searchParams }: { searchParams: Promis
                 <td>{formatShowDate(show.showDate)}</td>
                 <td>
                   <Link href={`/shows/${show.id}`}>{show.name}</Link>
+                  {/* On a phone the last column is off-screen, so the status goes
+                      under the name, where it is read together with the show. */}
+                  <span className="narrow-only cell-below">
+                    <SettlementState show={show} />
+                  </span>
                 </td>
                 <td>{show.artist.name}</td>
                 <td>{show.venue.name}</td>
-                <td>
-                  {show.settlementStatus ? (
-                    <StatusBadge status={show.settlementStatus} />
-                  ) : (
-                    <span className="muted">Not started</span>
-                  )}
+                <td className="wide-only">
+                  <SettlementState show={show} />
                 </td>
               </tr>
             ))}
@@ -71,31 +81,39 @@ export default async function ShowsPage({ searchParams }: { searchParams: Promis
           Date
           <input name="showDate" type="date" required />
         </label>
-        <label>
-          Venue
-          <select name="venueId" required>
+        {/* The link sits on the label's line, so the dropdowns stay level with the other
+            fields. It points at the forms further down; nothing new is sent. */}
+        <div className="field">
+          <div className="field-head">
+            <label htmlFor="new-show-venue">Venue</label>
+            <a href="#new-venue">Add venue</a>
+          </div>
+          <select id="new-show-venue" name="venueId" required>
             {venues.map((venue) => (
               <option key={venue.id} value={venue.id}>
                 {venue.name}
               </option>
             ))}
           </select>
-        </label>
-        <label>
-          Artist
-          <select name="artistId" required>
+        </div>
+        <div className="field">
+          <div className="field-head">
+            <label htmlFor="new-show-artist">Artist</label>
+            <a href="#new-artist">Add artist</a>
+          </div>
+          <select id="new-show-artist" name="artistId" required>
             {artists.map((artist) => (
               <option key={artist.id} value={artist.id}>
                 {artist.name}
               </option>
             ))}
           </select>
-        </label>
+        </div>
         <button type="submit">Create show</button>
       </form>
 
       <div className="form-grid">
-        <form action={createVenue} className="card row">
+        <form action={createVenue} id="new-venue" className="card row anchor-target">
           <label>
             New venue
             <input name="name" required />
@@ -104,7 +122,7 @@ export default async function ShowsPage({ searchParams }: { searchParams: Promis
             Add venue
           </button>
         </form>
-        <form action={createArtist} className="card row">
+        <form action={createArtist} id="new-artist" className="card row anchor-target">
           <label>
             New artist
             <input name="name" required />
