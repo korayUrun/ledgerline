@@ -4,7 +4,9 @@ import { z } from "zod";
 // packages/db/src/enums.test.ts fails if the two lists drift apart.
 
 // What started a run: the "Run audit" button, or a person's question in the chat.
-export const AgentRunKindSchema = z.enum(["audit", "question"]);
+// audit and question run on one settlement; workspace is the Assistant page, which
+// answers about any show and belongs to no settlement.
+export const AgentRunKindSchema = z.enum(["audit", "question", "workspace"]);
 export type AgentRunKind = z.infer<typeof AgentRunKindSchema>;
 
 // running → completed (the loop returned an outcome) or failed (it threw: the
@@ -53,8 +55,8 @@ export type ResolveFlagBody = z.infer<typeof ResolveFlagBodySchema>;
 
 export type AgentRunDto = {
   id: string;
-  settlementId: string;
-  settlementVersion: number;
+  settlementId: string | null; // null for a workspace run
+  settlementVersion: number | null;
   kind: AgentRunKind;
   question: string;
   model: string;

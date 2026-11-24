@@ -307,6 +307,15 @@ As built:
 - `GET /agent-runs/:id` returns the run and its steps in the same shape that streamed, so the replay page and the live chat panel share one component. Also `GET /settlements/:id/agent-runs`, `GET /settlements/:id/flags`, `POST /flags/:id/resolve` (`accepted|dismissed`; a person only).
 - The browser never calls the API: Next.js route handlers (`apps/web/src/app/settlements/[settlementId]/ask|audit`) pass the request on and the response body through unchanged.
 
+### 7.4 Workspace assistant (Assistant page)
+
+Added after the phases (2026-11-24) for questions about any show: "where are we with Harbor Lights?", "which shows need action?". It reuses the hand-written loop, the trace and the stream of §7.2–7.3; only the tools and the prompt differ (`AgentService.prepareWorkspace`).
+- **Two read-only tools:** `list_shows` (optional `search` over show, artist and venue names) and `get_show_progress` (one show's four steps, current step, next action, and the facts behind them). No write tool at all.
+- **The code decides the step:** `showProgress()` (`apps/api/src/modules/agent/workspace/show-progress.ts`, unit-tested) turns counts and statuses into step states and the next action. The model only puts them into words, like it quotes amounts instead of computing them. The web stepper applies the same rules in `apps/web/src/lib/show-steps.ts` (web cannot import api code).
+- **One snapshot per run:** `WorkspaceContextLoader` reads every show's facts in one query when the run starts. Settlement statuses are the stored ones (no drift check), like the shows list.
+- **Trace:** `AgentRun.kind = workspace` with `settlementId` and `settlementVersion` both null (a CHECK keeps the pair together). Prompt version `workspace-v1`, limits 6 model calls and 120k tokens.
+- **Routes:** `POST /assistant/ask` (SSE, a logged-in person only: an API key gets 401) and `GET /assistant/runs` (the latest 20); each run replays through `GET /agent-runs/:id`.
+
 ---
 
 ## 8. Payments (F7)

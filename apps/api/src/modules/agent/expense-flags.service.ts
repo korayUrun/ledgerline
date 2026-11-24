@@ -38,17 +38,23 @@ export class ExpenseFlagsService {
         where: { id: input.runId },
         select: { settlement: { select: { showId: true, status: true } } },
       });
+      // A workspace run (the Assistant page) has no settlement and no flag tool, so
+      // this is a programming error, never a model mistake.
+      const { settlement } = run;
+      if (settlement === null) {
+        throw new Error(`Agent run ${input.runId} belongs to no settlement; it cannot flag.`);
+      }
       // Read now, not when the run started: a person may have approved the
       // settlement in another tab while the audit was still running.
-      if (this.stateMachine.hasLockedInputs(run.settlement.status)) {
+      if (this.stateMachine.hasLockedInputs(settlement.status)) {
         throw new ConflictException(
-          `The settlement is ${run.settlement.status.replace("_", " ")}: its expenses can no longer be flagged.`,
+          `The settlement is ${settlement.status.replace("_", " ")}: its expenses can no longer be flagged.`,
         );
       }
       const expense = await tx.expense.findUnique({ where: { id: input.expenseId } });
       // The agent only ever sees this show's expenses. An id from anywhere else (a
       // typo, or an id planted in some expense's description) is refused.
-      if (!expense || expense.showId !== run.settlement.showId) {
+      if (!expense || expense.showId !== settlement.showId) {
         throw new NotFoundException(`There is no expense ${input.expenseId} in this show.`);
       }
       return this.open(tx, input, { agentRunId: input.runId }, `agent:${input.runId}`);

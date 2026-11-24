@@ -102,6 +102,8 @@ export type AgentRequest = {
   tools: readonly AgentTool[];
   question: string; // the first user message
   limits: AgentLimits;
+  // The label in the LLM client's log line; the audit agent's when not given.
+  task?: string;
   // Called once per step, in order, and awaited. The caller stores the trace (and
   // streams it to the browser). If storing a step fails, the run fails: a run that
   // cannot be replayed is not allowed (F12).
@@ -131,7 +133,7 @@ export async function runAgent(llm: LlmClient, request: AgentRequest): Promise<A
         // Thinking is always on for this model; effort sets how hard it thinks.
         output_config: { effort: "medium" },
       },
-      "settlement-agent",
+      request.task ?? "settlement-agent",
     );
     modelCalls += 1;
     addUsage(usage, response.usage);
