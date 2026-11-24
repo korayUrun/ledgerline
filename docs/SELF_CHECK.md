@@ -1008,3 +1008,41 @@ already has, so a page that failed because an API call failed would fail again a
 `retry()` asks the server to render the page again, which re-runs the API call.
 
 </details>
+
+## Workspace assistant (#75, #76)
+
+**Explain it: who decides that a show is on "Step 2 of 4", the model or the code? Why?**
+
+<details><summary>Answer</summary>
+
+The code. `showProgress()` turns counts and statuses (ticket tiers, contract status, terms
+version, settlement status, pending expenses, open flags) into each step's state and the next
+action, and it has unit tests. The model only calls `get_show_progress` and puts the result
+into words. Same rule as for money: an LLM's judgement is not tested or repeatable, so
+anything that must be right is decided by code the model reads.
+
+</details>
+
+**Explain it: the audit agent and the workspace assistant share one loop. What differs between them, and where?**
+
+<details><summary>Answer</summary>
+
+Only what `AgentService.prepare…` puts in `PreparedRun`: the system prompt, the tools, the
+limits and the log label. The audit agent gets seven tools on one settlement (one of them,
+`flag_expense`, writes a note); the workspace assistant gets two read-only tools over all
+shows. The loop (`runAgent`), the trace (`AgentTraceService`) and the SSE stream are the same
+code, so a fix to one helps both.
+
+</details>
+
+**Explain it: why did `AgentRun.settlementId` become nullable, and what stops a half-filled row?**
+
+<details><summary>Answer</summary>
+
+A workspace question is about no single settlement, but every run must still be stored so it
+can be replayed (F12). So `settlementId` and `settlementVersion` are null for workspace runs.
+A hand-written CHECK constraint in the migration says both are null or both are set, and the
+foreign key keeps `ON DELETE RESTRICT`. `flagFromAgentRun` also refuses a run with no
+settlement, though the workspace assistant has no flag tool anyway.
+
+</details>
