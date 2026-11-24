@@ -36,8 +36,15 @@ export class ExpenseFlagsService {
     return this.prisma.$transaction(async (tx) => {
       const run = await tx.agentRun.findUniqueOrThrow({
         where: { id: input.runId },
-        select: { settlement: { select: { showId: true } } },
+        select: { settlement: { select: { showId: true, status: true } } },
       });
+      // Read now, not when the run started: a person may have approved the
+      // settlement in another tab while the audit was still running.
+      if (this.stateMachine.hasLockedInputs(run.settlement.status)) {
+        throw new ConflictException(
+          `The settlement is ${run.settlement.status.replace("_", " ")}: its expenses can no longer be flagged.`,
+        );
+      }
       const expense = await tx.expense.findUnique({ where: { id: input.expenseId } });
       // The agent only ever sees this show's expenses. An id from anywhere else (a
       // typo, or an id planted in some expense's description) is refused.
@@ -50,7 +57,7 @@ export class ExpenseFlagsService {
 
   // An API key may flag any expense, but not once the settlement is approved: the
   // numbers are final then, and a note nobody can act on would only block nothing
-  // and confuse. (The agent never gets here: it only runs on computed settlements.)
+  // and confuse. flagFromAgentRun applies the same rule.
   async flagFromApiKey(input: FlagInput, apiKey: ApiKeyActor): Promise<FlagResult> {
     return this.prisma.$transaction(async (tx) => {
       const expense = await tx.expense.findUnique({ where: { id: input.expenseId } });

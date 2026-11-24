@@ -47,6 +47,18 @@ export class ApprovalsService {
       if (!live || hashSettlementInput(live.input) !== settlement.inputsHash) {
         throw new ConflictException("The inputs changed since the last compute. Recompute first.");
       }
+      // Submit-for-review refused open flags, but an API client (the MCP server) or a
+      // running audit can open one during review. A person decides on each one before
+      // money moves. (A flag opened in the same instant as this commit can still slip
+      // past: docs/SYSTEM.md §8 names that limit.)
+      const openFlagCount = await tx.expenseFlag.count({
+        where: { status: "open", expense: { showId } },
+      });
+      if (openFlagCount > 0) {
+        throw new ConflictException(
+          `${openFlagCount} assistant flag(s) are still open. Accept or dismiss them first.`,
+        );
+      }
       await this.assertCanPay(tx, showId, settlement);
 
       // Compare-and-set inside: of two approvals clicked at once, the second one's

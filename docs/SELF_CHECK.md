@@ -867,3 +867,44 @@ though you did set it: the variable never reached the process. `pnpm exec turbo 
 step fails. Put the line back, restore `.env`: the worker's start line logs `"llm":"fake"`.
 
 </details>
+
+# After the project: fixes from the final review
+
+## Open flags block approval (fix/approve-blocks-open-flags)
+
+**Explain it: submit-for-review already refused open flags. Why was that not enough, and why does approval not ask for a recompute when a flag is open?**
+
+<details><summary>Answer</summary>
+
+Time passes between submit and approve. During review an API client (the MCP server's
+`flag_expense`) or a still-running audit can open a new flag, and approval never looked,
+so money could move with a question nobody had answered. Now `approve()` counts open
+flags inside its transaction and answers 409. No recompute is needed because a flag is a
+note, not an engine input: it does not change the inputs hash. The person accepts or
+dismisses it, then approves the same version.
+
+</details>
+
+**Explain it: the agent's `flag_expense` reads the settlement status when the tool runs, not when the run starts. Why?**
+
+<details><summary>Answer</summary>
+
+An audit can take many seconds. If the status were read only at the start, a person could
+approve in another tab in the meantime and the agent would still open a flag on a settlement
+that is already `paying`. The flag would block nothing and confuse everyone. Reading it
+inside the flag's own transaction gives the same rule the API key path has: no flags once
+the inputs are locked.
+
+</details>
+
+**Explain it: what can still go wrong, and why is it accepted?**
+
+<details><summary>Answer</summary>
+
+A flag committed in the same milliseconds as the approval. Under READ COMMITTED each
+transaction sees only what was committed before its own read, so the approval counts 0
+flags and the flag path reads `in_review`, and both commit. Closing the window would need
+`SELECT … FOR UPDATE` on the settlement row in both paths (raw SQL in Prisma). It is
+accepted because a person clicks Approve and the window is tiny; `docs/SYSTEM.md` §8 says so.
+
+</details>
