@@ -482,28 +482,21 @@ tr.total .source-ref {
 
 /* --- Summary ------------------------------------------------------------------------- */
 
+/* The payout card: one big figure, then one quiet line of audit details. */
 .summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 16px 20px;
-  align-items: end;
-}
-
-.summary div {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
-.summary strong {
-  font-size: 18px;
+.summary-figure {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
 }
 
-.summary-total {
-  grid-column: span 2;
-}
-
-.summary .summary-total strong {
+.payout-amount {
   font-size: 32px;
   line-height: 1.1;
   font-weight: 700;
@@ -512,10 +505,74 @@ tr.total .source-ref {
   color: var(--accent);
 }
 
+/* A stale payout is the old result: greyed, never in the "this is the amount" color.
+   The "Outdated" label next to it says so in words, not by color alone. */
+.payout-amount.payout-outdated {
+  color: var(--muted);
+}
+
+.outdated-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  white-space: nowrap;
+}
+
+.summary-meta {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.summary-meta code {
+  font-size: 11px;
+}
+
+/* --- Worksheet ----------------------------------------------------------------------- */
+
+/* The clause and sources under a line's label exist only for phones (see below). */
+.narrow-only {
+  display: none;
+}
+
+.line-meta {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
 @media (max-width: 640px) {
-  .summary-total {
-    grid-column: 1 / -1;
+  /* Four columns do not fit in 390 px: the Clause and Computed-from columns sat
+     off-screen and every row grew tall and empty. On a phone the worksheet is two
+     columns (step, amount) and each step lists its clause and sources underneath. */
+  .table-wrap.worksheet table {
+    min-width: 0;
   }
+  .wide-only {
+    display: none;
+  }
+  .narrow-only {
+    display: block;
+  }
+}
+
+/* Stripe attempts and keys: for tracing a payment, so one click away. */
+.payment-details {
+  margin: 28px 0 16px;
+}
+
+.payment-details > summary {
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 12px;
 }
 
 /* --- Forms --------------------------------------------------------------------------- */
