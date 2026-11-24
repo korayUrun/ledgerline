@@ -963,3 +963,48 @@ and drop it. The test fired two flags with `Promise.all` and got two rows 3 time
 before the fix.
 
 </details>
+
+## Web UX pass (#57, #60, #63, #64, #65)
+
+**Explain it: why did the "Gross" column on the sales page have to go, even though `qtySold * priceCents` is integer math?**
+
+<details><summary>Answer</summary>
+
+The rule is not only "no floats": money that ends up in front of a person comes from one place,
+the engine, and the UI only formats it with `formatCents`. A second calculation in the browser
+can drift from the engine's (comps, rounding, a future rule) and nobody would notice. The
+worksheet already explains the gross per tier from the engine's own lines.
+
+</details>
+
+**Explain it: the approve checkbox is `required` but has no `name`. Why both?**
+
+<details><summary>Answer</summary>
+
+`required` makes the browser refuse to submit the form until it is ticked, so paying takes a
+deliberate second step. Without a `name`, a field is not sent at all, so the request body and
+the server action stay exactly the same: the API did not change. It is a UI guard, not
+security; the real rule (only a logged-in person can approve) is still enforced by the API.
+
+</details>
+
+**Explain it: the web app repeats the list of locked statuses from the API. Is that a second source of truth?**
+
+<details><summary>Answer</summary>
+
+For display only. `web` may not import `api` code (SYSTEM.md §2), so `lib/show-steps.ts` keeps
+a copy to decide which forms to hide. If the two lists ever differ, the worst case is a form
+that the API refuses with a 409, or a missing form; the API's list is the one that protects
+the data. A test in `show-steps.test.ts` pins the web copy.
+
+</details>
+
+**Explain it: why does "Try again" on the error page call `retry()` and not `reset()`?**
+
+<details><summary>Answer</summary>
+
+In Next.js 16, `reset()` re-renders the part of the tree that failed using what the client
+already has, so a page that failed because an API call failed would fail again at once.
+`retry()` asks the server to render the page again, which re-runs the API call.
+
+</details>
