@@ -235,4 +235,6 @@ Ideas and small follow-ups that came up while building. Not scheduled; pick them
 - Delete or archive the stored PDF of a superseded contract upload (today every upload is kept).
 - MCP output schemas use `type: ["string", "null"]` for nullable fields (Zod's JSON Schema). Valid, and Claude reads it, but MCP Inspector's `--strict` warns that single-`type` dialects (e.g. Gemini function declarations) may reject it. Switch to `anyOf` if a non-Claude client needs it.
 - `formatNanoUsd` exists twice (api and web) because web cannot import api code. Move it to `packages/schemas` next to `formatCents` if a third user appears.
+- Payout recovery (from the final review, see SYSTEM.md §8 "Known recovery limits"): the sweeper retrieves a transfer that has an id but no webhook, and checks Stripe by `metadata.payoutId` before re-sending a payout whose idempotency key is near 24 hours old.
+- Close the approve-versus-new-flag window (SYSTEM.md §8): both paths take one `pg_advisory_xact_lock` per show, the same tool the flag dedupe uses.
 - Harder eval contracts: the baseline is 100%, so the eval can no longer show a prompt getting better. Ideas: terms in a table, an amendment that overrides an earlier clause, a percentage of gross instead of net, a term that is truly missing, scanned (image-only) pages.
