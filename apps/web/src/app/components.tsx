@@ -22,8 +22,10 @@ export function ErrorBanner({ searchParams }: { searchParams: SearchParams }) {
 }
 
 // One look for every status (settlement and expense), so colors mean the same everywhere.
-export function StatusBadge({ status }: { status: string }) {
-  return <span className={`badge badge-${status}`}>{humanize(status)}</span>;
+// `label` replaces the raw enum text where a page has a proper word for it ("In review"
+// rather than "in review"); the color still comes from the status.
+export function StatusBadge({ status, label }: { status: string; label?: string }) {
+  return <span className={`badge badge-${status}`}>{label ?? humanize(status)}</span>;
 }
 
 // What a list says when it has nothing in it yet: what is missing, then what to do

@@ -1004,6 +1004,414 @@ tbody tr:hover td.empty-cell {
   background: none;
 }
 
+/* --- Shows dashboard ------------------------------------------------------------------- */
+
+/* Summary cards (shows/dashboard.tsx): counts of shows, never money. Four in a row,
+   two by two on a narrow screen. Each card is a link that applies its filter. */
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0 0 var(--space-6);
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 800px) {
+  .stat-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* On a phone the four cards took most of the first screen. Label and count say enough
+   there; only the failed-payment line stays, since it is a call to act. */
+@media (max-width: 640px) {
+  .stat-cards {
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+  }
+  .stat-card {
+    padding: var(--space-3) var(--space-4);
+  }
+  .stat-hint:not(.stat-alert) {
+    display: none;
+  }
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 100%;
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.stat-card:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+/* The card whose filter is applied: a 2px accent frame. The line above the table
+   also says "Status: …" in words, so this is never the only sign. */
+.stat-card[aria-current="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* The label with a dot in the group's tone, like a badge; the word carries the meaning. */
+.stat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.stat-label::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.stat-needs_action .stat-label::before {
+  background: var(--warn);
+}
+
+.stat-in_review .stat-label::before,
+.stat-in_payment .stat-label::before {
+  background: var(--info);
+}
+
+.stat-paid .stat-label::before {
+  background: var(--success);
+}
+
+.stat-count {
+  font-size: var(--text-2xl);
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-hint {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/* "1 payment failed": the one count that needs a person again. Danger tone and bold,
+   and the words say it. */
+.stat-hint.stat-alert {
+  font-weight: 600;
+  color: var(--danger);
+}
+
+/* The toolbar: search, sort and Apply on one line (wrapping on a phone), the status
+   chips under it. */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+/* The magnifier sits inside the field, left of the text. */
+.search-field .icon {
+  position: absolute;
+  left: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search-field input {
+  width: 100%;
+  padding-left: 34px;
+}
+
+.sort-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sort-field label {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .sort-field {
+    flex: 1 1 auto;
+  }
+  .sort-field select {
+    flex: 1;
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* A filter chip: a pill-shaped submit button. Quiet until pressed; the pressed one is
+   filled in the accent (a change of fill and text, not only of hue) and announced by
+   aria-pressed. */
+button.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-sm);
+  box-shadow: none;
+}
+
+button.chip:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+button.chip[aria-pressed="true"],
+button.chip[aria-pressed="true"]:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.chip-count {
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+button.chip[aria-pressed="true"] .chip-count {
+  background: color-mix(in srgb, var(--on-accent) 18%, transparent);
+  border-color: transparent;
+  color: var(--on-accent);
+}
+
+/* "3 of 8 shows · Status: Computed" and Clear filters. */
+.result-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.result-line p {
+  margin: 0;
+}
+
+.result-line strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.result-line a {
+  font-weight: 500;
+}
+
+/* The list: name first with artist · venue under it, then date, status, next step. */
+.show-table td {
+  vertical-align: middle;
+}
+
+.show-table .show-name {
+  font-weight: 600;
+}
+
+.show-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.show-table .date-cell,
+.show-table .status-cell,
+.show-table .next-cell {
+  white-space: nowrap;
+}
+
+.show-table .date-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+.next-link,
+.next-wait {
+  font-size: var(--text-md);
+}
+
+.next-wait,
+.next-none {
+  color: var(--muted);
+}
+
+/* On a phone each row is a small card: name and date on top (the date is short, so
+   the name keeps most of the width), status and next step under them. Nothing scrolls sideways. The header row goes, since every cell says
+   what it is on its own (a date, a status badge, an action). */
+@media (max-width: 640px) {
+  .table-wrap.show-table table {
+    min-width: 0;
+  }
+
+  .show-table thead {
+    display: none;
+  }
+
+  .show-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "show date"
+      "status next";
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .show-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .show-table td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+
+  .show-table tbody tr:hover td {
+    background: none;
+  }
+
+  .show-table .show-cell {
+    grid-area: show;
+  }
+
+  .show-table .status-cell {
+    grid-area: status;
+  }
+
+  .show-table .date-cell {
+    grid-area: date;
+    padding-top: 2px;
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+
+  .show-table .next-cell {
+    grid-area: next;
+    justify-self: end;
+  }
+
+  .show-table .next-link,
+  .show-table .next-wait {
+    font-size: var(--text-sm);
+  }
+}
+
+/* The "New show" panel: hidden until it is the URL's target (#new-show), or one of its
+   forms is (#new-venue, #new-artist), or a form came back with an error (.is-open).
+   No JavaScript needed to open or close it. */
+.new-show-panel {
+  display: none;
+  margin-bottom: var(--space-6);
+}
+
+.new-show-panel:target,
+.new-show-panel:has(:target),
+.new-show-panel.is-open {
+  display: block;
+}
+
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.panel-head h2 {
+  margin: 0;
+}
+
+.panel-close {
+  font-size: var(--text-md);
+  font-weight: 500;
+}
+
+/* The venue and artist forms: secondary, under a rule. */
+.panel-sub {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.panel-sub-title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.panel-sub .form-grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+/* Two classes: .row (later in this file) centers its items, and the button must line
+   up with the input, not with the middle of label and input. */
+.row.add-form {
+  align-items: flex-end;
+  flex-wrap: nowrap;
+}
+
+.add-form label {
+  flex: 1;
+  min-width: 0;
+}
+
 .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
