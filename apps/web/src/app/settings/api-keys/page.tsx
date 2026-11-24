@@ -3,7 +3,8 @@ import { api, API_URL } from "../../../lib/api";
 import type { SearchParams } from "../../../lib/flash";
 import { formatDateTime } from "../../../lib/format";
 import { revokeApiKey } from "../../actions";
-import { ErrorBanner } from "../../components";
+import { EmptyState, ErrorBanner } from "../../components";
+import { PageHeader } from "../../page-header";
 import { CreateKeyForm } from "./create-key-form";
 
 // API keys for the public /v1 API (F9) and the MCP server (F10). A key can read
@@ -25,12 +26,21 @@ export default async function ApiKeysPage({
 
   return (
     <>
-      <h1>API keys</h1>
-      <p className="muted">
-        For other tools, such as the Ledgerline MCP server in Claude Desktop. A key can read shows
-        and settlements and flag expenses for review. It cannot approve or pay: only a logged-in
-        person can. API reference: <a href={`${API_URL}/v1/docs`}>{API_URL}/v1/docs</a>
-      </p>
+      <PageHeader
+        title="API keys"
+        subtitle={
+          <>
+            For other tools, such as the Ledgerline MCP server in Claude Desktop. A key can read
+            shows and settlements and flag expenses for review. It cannot approve or pay: only a
+            logged-in person can.
+          </>
+        }
+        actions={
+          <a href={`${API_URL}/v1/docs`} className="button-link secondary">
+            API reference
+          </a>
+        }
+      />
       <ErrorBanner searchParams={await searchParams} />
 
       <h2>New key</h2>
@@ -89,8 +99,10 @@ export default async function ApiKeysPage({
             ))}
             {keys.length === 0 && (
               <tr>
-                <td colSpan={6} className="muted">
-                  No keys yet.
+                <td colSpan={6} className="empty-cell">
+                  <EmptyState title="No keys yet">
+                    Create one above to connect another tool.
+                  </EmptyState>
                 </td>
               </tr>
             )}

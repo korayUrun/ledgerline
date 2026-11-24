@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
   },
   // Next 16 writes an AGENTS.md into the app on `next dev`; we keep our own docs.
   agentRules: false,
+  // The dev-only "N" badge sits bottom-left by default, on top of the sidebar's
+  // Log out button. Production builds never show it.
+  devIndicators: { position: "bottom-right" },
 };
 
 export default nextConfig;

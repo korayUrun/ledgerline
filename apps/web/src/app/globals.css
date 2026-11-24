@@ -3,9 +3,36 @@
  * Colors are tokens on :root and are redefined for dark mode below, so components
  * never name a color directly. Status colors come in tones (info, warn, danger,
  * success) and every badge maps to a tone, so a color means the same thing on
- * every page. */
+ * every page.
+ *
+ * Besides colors, :root holds the scales every component draws from: type sizes,
+ * spacing steps, radii and elevation. Using the steps (instead of a fresh 13.5px or
+ * 22px each time) is what keeps the pages in one rhythm. */
 
 :root {
+  /* Type scale. 15px body; each step is a deliberate size, not a one-off. */
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+
+  /* Spacing scale, on a 4px grid. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  --sidebar-width: 248px;
+
   --bg: #f6f5f1;
   --surface: #ffffff;
   --surface-2: #faf9f6;
@@ -29,9 +56,31 @@
   --success: #1f6b4a;
   --success-bg: #e4f2ea;
 
-  --shadow: 0 1px 2px rgb(20 24 22 / 0.04), 0 1px 1px rgb(20 24 22 / 0.03);
-  --radius: 10px;
-  --radius-sm: 6px;
+  /* A row under the pointer: one step darker than the surface. */
+  --surface-hover: #f3f2ed;
+
+  /* The login page's brand panel: a deep green with light text, in both themes. Text
+     is at least 5.3:1 even under the glow in the top corner (7.2:1 elsewhere), the
+     quieter text 5.1:1; in dark mode 7.6:1 and 6.8:1. */
+  --hero-bg: #133a2f;
+  --hero-bg-2: #1f5c4a;
+  --hero-text: #f2f6f4;
+  --hero-muted: #c3d6cd;
+  --hero-line: rgb(255 255 255 / 0.07);
+  --hero-glow: rgb(108 196 161 / 0.2);
+  --hero-chip-bg: rgb(255 255 255 / 0.1);
+  --hero-chip-text: #9fe0c4;
+  --hero-mark: #6cc4a1;
+  --hero-mark-line: #0d1a15;
+
+  /* Elevation: sm for controls, the default for cards, lg for things that float
+     (the phone menu, the login card). */
+  --shadow-sm: 0 1px 2px rgb(20 24 22 / 0.06);
+  --shadow: 0 1px 2px rgb(20 24 22 / 0.04), 0 2px 8px rgb(20 24 22 / 0.04);
+  --shadow-lg: 0 16px 40px -12px rgb(20 24 22 / 0.22), 0 2px 6px rgb(20 24 22 / 0.06);
+  --radius-lg: 16px;
+  --radius: 12px;
+  --radius-sm: 8px;
 
   color-scheme: light;
 }
@@ -59,7 +108,24 @@
     --success: #7fd3a8;
     --success-bg: #17291f;
 
-    --shadow: none;
+    --surface-hover: #202623;
+
+    --hero-bg: #0f1c17;
+    --hero-bg-2: #183429;
+    --hero-text: #e6e9e7;
+    --hero-muted: #a9bdb4;
+    --hero-line: rgb(108 196 161 / 0.07);
+    --hero-glow: rgb(108 196 161 / 0.18);
+    --hero-chip-bg: rgb(108 196 161 / 0.14);
+    --hero-chip-text: #6cc4a1;
+    --hero-mark: #6cc4a1;
+    --hero-mark-line: #0d1a15;
+
+    /* Shadows barely show on a dark page; the borders do the separating. They stay
+       for the floating things, so a menu still lifts off the page. */
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 20px 44px -12px rgb(0 0 0 / 0.65), 0 2px 6px rgb(0 0 0 / 0.3);
     color-scheme: dark;
   }
 }
@@ -104,17 +170,18 @@ a:hover {
 
 h1 {
   margin: 0;
-  font-size: 26px;
-  line-height: 1.25;
+  font-size: var(--text-2xl);
+  line-height: 1.2;
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
 }
 
 h2 {
-  margin: 36px 0 12px;
-  font-size: 17px;
+  margin: var(--space-10) 0 var(--space-3);
+  font-size: var(--text-lg);
+  line-height: 1.3;
   font-weight: 600;
-  letter-spacing: -0.005em;
+  letter-spacing: -0.01em;
 }
 
 .muted {
@@ -163,30 +230,39 @@ pre {
   font-size: 12px;
 }
 
-/* --- Top bar ------------------------------------------------------------------------- */
+/* --- App shell ---------------------------------------------------------------------- */
 
-.topbar {
+/* Phone and tablet first: a top bar with a menu. From 960px the sidebar takes over
+   (media query at the end of this section). Both are always in the page; display:
+   none hides the unused one from screen readers too, so the nav is never read twice. */
+.sidebar {
+  display: none;
+}
+
+.mobile-bar {
   position: sticky;
   top: 0;
-  z-index: 10;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-2) var(--space-4);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: saturate(1.4) blur(8px);
   border-bottom: 1px solid var(--border);
 }
 
-.topbar-inner {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 10px 16px;
+/* The pill sits right of the brand, the menu button at the far end. */
+.mobile-bar .env-pill {
+  margin-left: auto;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  font-size: var(--text-base);
   font-weight: 700;
   letter-spacing: -0.01em;
   text-decoration: none;
@@ -199,9 +275,9 @@ pre {
 
 /* A ledger page: a green square with ruled lines. */
 .brand-mark {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
   background:
     repeating-linear-gradient(
       to bottom,
@@ -213,102 +289,270 @@ pre {
   padding: 4px 5px;
 }
 
-.topnav {
+/* The primary navigation, in the sidebar and in the phone menu alike. */
+.sidenav {
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.topnav a {
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.topnav a:hover {
-  color: var(--text);
-  background: var(--surface-2);
-}
-
-.topnav a[aria-current="page"] {
-  color: var(--text);
-  background: var(--accent-soft);
-}
-
-.topbar-end {
+.sidenav a {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-left: auto;
+  gap: 10px;
+  min-height: 38px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: var(--text-md);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.sidenav a:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+/* Active: tinted, bolder and marked with a bar on the left, so it reads as "you are
+   here" without relying on the tint alone. Accent on accent-soft: 6.6:1 light,
+   7.0:1 dark. */
+.sidenav a[aria-current="page"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.sidenav a[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
 }
 
 .env-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 2px 10px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 20px;
   color: var(--warn);
   background: var(--warn-bg);
   white-space: nowrap;
 }
 
-.user {
+/* A dot, so the pill reads as a status at a glance; the words say what it is. */
+.env-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Who is logged in, and Log out. */
+.user-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.user-card {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-1);
+  min-width: 0;
+}
+
+.avatar {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .user-name {
-  font-size: 14px;
-  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--text);
 }
 
-@media (max-width: 640px) {
-  /* Brand, nav, test-mode pill and Log out do not fit in 390 px. The nav moves to its
-     own second line (order + full width) so the pill and Log out keep the first line
-     next to the brand, instead of everything squeezing and the page scrolling sideways. */
-  .topbar-inner {
-    flex-wrap: wrap;
-    gap: 4px 12px;
+/* Log out spans the column, icon first, like the nav items above it. */
+button.logout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 36px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-md);
+}
+
+/* The phone menu: a <details> whose button sits in the bar and whose panel drops
+   down over the page. */
+.mobile-menu > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: 500;
+  list-style: none;
+  cursor: pointer;
+}
+
+.mobile-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-menu > summary:hover,
+.mobile-menu[open] > summary {
+  background: var(--surface-hover);
+}
+
+/* Positioned against the sticky bar (sticky makes it the containing block), so the
+   panel spans the full width right under it. */
+.mobile-menu-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+
+.mobile-menu-panel .user-block {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+@media (min-width: 960px) {
+  /* The sidebar column's surface and right border are painted on the grid itself, so
+     the column runs the full page height even below the sticky sidebar (which is only
+     one screen tall). */
+  .app-shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    min-height: 100vh;
+    background: linear-gradient(
+      to right,
+      var(--surface) 0 calc(var(--sidebar-width) - 1px),
+      var(--border) calc(var(--sidebar-width) - 1px) var(--sidebar-width),
+      transparent var(--sidebar-width)
+    );
   }
-  .topnav {
-    order: 1;
-    width: 100%;
-  }
-  .topnav a {
-    white-space: nowrap;
-  }
-  /* The test-mode pill says no real money moves, so it stays on a phone; the user's
-     name is the less important thing to drop when space is tight. */
-  .user-name {
+
+  .mobile-bar {
     display: none;
+  }
+
+  /* Sticky at full height: it stays put while the page scrolls, like a fixed sidebar,
+     but still takes its own column so nothing slides under it. */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    height: 100vh;
+    overflow-y: auto;
+    padding: var(--space-5) var(--space-3) var(--space-4);
+  }
+
+  .sidebar .brand {
+    padding: var(--space-1) var(--space-3);
+  }
+
+  /* Bottom of the column: the test-mode pill, then who is logged in. */
+  .sidebar-foot {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-top: auto;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+
+  .sidebar-foot .env-pill {
+    margin-left: var(--space-3);
+  }
+
+  .sidebar-foot .user-block {
+    align-self: stretch;
+  }
+
+  .sidebar-foot .user-card {
+    padding-left: var(--space-2);
   }
 }
 
 /* --- Page ---------------------------------------------------------------------------- */
 
 .page {
-  max-width: 1120px;
+  width: 100%;
+  max-width: 1160px;
   margin: 0 auto;
-  padding: 28px 16px 80px;
+  padding: var(--space-6) var(--space-4) 96px;
 }
 
-.page > h1 {
-  margin-bottom: 6px;
+@media (min-width: 960px) {
+  .page {
+    padding: var(--space-10) var(--space-10) 96px;
+  }
 }
 
-.show-header {
-  margin-bottom: 4px;
+/* PageHeader (page-header.tsx): breadcrumb, title with its badge, one line of
+   context, and the page's actions on the right. */
+.page-header {
+  margin-bottom: var(--space-6);
 }
 
 .breadcrumb {
   display: flex;
-  gap: 8px;
-  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
   color: var(--muted);
-  margin-bottom: 8px;
+}
+
+.crumb {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.crumb-sep {
+  color: var(--border-strong);
 }
 
 .breadcrumb a {
@@ -318,24 +562,71 @@ pre {
 
 .breadcrumb a:hover {
   color: var(--accent);
+  text-decoration: underline;
 }
 
-.show-title {
+/* Text and actions side by side; once there is no room, the actions wrap under the
+   text (flex-basis 320px) rather than squeezing the title. */
+.page-header-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-6);
+}
+
+.page-header-text {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.page-title {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-2) var(--space-3);
 }
 
-.show-header .muted {
-  margin: 4px 0 0;
-  font-size: 14px;
+.page-title h1 {
+  overflow-wrap: anywhere;
+}
+
+/* A show name like "The Harbor Lights — Fall Tour" took three lines at 28px on a
+   phone; one step down keeps it to two. */
+@media (max-width: 640px) {
+  .page-title h1 {
+    font-size: var(--text-xl);
+  }
+}
+
+.page-subtitle {
+  margin: 6px 0 0;
+  max-width: 72ch;
+  font-size: var(--text-base);
+  color: var(--muted);
+}
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Logged out: no shell, the page (login) draws its own frame. */
+.page-public {
+  min-height: 100vh;
+}
+
+/* An error before login, e.g. the API is down: a centered card, not edge to edge. */
+.page-public > .error-page {
+  max-width: 480px;
+  margin: 56px auto;
 }
 
 .tabs {
   display: flex;
   gap: 2px;
-  margin: 20px 0 8px;
+  margin: 0 0 var(--space-2);
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
   scrollbar-width: none;
@@ -490,19 +781,26 @@ pre {
 .button-link {
   display: inline-flex;
   align-items: center;
+  gap: var(--space-2);
   min-height: 36px;
   padding: 6px 16px;
+  border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
   background: var(--accent);
   color: var(--on-accent);
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 500;
   text-decoration: none;
-  transition: background 0.15s;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .button-link:hover {
   background: var(--accent-hover);
+  border-color: var(--accent-hover);
   color: var(--on-accent);
 }
 
@@ -513,7 +811,7 @@ pre {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px 16px;
-  margin: 36px 0 12px;
+  margin: var(--space-10) 0 var(--space-3);
 }
 
 .section-head h2 {
@@ -576,8 +874,8 @@ pre {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 18px;
-  margin-bottom: 16px;
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
 }
 
 .table-wrap {
@@ -586,7 +884,7 @@ pre {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 table {
@@ -604,20 +902,39 @@ table {
 
 th,
 td {
-  padding: 10px 14px;
+  padding: var(--space-3) 14px;
   text-align: left;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
 
+/* A little more room at the frame's edges than between columns. */
+th:first-child,
+td:first-child {
+  padding-left: var(--space-4);
+}
+
+th:last-child,
+td:last-child {
+  padding-right: var(--space-4);
+}
+
+/* The header band: a tinted strip with a firmer line under it, so it reads as the
+   table's label row even where it scrolls sideways inside its frame. */
 th {
   background: var(--surface-2);
   font-size: 11.5px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--muted);
   white-space: nowrap;
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+thead th {
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 tbody tr:last-child td {
@@ -625,7 +942,7 @@ tbody tr:last-child td {
 }
 
 tbody tr:hover td {
-  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  background: var(--surface-hover);
 }
 
 td a {
@@ -640,6 +957,51 @@ td a:hover {
 td.muted {
   padding: 18px 14px;
   text-align: center;
+}
+
+/* --- Empty state ----------------------------------------------------------------------- */
+
+/* EmptyState (components.tsx): a dashed box that says what is missing and what to do.
+   Inside a table cell it drops the box, the table frame already draws one. */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-8) var(--space-4);
+  margin-bottom: var(--space-4);
+  text-align: center;
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.empty-state-title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.empty-state-text {
+  margin: 0;
+  max-width: 48ch;
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+
+td.empty-cell {
+  padding: 0;
+}
+
+td.empty-cell .empty-state {
+  margin: 0;
+  border: 0;
+  background: none;
+}
+
+tbody tr:hover td.empty-cell {
+  background: none;
 }
 
 .num {
@@ -910,9 +1272,12 @@ input[type="file"]::file-selector-button {
   cursor: pointer;
 }
 
+/* Four buttons, one shape: primary (the default, filled), secondary (outlined, an
+   option), ghost (no frame, a quiet action like Log out) and danger (outlined in the
+   danger tone, e.g. Revoke). Same height and radius as .button-link. */
 button {
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 500;
   min-height: 36px;
   padding: 6px 16px;
@@ -922,9 +1287,11 @@ button {
   color: var(--on-accent);
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: var(--shadow-sm);
   transition:
     background 0.15s,
-    border-color 0.15s;
+    border-color 0.15s,
+    color 0.15s;
 }
 
 button:hover:not(:disabled) {
@@ -960,11 +1327,12 @@ button.ghost {
   background: transparent;
   border-color: transparent;
   color: var(--muted);
+  box-shadow: none;
 }
 
 button.ghost:hover:not(:disabled) {
-  background: var(--surface-2);
-  border-color: var(--border);
+  background: var(--surface-hover);
+  border-color: transparent;
   color: var(--text);
 }
 
@@ -1019,6 +1387,7 @@ input[type="checkbox"]:disabled:checked::before {
 button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .row {
@@ -1210,6 +1579,7 @@ legend {
   align-items: start;
 }
 
+/* Sticky clear of the phone/tablet bar (56px); from 960px there is no bar above it. */
 .pdf-viewer {
   position: sticky;
   top: 72px;
@@ -1218,6 +1588,12 @@ legend {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
+}
+
+@media (min-width: 960px) {
+  .pdf-viewer {
+    top: var(--space-6);
+  }
 }
 
 @media (max-width: 900px) {
@@ -1304,14 +1680,143 @@ legend {
 
 /* --- Login ----------------------------------------------------------------------------- */
 
+/* Two columns from 960px: the brand panel on the left, the login card on the right.
+   One column below that, the panel first and compact. */
+.auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.auth-brand {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-5);
+  color: var(--hero-text);
+  background:
+    radial-gradient(120% 80% at 0% 0%, var(--hero-glow), transparent 60%),
+    linear-gradient(160deg, var(--hero-bg-2), var(--hero-bg) 70%);
+}
+
+/* The pattern: ruled ledger lines with a margin rule, fading out towards the bottom.
+   Drawn behind the text (z-index -1 inside the isolated panel). */
+.auth-brand::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(to right, transparent 0 63px, var(--hero-line) 63px 64px, transparent 64px),
+    repeating-linear-gradient(to bottom, transparent 0 31px, var(--hero-line) 31px 32px);
+  mask-image: linear-gradient(to bottom, black 30%, transparent 95%);
+}
+
+.auth-brand-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* The brand on the dark panel: not a link (it would only lead back here). */
+.brand-on-hero,
+.brand-on-hero:hover {
+  color: var(--hero-text);
+}
+
+.brand-on-hero .brand-mark {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 5px,
+      color-mix(in srgb, var(--hero-mark-line) 70%, transparent) 5px 6px
+    ),
+    var(--hero-mark);
+  background-clip: content-box, border-box;
+}
+
+.auth-tagline {
+  margin: 0;
+  max-width: 18ch;
+  font-size: var(--text-xl);
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.auth-benefits {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auth-benefits li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--text-md);
+}
+
+.auth-benefit-icon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  background: var(--hero-chip-bg);
+  color: var(--hero-chip-text);
+}
+
+.auth-benefits strong {
+  display: block;
+  font-weight: 600;
+  line-height: 26px;
+}
+
+/* On a phone the titles carry the message; the sentences come back from 960px. */
+.auth-benefit-text {
+  display: none;
+  color: var(--hero-muted);
+}
+
+.auth-footnote {
+  display: none;
+  margin: 0;
+  max-width: 52ch;
+  font-size: var(--text-sm);
+  color: var(--hero-muted);
+}
+
+.auth-panel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4) var(--space-12);
+}
+
 .login {
-  max-width: 400px;
-  margin: 56px auto;
-  padding: 28px;
+  width: 100%;
+  max-width: 420px;
+  margin: 0;
+  padding: var(--space-6);
 }
 
 .login h1 {
-  margin-bottom: 18px;
+  font-size: var(--text-xl);
+}
+
+.login-lead {
+  margin: var(--space-1) 0 var(--space-5);
+  font-size: var(--text-md);
+  color: var(--muted);
 }
 
 .login .form-grid {
@@ -1320,6 +1825,107 @@ legend {
 
 .login .form-grid > button {
   justify-self: stretch;
+  min-height: 40px;
+}
+
+/* The seeded demo account, as a quiet reference box under the form. */
+.demo-hint {
+  margin-top: var(--space-5);
+  padding: var(--space-3) 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.demo-hint-title {
+  margin: 0 0 6px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.demo-hint dl {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.demo-hint dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.demo-hint dt {
+  color: var(--muted);
+}
+
+.demo-hint dd {
+  margin: 0;
+}
+
+.demo-hint-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+@media (min-width: 960px) {
+  .auth {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  }
+
+  .auth-brand {
+    gap: var(--space-8);
+    padding: var(--space-10) var(--space-12);
+  }
+
+  /* Vertically centred between the brand row and the footnote. */
+  .auth-brand-body {
+    margin: auto 0;
+  }
+
+  .auth-tagline {
+    font-size: var(--text-3xl);
+    line-height: 1.12;
+  }
+
+  .auth-benefits {
+    gap: var(--space-5);
+    margin-top: var(--space-8);
+    max-width: 460px;
+  }
+
+  .auth-benefits li {
+    font-size: var(--text-base);
+  }
+
+  .auth-benefit-text {
+    display: block;
+    font-size: var(--text-md);
+  }
+
+  .auth-footnote {
+    display: block;
+  }
+
+  .auth-panel {
+    align-items: center;
+    padding: var(--space-10);
+  }
+
+  .login {
+    padding: var(--space-8);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .login h1 {
+    font-size: var(--text-2xl);
+  }
 }
 
 /* --- API keys -------------------------------------------------------------------------- */
