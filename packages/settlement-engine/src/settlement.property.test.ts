@@ -21,6 +21,12 @@ import {
 // Phase 1 "Done when": every property passes with 1,000+ random inputs.
 const NUM_RUNS = 1000;
 
+// 1,000 runs take about 0.1 s locally, but on a busy CI runner, with coverage on and
+// the first test paying for the warm-up, one test took over 5 s, Vitest's default
+// limit (twice on 2026-11-24, no assertion failed). The limit guards against hangs,
+// not speed, so property tests get a generous one.
+const PROPERTY_TIMEOUT_MS = 30_000;
+
 function sumOfKinds(lines: SettlementLine[], kinds: readonly LineKind[]): number {
   let totalCents = 0;
   for (const line of lines) {
@@ -33,7 +39,7 @@ function amountOf(lines: SettlementLine[], kind: LineKind): number | undefined {
   return lines.find((line) => line.kind === kind)?.amountCents;
 }
 
-describe("settlement properties", () => {
+describe("settlement properties", { timeout: PROPERTY_TIMEOUT_MS }, () => {
   it("payout is never negative, and every amount is a non-negative integer", () => {
     fc.assert(
       fc.property(settlementInputArb(), (input) => {
@@ -108,7 +114,7 @@ describe("settlement properties", () => {
   });
 });
 
-describe("expense properties", () => {
+describe("expense properties", { timeout: PROPERTY_TIMEOUT_MS }, () => {
   it("submitted − dropped − capped = allowed, and allowed never exceeds the total cap", () => {
     fc.assert(
       fc.property(expensesArb, expensePolicyArb, (expenses, policy) => {
@@ -128,7 +134,7 @@ describe("expense properties", () => {
   });
 });
 
-describe("money properties", () => {
+describe("money properties", { timeout: PROPERTY_TIMEOUT_MS }, () => {
   const amountArb = fc.integer({ min: 0, max: MAX_CENTS });
   const bpsArb = fc.integer({ min: 0, max: 10_000 });
 
