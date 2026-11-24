@@ -43,6 +43,12 @@ jobs:
             exit 1
           fi
 
+      # Turbo's default "strict" env mode hands a task only the variables listed in
+      # turbo.json, so `LLM_CLIENT=fake pnpm dev` silently ran with LLM_CLIENT unset.
+      # Found by the Phase 7 fresh-clone run; this keeps it from coming back.
+      - name: Dev tasks get the shell's environment
+        run: test "$(pnpm exec turbo run dev --dry=json | jq -r '.envMode')" = "loose"
+
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
