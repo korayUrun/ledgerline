@@ -32,6 +32,11 @@ import { termsFromForm } from "../lib/terms-form";
 async function callApi(returnPath: string, call: () => Promise<unknown>): Promise<string> {
   try {
     await call();
+    // A layout is not re-rendered when you move between pages under it, so after a
+    // change the show header (status badge, step tabs) kept its old state until a
+    // reload. Marking everything under /shows as changed makes the redirect that
+    // follows render the layouts again too.
+    revalidatePath("/shows", "layout");
     return returnPath;
   } catch (error) {
     if (error instanceof ApiError) {
