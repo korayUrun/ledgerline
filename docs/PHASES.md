@@ -211,7 +211,6 @@ Estimated total: ~4 weeks part-time.
 - [x] CI runner upkeep: runner pinned to `ubuntu-24.04`, `pnpm/action-setup` v4 → v6 (runs on Node 24) (from Later)
 - [x] Deferred live runs (API budget, last): the Phase 4 agent eval baseline and the `AGENT_MODEL` choice (Haiku, $0.046)
 - [ ] ~~2-minute demo video~~ Dropped: no presentation.
-- [ ] ~~Final CV bullets~~ Dropped: no presentation.
 
 **Done when:** a fresh clone runs with `docker compose up` + `pnpm dev` from the README; the eval badge/table is current.
 
