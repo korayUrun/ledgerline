@@ -1,6 +1,7 @@
 import type { SearchParams } from "../../../../lib/flash";
 import { importTicketSales } from "../../../actions";
-import { ErrorBanner } from "../../../components";
+import { ErrorBanner, NextStep } from "../../../components";
+import { SubmitButton } from "../../../submit-button";
 
 export default async function ImportPage({
   params,
@@ -39,8 +40,10 @@ VIP,70,10,80.00,280.00,112.00`}</pre>
           Ticket sales CSV
           <input type="file" name="file" accept=".csv,text/csv" required />
         </label>
-        <button type="submit">Import</button>
+        <SubmitButton pendingLabel="Importing…">Import</SubmitButton>
       </form>
+
+      <NextStep href={`/shows/${showId}`}>Check the sales and expenses</NextStep>
     </>
   );
 }

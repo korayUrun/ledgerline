@@ -6,6 +6,7 @@ import type { SearchParams } from "../../../../../lib/flash";
 import { evidenceFromExtraction } from "../../../../../lib/terms-form";
 import { confirmContract } from "../../../../actions";
 import { ErrorBanner, StatusBadge } from "../../../../components";
+import { SubmitButton } from "../../../../submit-button";
 import { TermsFields } from "../../terms-fields";
 import { UsageNote } from "../usage-note";
 
@@ -74,9 +75,9 @@ export default async function ContractReviewPage({
               draft={contract.draft}
               evidence={evidenceFromExtraction(contract.extraction)}
             />
-            <button type="submit" disabled={!canConfirm}>
+            <SubmitButton disabled={!canConfirm} pendingLabel="Confirming…">
               Confirm terms (creates a new version)
-            </button>
+            </SubmitButton>
           </form>
         </div>
       )}

@@ -24,6 +24,7 @@ import {
   submitForReview,
 } from "../../../actions";
 import { ErrorBanner, StatusBadge } from "../../../components";
+import { SubmitButton } from "../../../submit-button";
 import { AssistantPanel } from "./assistant-panel";
 
 // F5: the worksheet. Every line shows the contract clause it applies and the
@@ -64,6 +65,13 @@ export default async function SettlementPage({
   const locked =
     settlement !== null &&
     ["approved", "paying", "paid", "payment_failed"].includes(settlement.status);
+  // One filled button per state, the step that moves the settlement forward: compute
+  // while there is no current result, submit once there is one. In review, the filled
+  // button is "Approve and pay", so Recompute steps back too.
+  const needsCompute =
+    !settlement || settlement.status === "draft" || settlement.status === "stale";
+  const submitPrimary = settlement?.status === "computed";
+  const submitBlockedReason = submitBlocked(settlement, view.pendingExpenseCount, openFlagCount);
 
   return (
     <>
@@ -124,15 +132,31 @@ export default async function SettlementPage({
         {!locked && (
           <>
             <form action={computeSettlement.bind(null, showId)}>
-              <button type="submit">
+              <SubmitButton
+                className={needsCompute ? undefined : "secondary"}
+                pendingLabel="Computing…"
+              >
                 {settlement && settlement.status !== "draft" ? "Recompute" : "Compute settlement"}
-              </button>
+              </SubmitButton>
             </form>
-            <form action={submitForReview.bind(null, showId)}>
-              <button type="submit" className="secondary" disabled={!canSubmit}>
-                Submit for review
-              </button>
-            </form>
+            <div className="action-group">
+              <form action={submitForReview.bind(null, showId)}>
+                <SubmitButton
+                  className={submitPrimary ? undefined : "secondary"}
+                  disabled={!canSubmit}
+                  describedBy={submitBlockedReason ? "submit-blocked-reason" : undefined}
+                  pendingLabel="Submitting…"
+                >
+                  Submit for review
+                </SubmitButton>
+              </form>
+              {/* Why the button is greyed out, in words, next to it. */}
+              {submitBlockedReason && (
+                <p id="submit-blocked-reason" className="action-reason">
+                  {submitBlockedReason}
+                </p>
+              )}
+            </div>
           </>
         )}
         {(needsAccount || (artistAccount !== null && settlement?.status === "in_review")) && (
@@ -143,16 +167,34 @@ export default async function SettlementPage({
           </form>
         )}
         {settlement?.status === "in_review" && (
-          <form action={approveSettlement.bind(null, showId)}>
-            <button type="submit" disabled={needsAccount}>
+          <form action={approveSettlement.bind(null, showId)} className="approve-form">
+            {/* Approving moves (test) money and cannot be undone, so the person confirms
+                the amount and the payee first. The checkbox has no name, so the form
+                sends exactly what it did before; `required` makes the browser block the
+                submit until it is ticked. */}
+            <label className="inline">
+              <input type="checkbox" required />I have checked the worksheet. Pay{" "}
+              {settlement.payoutCents === null ? "the payout" : formatCents(settlement.payoutCents)}{" "}
+              to {show.artist.name}.
+            </label>
+            <SubmitButton
+              disabled={needsAccount}
+              describedBy={needsAccount ? "approve-blocked-reason" : undefined}
+              pendingLabel="Approving…"
+            >
               Approve and pay{" "}
               {settlement.payoutCents === null ? "" : formatCents(settlement.payoutCents)}
-            </button>
+            </SubmitButton>
+            {needsAccount && (
+              <p id="approve-blocked-reason" className="action-reason">
+                Connect a Stripe account for {show.artist.name} first.
+              </p>
+            )}
           </form>
         )}
         {settlement?.status === "payment_failed" && (
           <form action={retryPayment.bind(null, showId)}>
-            <button type="submit">Retry payment</button>
+            <SubmitButton pendingLabel="Retrying…">Retry payment</SubmitButton>
           </form>
         )}
       </div>
@@ -264,6 +306,26 @@ export default async function SettlementPage({
       )}
     </>
   );
+}
+
+// Why "Submit for review" is disabled, in words (the API refuses in these cases too).
+// null when it is enabled, or when a later step owns the page (review, payment).
+function submitBlocked(
+  settlement: SettlementDto | null,
+  pendingExpenseCount: number,
+  openFlagCount: number,
+): string | null {
+  if (!settlement || settlement.status === "draft") return "Compute the settlement first.";
+  if (settlement.status === "stale") return "The inputs changed. Recompute first.";
+  if (settlement.status !== "computed") return null;
+  const reasons: string[] = [];
+  if (pendingExpenseCount > 0) {
+    reasons.push(`${pendingExpenseCount} expense(s) still pending on the expenses tab.`);
+  }
+  if (openFlagCount > 0) {
+    reasons.push(`${openFlagCount} assistant flag(s) to accept or dismiss below.`);
+  }
+  return reasons.length > 0 ? reasons.join(" ") : null;
 }
 
 function lineClass(kind: string): string {
