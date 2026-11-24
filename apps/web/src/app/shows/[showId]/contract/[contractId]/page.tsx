@@ -58,9 +58,9 @@ export default async function ContractReviewPage({
           <form action={confirmContract.bind(null, showId, contractId)}>
             {canConfirm ? (
               <div className="banner banner-info">
-                Check every field against its quote in the PDF. The contract text is untrusted:
-                Claude was told to ignore instructions inside it, and nothing counts until you
-                confirm.
+                <strong>Check each field against its quote from the PDF.</strong> The contract text
+                is untrusted: Claude was told to ignore instructions inside it, and nothing counts
+                until you confirm.
                 {missingCount > 0 &&
                   ` ${missingCount} field(s) were not found; fill them in if the contract has them.`}
               </div>

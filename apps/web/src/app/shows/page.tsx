@@ -2,6 +2,7 @@ import type { ArtistDto, ShowDto, VenueDto } from "@ledgerline/schemas";
 import Link from "next/link";
 import { api } from "../../lib/api";
 import type { SearchParams } from "../../lib/flash";
+import { formatShowDate } from "../../lib/format";
 import { createArtist, createShow, createVenue } from "../actions";
 import { ErrorBanner, StatusBadge } from "../components";
 
@@ -34,7 +35,7 @@ export default async function ShowsPage({ searchParams }: { searchParams: Promis
           <tbody>
             {shows.map((show) => (
               <tr key={show.id}>
-                <td>{show.showDate}</td>
+                <td>{formatShowDate(show.showDate)}</td>
                 <td>
                   <Link href={`/shows/${show.id}`}>{show.name}</Link>
                 </td>
@@ -44,7 +45,7 @@ export default async function ShowsPage({ searchParams }: { searchParams: Promis
                   {show.settlementStatus ? (
                     <StatusBadge status={show.settlementStatus} />
                   ) : (
-                    <span className="muted">none yet</span>
+                    <span className="muted">Not started</span>
                   )}
                 </td>
               </tr>
@@ -52,7 +53,7 @@ export default async function ShowsPage({ searchParams }: { searchParams: Promis
             {shows.length === 0 && (
               <tr>
                 <td colSpan={5} className="muted">
-                  No shows yet. Run <code>pnpm db:seed</code> or create one below.
+                  No shows yet — create one below.
                 </td>
               </tr>
             )}

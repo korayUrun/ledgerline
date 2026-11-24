@@ -16,8 +16,8 @@ export default async function ImportPage({
       <h2>Import ticket sales</h2>
       <p>
         Upload the ticketing system&apos;s CSV export, one row per ticket tier. The import{" "}
-        <strong>replaces</strong> this show&apos;s current ticket sales and makes a computed
-        settlement stale.
+        <strong>replaces</strong> this show&apos;s current ticket sales, which means the settlement
+        must be recomputed.
       </p>
       <pre>{`tier,qty_sold,comps,price,tax,fees
 GA,320,25,35.00,560.00,224.00
@@ -35,7 +35,10 @@ VIP,70,10,80.00,280.00,112.00`}</pre>
         </li>
       </ul>
       <form action={importTicketSales.bind(null, showId)} className="card row">
-        <input type="file" name="file" accept=".csv,text/csv" required />
+        <label>
+          Ticket sales CSV
+          <input type="file" name="file" accept=".csv,text/csv" required />
+        </label>
         <button type="submit">Import</button>
       </form>
     </>

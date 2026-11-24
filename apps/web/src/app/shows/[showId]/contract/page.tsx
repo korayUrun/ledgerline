@@ -20,6 +20,7 @@ export default async function ContractPage({
   const contracts = await api.get<ContractDto[]>(`/shows/${showId}/contracts`);
   const latest = contracts[0];
   const inProgress = latest?.status === "uploaded" || latest?.status === "extracting";
+  const hasEarlier = contracts.length > 1;
 
   return (
     <>
@@ -62,16 +63,20 @@ export default async function ContractPage({
       <form action={uploadContract.bind(null, showId)} className="card">
         <p className="muted">
           {latest
-            ? "Upload a new PDF to extract the terms again. Earlier uploads are kept below."
+            ? `Upload a new PDF to extract the terms again.${hasEarlier ? " Earlier uploads are kept below." : ""}`
             : "Upload the artist contract (PDF, max 10 MB). Claude extracts the deal terms; you review them before anything is computed."}
         </p>
-        <div className="row">
-          <input type="file" name="file" accept="application/pdf" required />
+        {/* Bottom-aligned so the button lines up with the file input, not its label. */}
+        <div className="row" style={{ alignItems: "flex-end" }}>
+          <label>
+            Contract PDF
+            <input type="file" name="file" accept="application/pdf" required />
+          </label>
           <button type="submit">Upload and extract</button>
         </div>
       </form>
 
-      {contracts.length > 1 && (
+      {hasEarlier && (
         <>
           <h2>Earlier uploads</h2>
           <div className="table-wrap">
