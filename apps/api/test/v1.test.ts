@@ -225,6 +225,31 @@ describe("POST /v1/expenses/:id/flags", () => {
     expect(settlement.body).toMatchObject({ status: "in_review", version: 1 });
   });
 
+  it("blocks approval until a person resolves a flag opened during review", async () => {
+    // Review started with no open flags; the MCP client flags an expense afterwards.
+    const { showId, expenses } = await showInReview();
+    const flagged = await v1<V1ExpenseFlag>("POST", `/expenses/${expenses[0]?.id}/flags`, body);
+    expect(flagged.status).toBe(201);
+
+    const blocked = await t.request<{ message: string }>(
+      "POST",
+      `/shows/${showId}/settlement/approve`,
+    );
+
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.message).toMatch(/1 assistant flag\(s\) are still open/);
+    expect(await t.prisma.payout.count()).toBe(0);
+
+    // Once the person dismisses it, the same settlement can be approved: a flag is
+    // not an input, so nothing needs recomputing.
+    const dismissed = await t.request("POST", `/flags/${flagged.body.id}/resolve`, {
+      resolution: "dismissed",
+    });
+    expect(dismissed.status).toBe(200);
+    const approved = await t.request("POST", `/shows/${showId}/settlement/approve`);
+    expect(approved.status).toBe(200);
+  });
+
   it("refuses once the settlement is approved: the numbers are final", async () => {
     const { showId, expenses } = await showInReview();
     const approved = await t.request("POST", `/shows/${showId}/settlement/approve`);

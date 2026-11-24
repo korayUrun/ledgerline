@@ -229,6 +229,23 @@ describe("expense flags", () => {
     expect(await t.prisma.auditLog.count({ where: { action: "expense.flagged" } })).toBe(1);
   });
 
+  it("refuses once the settlement is approved, even for a run started before", async () => {
+    // A long audit run started while the settlement was open; a person approved it
+    // in another tab before the agent got to flag_expense.
+    const runId = await startRun();
+    await t.prisma.settlement.update({ where: { id: settlement.id }, data: { status: "paying" } });
+
+    await expect(
+      flags.flagFromAgentRun({
+        runId,
+        expenseId: toner().id,
+        kind: "category_not_allowed",
+        reason: "Not allowed.",
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(await t.prisma.expenseFlag.count()).toBe(0);
+  });
+
   it("refuses an expense from another show", async () => {
     const runId = await startRun();
     const other = await createComputedShow("Other Night");
