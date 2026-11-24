@@ -139,7 +139,7 @@ Estimated total: ~4 weeks part-time.
 
 **Break it:** (1) remove the step limit and give the agent a tool that always returns "try again". (2) Write a vague tool description. Watch the traces in both cases.
 
-**Status:** done 2026-11-23, except the live eval run. Built: trace tables, the hand-written loop, the seven tools, ask/audit over SSE with the chat panel, flags resolved by a person (open flags block review), the replay page and the agent eval (`pnpm evals:agent`; the oracle scores 100% precision/recall). Every answer can be replayed from `AgentStep`. **Deferred to the end of the project (API budget):** the live run that records precision/recall, saves `packages/evals/baselines/agent.{json,md}` and picks `AGENT_MODEL` (default `claude-sonnet-5-5` until then). The Explain it questions and the Break it drill are in `SELF_CHECK.md` (deferred).
+**Status:** done 2026-11-23, except the live eval run. Built: trace tables, the hand-written loop, the seven tools, ask/audit over SSE with the chat panel, flags resolved by a person (open flags block review), the replay page and the agent eval (`pnpm evals:agent`; the oracle scores 100% precision/recall). Every answer can be replayed from `AgentStep`. Live run done 2026-11-24 (Phase 7): `claude-haiku-5-5` scored 100% precision and recall (26/26) for $0.046, saved as `packages/evals/baselines/agent.{json,md}`, and became the default `AGENT_MODEL` (Sonnet and Opus not run, API budget). The Explain it questions and the Break it drill are in `SELF_CHECK.md` (deferred).
 
 ---
 
@@ -209,7 +209,7 @@ Estimated total: ~4 weeks part-time.
 - [x] Web UI design pass: consistent layout, typography, tables and states across the existing pages. No new features or screens. (Color tokens with dark mode, IBM Plex via `next/font`, active tab and top navigation, payout as the headline number, status badges in four tones.)
 - [x] Bind the compose ports to `127.0.0.1` (from Later)
 - [x] CI runner upkeep: runner pinned to `ubuntu-24.04`, `pnpm/action-setup` v4 → v6 (runs on Node 24) (from Later)
-- [ ] Deferred live runs (API budget, last): the Phase 4 agent eval baseline and the `AGENT_MODEL` choice
+- [x] Deferred live runs (API budget, last): the Phase 4 agent eval baseline and the `AGENT_MODEL` choice (Haiku, $0.046)
 - [ ] ~~2-minute demo video~~ Dropped: no presentation.
 - [ ] ~~Final CV bullets~~ Dropped: no presentation.
 

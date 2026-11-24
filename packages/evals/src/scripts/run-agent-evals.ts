@@ -46,7 +46,7 @@ const { values: args } = parseArgs({
 const mode = args.oracle ? "oracle" : "live";
 const model = args.oracle
   ? "oracle"
-  : (args.model ?? process.env["AGENT_MODEL"] ?? "claude-sonnet-5-5");
+  : (args.model ?? process.env["AGENT_MODEL"] ?? "claude-haiku-5-5");
 const apiKey = process.env["ANTHROPIC_API_KEY"] || null;
 if (mode === "live" && apiKey === null) {
   console.error("ANTHROPIC_API_KEY is not set. Add it to .env, or run with --oracle.");
