@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-11-24T08:17:08.905Z",
+  "mode": "live",
+  "model": "claude-haiku-5-5",
+  "promptVersion": "agent-v1",
+  "cases": 25,
+  "planted": 26,
+  "truePositives": 26,
+  "falsePositives": 0,
+  "falseNegatives": 0,
+  "rightKind": 26,
+  "outcomes": {
+    "answered": 25
+  },
+  "modelCalls": 62,
+  "toolCalls": 127,
+  "tokens": {
+    "input": 255112,
+    "output": 40753
+  },
+  "costNanoUsd": 45887700,
+  "averageDurationMs": 10067.44
+}

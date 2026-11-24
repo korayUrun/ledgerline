@@ -223,7 +223,7 @@ All Claude calls go through `modules/llm`, which handles:
 
 As built (`apps/api/src/modules/llm/`):
 - `LlmClient` is a one-method interface (`createMessage`). `AnthropicLlmClient` uses the official SDK; `FakeLlmClient` is scripted for tests and offline runs.
-- The model comes from config per task: `EXTRACTION_MODEL` (default `claude-opus-5-5`) and `AGENT_MODEL` (default `claude-sonnet-5-5`, to be confirmed by the agent eval). Retries on 408/409/429/5xx and dropped connections are the SDK's own (`maxRetries`, exponential backoff, honours `Retry-After`); we configure them instead of writing a second retry loop. Timeout `LLM_TIMEOUT_MS` (120 s).
+- The model comes from config per task: `EXTRACTION_MODEL` (default `claude-opus-5-5`) and `AGENT_MODEL` (default `claude-haiku-5-5`, chosen by the agent eval, see §11). Retries on 408/409/429/5xx and dropped connections are the SDK's own (`maxRetries`, exponential backoff, honours `Retry-After`); we configure them instead of writing a second retry loop. Timeout `LLM_TIMEOUT_MS` (120 s).
 - Every call logs task, model, stop reason, tokens, cost and duration. Prompt and reply text are never logged.
 - The worker and, since Phase 4, the HTTP API read `ANTHROPIC_API_KEY`: the worker for extraction, the API for the audit agent (it runs in the request so its steps can stream to the browser). `LLM_CLIENT=fake` runs both without a key: every extracted field comes back missing (a person types the terms) and the agent answers that it is offline.
 
@@ -451,6 +451,7 @@ As built (`packages/evals/`):
 - **Reports** go to `evals/reports/` (gitignored); `--save-baseline` writes `packages/evals/baselines/extraction.{json,md}` (committed). The CI gate (`evals.yml`) is part of Phase 7.
 - **Baseline (2026-11-19, `claude-opus-5-5`, `extract-v2`):** 300/300 fields, 25/25 payouts exact, 0 retries, $1.05 for 25 contracts ($0.042 each), 5.8 s each. The dataset is now too easy to separate good prompts from better ones; harder templates are on the Later list.
 - **Agent eval (Phase 4):** `pnpm evals:agent [--model <id>]` runs the production audit (same loop, tools, prompt, limits) on every case. The context is built from the case's ground-truth terms, so an extraction mistake cannot count against the agent; flags go to a list in memory. Scored by expense: **precision** = flagged expenses that are planted violations / all flagged expenses, **recall** = planted violations flagged / all planted, plus whether the flag kind was right. `--oracle` flags exactly the planted violations and must score 100%. Baseline: `packages/evals/baselines/agent.{json,md}`.
+- **Agent baseline (2026-11-24, `claude-haiku-5-5`, `agent-v1`):** precision 100% (26/26), recall 100% (26/26), right kind 26/26, 25/25 answered; 62 model calls and 127 tool calls in all, $0.046 for 25 audits ($0.0018 each), 10.1 s each. Haiku became the default `AGENT_MODEL`. Sonnet and Opus were not run (API budget), so this says Haiku is enough for this dataset, not that it beats them; like extraction, the dataset is now too easy to separate models (harder cases are on the Later list).
 
 ---
 

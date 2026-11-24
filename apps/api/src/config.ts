@@ -35,8 +35,9 @@ export type LlmConfig = {
   client: "anthropic" | "fake";
   apiKey: string | null;
   extractionModel: string;
-  // The audit agent's model (F6). Chosen by the agent eval; Sonnet until then,
-  // because an audit makes many calls and Opus costs more per token.
+  // The audit agent's model (F6). Chosen by the agent eval (baselines/agent.md):
+  // Haiku found every planted violation with no false flag, at about $0.002 an
+  // audit. An audit makes several calls, so a cheap model that scores 100% wins.
   agentModel: string;
   timeoutMs: number;
   maxRetries: number; // SDK retries on 429/5xx/connection errors, per call
@@ -131,7 +132,7 @@ function readLlmConfig(env: NodeJS.ProcessEnv): LlmConfig {
     client,
     apiKey,
     extractionModel: env["EXTRACTION_MODEL"] ?? "claude-opus-5-5",
-    agentModel: env["AGENT_MODEL"] ?? "claude-sonnet-5-5",
+    agentModel: env["AGENT_MODEL"] ?? "claude-haiku-5-5",
     timeoutMs: Number(env["LLM_TIMEOUT_MS"] ?? 120_000),
     maxRetries: Number(env["LLM_MAX_RETRIES"] ?? 3),
   };

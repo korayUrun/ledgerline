@@ -118,9 +118,20 @@ Model `claude-opus-5-5`, prompt `extract-v2`, 2026-11-19. Hard cases are tagged 
 dataset: money written in words, cents in the guarantee, sub-clauses, a merch percentage and
 a deposit that are not deal terms, and two contracts with a prompt-injection line.
 
-Audit agent (flag precision / recall against planted expense violations): the runner and its
-oracle are done (`pnpm evals:agent --oracle` scores 100%); the live baseline is recorded at the
-end of the project.
+Audit agent, the same 25 shows with planted expense violations
+(`packages/evals/baselines/agent.md`):
+
+| Metric | Result |
+|---|---|
+| Precision (flagged expenses that are real violations) | **100%** (26/26) |
+| Recall (planted violations found) | **100%** (26/26) |
+| Right kind of flag | 26/26 |
+| Cost per audit | $0.0018 |
+| Time per audit | 10.1 s |
+
+Model `claude-haiku-5-5` (the default `AGENT_MODEL`), prompt `agent-v1`, 2026-11-24. Both
+datasets are now too easy to tell a good prompt or model from a better one; harder cases are on
+the Later list.
 
 ## Run it locally
 
