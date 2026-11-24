@@ -19,15 +19,6 @@ export function Brand() {
   );
 }
 
-// Said on every page, because the person must never wonder whether money is real.
-export function TestModePill() {
-  return (
-    <span className="env-pill" title="All data is synthetic; Stripe runs in test mode">
-      Test mode
-    </span>
-  );
-}
-
 // The same two links in the sidebar and in the phone menu. NavLink marks the current
 // one with aria-current="page", which is also what the CSS styles as active, so the
 // active look and what a screen reader announces can never disagree.
@@ -83,14 +74,12 @@ export function AppShell({ user, children }: { user: UserDto; children: React.Re
         <Brand />
         <PrimaryNav />
         <div className="sidebar-foot">
-          <TestModePill />
           <UserBlock user={user} />
         </div>
       </aside>
 
       <header className="mobile-bar">
         <Brand />
-        <TestModePill />
         <MobileMenu>
           <PrimaryNav />
           <UserBlock user={user} />
