@@ -135,6 +135,37 @@ describe("the payout job", () => {
     expect(await settlementStatus()).toBe("paid");
   });
 
+  it("writes an audit row for each payout status change, with the real 'before'", async () => {
+    const payout = await approve();
+
+    await processor.process(payout.id);
+
+    const rows = await t.prisma.auditLog.findMany({
+      where: { entity: "payout", entityId: payout.id },
+      orderBy: { at: "asc" },
+    });
+    expect(rows.map((row) => [row.action, row.before, row.after])).toEqual([
+      ["payout.processing_started", { status: "pending" }, { status: "processing" }],
+      [
+        "payout.transfer_created",
+        { status: "processing", stripeTransferId: null },
+        { status: "processing", stripeTransferId: expect.any(String) as string },
+      ],
+    ]);
+  });
+
+  it("writes the processing row once, even when the job is retried", async () => {
+    const payout = await approve();
+    t.payments.timeOutNext();
+    await expect(processor.process(payout.id)).rejects.toThrow("timed out");
+
+    await processor.process(payout.id);
+
+    expect(await t.prisma.auditLog.count({ where: { action: "payout.processing_started" } })).toBe(
+      1,
+    );
+  });
+
   it("does nothing when run again after the transfer exists", async () => {
     const payout = await approve();
     await processor.process(payout.id);

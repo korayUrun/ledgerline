@@ -18,17 +18,29 @@ export class PayoutStateService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // pending → processing, just before the transfer call. Nothing changes if it is
-  // already processing (a retried job).
-  async markProcessing(tx: Prisma.TransactionClient, payout: Payout): Promise<void> {
-    await tx.payout.updateMany({
+  // pending → processing, just before the transfer call. Nothing changes, and no
+  // audit row is written, if it is already processing (a retried job).
+  async markProcessing(tx: Prisma.TransactionClient, payout: Payout, actor: string): Promise<void> {
+    const { count } = await tx.payout.updateMany({
       where: { id: payout.id, status: "pending" },
       data: { status: "processing" },
     });
+    if (count === 1) {
+      await this.audit.record(tx, {
+        actor,
+        action: "payout.processing_started",
+        entity: "payout",
+        entityId: payout.id,
+        before: { status: "pending" },
+        after: { status: "processing" },
+      });
+    }
   }
 
   // The provider accepted the transfer. The payout stays processing: the webhook
   // is what confirms it. Returns false if the payout was already past this point.
+  // The job always calls markProcessing first, so only a processing payout without
+  // a transfer id qualifies, and the audit row's "before" is exactly that.
   async recordTransfer(
     tx: Prisma.TransactionClient,
     payout: Payout,
@@ -36,8 +48,8 @@ export class PayoutStateService {
     actor: string,
   ): Promise<boolean> {
     const { count } = await tx.payout.updateMany({
-      where: { id: payout.id, status: { in: ["pending", "processing"] }, stripeTransferId: null },
-      data: { status: "processing", stripeTransferId: transferId },
+      where: { id: payout.id, status: "processing", stripeTransferId: null },
+      data: { stripeTransferId: transferId },
     });
     if (count === 1) {
       await this.audit.record(tx, {
@@ -45,7 +57,7 @@ export class PayoutStateService {
         action: "payout.transfer_created",
         entity: "payout",
         entityId: payout.id,
-        before: { status: payout.status },
+        before: { status: "processing", stripeTransferId: null },
         after: { status: "processing", stripeTransferId: transferId },
       });
     }

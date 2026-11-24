@@ -57,7 +57,9 @@ export class PayoutProcessor {
       return "failed";
     }
 
-    await this.prisma.$transaction((tx) => this.payouts.markProcessing(tx, payout));
+    await this.prisma.$transaction((tx) =>
+      this.payouts.markProcessing(tx, payout, PAYOUT_JOB_ACTOR),
+    );
 
     let transferId: string;
     try {
