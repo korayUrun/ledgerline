@@ -246,6 +246,23 @@ describe("expense flags", () => {
     expect(await t.prisma.expenseFlag.count()).toBe(0);
   });
 
+  it("opens one flag when two sources flag the same expense at the same moment", async () => {
+    const input = {
+      expenseId: toner().id,
+      kind: "category_not_allowed" as const,
+      reason: "Not allowed.",
+    };
+    const [runA, runB] = [await startRun(), await startRun()];
+
+    const results = await Promise.all([
+      flags.flagFromAgentRun({ ...input, runId: runA }),
+      flags.flagFromAgentRun({ ...input, runId: runB }),
+    ]);
+
+    expect(results.map((result) => result.created).sort()).toEqual([false, true]);
+    expect(await t.prisma.expenseFlag.count()).toBe(1);
+  });
+
   it("refuses an expense from another show", async () => {
     const runId = await startRun();
     const other = await createComputedShow("Other Night");
