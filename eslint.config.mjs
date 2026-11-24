@@ -44,6 +44,19 @@ export default defineConfig([
     files: ["**/*.{js,mjs,cjs}"],
     extends: [tseslint.configs.disableTypeChecked],
   },
+  {
+    // Dev scripts run on Node. ESLint does not know the runtime of a plain .mjs
+    // file, so name the Node globals they use (no `globals` package for seven names).
+    files: ["apps/*/scripts/**/*.mjs"],
+    languageOptions: {
+      globals: Object.fromEntries(
+        ["process", "console", "fetch", "URL", "Buffer", "setTimeout", "WebSocket"].map((name) => [
+          name,
+          "readonly",
+        ]),
+      ),
+    },
+  },
 
   // --- settlement-engine: pure money math -------------------------------------
   {
