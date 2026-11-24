@@ -29,8 +29,9 @@ import { AgentTraceService } from "./agent-trace.service.js";
 import { AgentService, type PreparedRun } from "./agent.service.js";
 import { ExpenseFlagsService } from "./expense-flags.service.js";
 
-// The audit agent over HTTP (F6) and its traces (F12). There is no endpoint that
-// lets the agent approve or pay: those stay human actions (Phase 5).
+// The audit agent (F6), the workspace assistant (Assistant page) and their traces
+// (F12). There is no endpoint that lets an agent approve or pay: those stay human
+// actions (Phase 5).
 @Controller()
 export class AgentController {
   constructor(
@@ -61,6 +62,24 @@ export class AgentController {
   ): Promise<void> {
     const prepared = await this.agent.prepare(settlementId, "audit", AUDIT_QUESTION, actor);
     await this.stream(response, prepared);
+  }
+
+  // The Assistant page: a question about any show (where it stands, what is next).
+  // Same stream and trace as the audit agent; its tools only read.
+  @Post("assistant/ask")
+  async askWorkspace(
+    @Body(new ZodBodyPipe(AskBodySchema)) body: AskBody,
+    @CurrentActor() actor: Actor,
+    @Res() response: ServerResponse,
+  ): Promise<void> {
+    const prepared = await this.agent.prepareWorkspace(body.question, actor);
+    await this.stream(response, prepared);
+  }
+
+  // The Assistant page's recent conversations; each replays through GET /agent-runs/:id.
+  @Get("assistant/runs")
+  async listWorkspaceRuns(): Promise<AgentRunDto[]> {
+    return (await this.traces.listWorkspaceRuns(20)).map(toAgentRunDto);
   }
 
   @Get("settlements/:settlementId/agent-runs")

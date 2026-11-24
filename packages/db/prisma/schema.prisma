@@ -96,6 +96,7 @@ enum ContractStatus {
 enum AgentRunKind {
   audit
   question
+  workspace
 }
 
 enum AgentRunStatus {
@@ -425,10 +426,12 @@ model ProcessedWebhookEvent {
 // the steps are everything that followed, in order.
 model AgentRun {
   id                String         @id @default(uuid())
-  settlementId      String
+  // Both null for a workspace run (the Assistant page): it can read any show and
+  // belongs to no single settlement.
+  settlementId      String?
   // The settlement version the agent looked at. If the settlement is recomputed
   // later, the run's answers describe the older numbers.
-  settlementVersion Int
+  settlementVersion Int?
   kind              AgentRunKind
   question          String // the first user message, exactly as sent
   model             String // as requested; each model_call step stores the one that answered
@@ -450,7 +453,8 @@ model AgentRun {
   startedAt         DateTime       @default(now())
   finishedAt        DateTime?
 
-  settlement Settlement    @relation(fields: [settlementId], references: [id])
+  // Restrict, as before the column became optional: a settlement with runs is never deleted.
+  settlement Settlement?   @relation(fields: [settlementId], references: [id], onDelete: Restrict)
   steps      AgentStep[]
   flags      ExpenseFlag[]
 

@@ -12,8 +12,8 @@ import { PRISMA } from "../../common/tokens.js";
 import type { AgentRunResult, AgentStep } from "./agent-loop.js";
 
 export type StartRunInput = {
-  settlementId: string;
-  settlementVersion: number;
+  settlementId: string | null; // null for a workspace run (no single settlement)
+  settlementVersion: number | null;
   kind: AgentRunKind;
   question: string;
   model: string;
@@ -124,6 +124,16 @@ export class AgentTraceService {
     return this.prisma.agentRun.findMany({
       where: { settlementId },
       orderBy: { startedAt: "desc" },
+    });
+  }
+
+  // The Assistant page's recent conversations, newest first. Bounded: the page shows
+  // a short history, not every run ever made.
+  listWorkspaceRuns(limit: number): Promise<AgentRun[]> {
+    return this.prisma.agentRun.findMany({
+      where: { kind: "workspace" },
+      orderBy: { startedAt: "desc" },
+      take: limit,
     });
   }
 
