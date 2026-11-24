@@ -1,7 +1,8 @@
 import type { UserDto } from "@ledgerline/schemas";
 import Link from "next/link";
 import { logout } from "./actions";
-import { GuideIcon, KeyIcon, LogOutIcon, ShowsIcon } from "./icons";
+import { initials } from "../lib/directory";
+import { ArtistsIcon, GuideIcon, KeyIcon, LogOutIcon, ShowsIcon, VenuesIcon } from "./icons";
 import { MobileMenu } from "./mobile-menu";
 import { NavLink } from "./nav-link";
 
@@ -21,15 +22,26 @@ export function Brand() {
 
 // The same links in the sidebar and in the phone menu. NavLink marks the current one
 // with aria-current="page", which is also what the CSS styles as active, so the active
-// look and what a screen reader announces can never disagree. The work comes first;
-// the Guide sits apart under "Help", since it is read once, not used every day.
+// look and what a screen reader announces can never disagree. Three groups, by how
+// often they are used: the daily work (shows, and who and where they are with), the
+// developer settings (keys for other tools), and the Guide, read once.
 function PrimaryNav() {
   return (
     <nav className="sidenav" aria-label="Main">
+      <p className="sidenav-label">Workspace</p>
       <NavLink href="/shows">
         <ShowsIcon />
         <span>Shows</span>
       </NavLink>
+      <NavLink href="/artists">
+        <ArtistsIcon />
+        <span>Artists</span>
+      </NavLink>
+      <NavLink href="/venues">
+        <VenuesIcon />
+        <span>Venues</span>
+      </NavLink>
+      <p className="sidenav-label">Developers</p>
       <NavLink href="/settings/api-keys">
         <KeyIcon />
         <span>API keys</span>
@@ -43,17 +55,8 @@ function PrimaryNav() {
   );
 }
 
-// "Demo Manager" -> "DM", for the round badge next to the name. Display only.
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter((word) => word.length > 0)
-    .slice(0, 2)
-    .map((word) => word.charAt(0).toUpperCase())
-    .join("");
-}
-
-// Who is logged in, and the way out. The form posts to the existing logout action.
+// Who is logged in, and the way out. The form posts to the existing logout action. The
+// round badge uses initials() from lib/directory.ts, like the artists and venues lists.
 function UserBlock({ user }: { user: UserDto }) {
   return (
     <div className="user-block">

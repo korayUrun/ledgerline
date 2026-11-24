@@ -156,13 +156,20 @@ function isShowSort(value: string): value is ShowSort {
   return Object.hasOwn(SORT_LABELS, value);
 }
 
+// The search text (?q=), trimmed and capped like the search box's maxLength. Shared
+// with the artists and venues directories (lib/directory.ts), so every search box
+// reads the URL the same way.
+export function readSearchText(searchParams: SearchParams): string {
+  return first(searchParams["q"]).trim().slice(0, 100);
+}
+
 // The URL is typed by people and shared as links, so anything unknown falls back to
 // the default instead of failing the page.
 export function readShowQuery(searchParams: SearchParams): ShowQuery {
   const status = first(searchParams["status"]);
   const sort = first(searchParams["sort"]);
   return {
-    q: first(searchParams["q"]).trim().slice(0, 100),
+    q: readSearchText(searchParams),
     status: isStatusFilter(status) ? status : DEFAULT_SHOW_QUERY.status,
     sort: isShowSort(sort) ? sort : DEFAULT_SHOW_QUERY.sort,
   };
