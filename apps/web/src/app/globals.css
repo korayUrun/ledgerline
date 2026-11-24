@@ -12,7 +12,9 @@
   --text: #1a1d1b;
   --muted: #66706b;
   --border: #e4e2db;
-  --border-strong: #cfccc2;
+  /* Outlines of controls (inputs, secondary buttons). WCAG 1.4.11 wants 3:1 against
+     the surface so you can see where a field is: 3.46:1 on white. */
+  --border-strong: #8c8a82;
   --accent: #1f5c4a;
   --accent-hover: #174a3b;
   --accent-soft: #e7f0ec;
@@ -27,7 +29,6 @@
   --success: #1f6b4a;
   --success-bg: #e4f2ea;
 
-  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
   --shadow: 0 1px 2px rgb(20 24 22 / 0.04), 0 1px 1px rgb(20 24 22 / 0.03);
   --radius: 10px;
   --radius-sm: 6px;
@@ -43,7 +44,7 @@
     --text: #e6e9e7;
     --muted: #98a29d;
     --border: #2a302d;
-    --border-strong: #3a423e;
+    --border-strong: #6b7570; /* 3.61:1 on the dark surface */
     --accent: #6cc4a1;
     --accent-hover: #86d3b4;
     --accent-soft: #1b2c25;
@@ -92,9 +93,12 @@ a:hover {
   color: var(--accent-hover);
 }
 
+/* Keyboard focus: a solid accent outline, with a gap so it never merges with the
+   element's own border or fill. Solid accent is 7.2:1 on the page in light mode and
+   8.9:1 in dark (WCAG asks 3:1); the old 30% tint was under 2:1. */
 :focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
 
@@ -243,11 +247,23 @@ pre {
 }
 
 @media (max-width: 640px) {
+  /* Brand, nav, test-mode pill and Log out do not fit in 390 px. The nav moves to its
+     own second line (order + full width) so the pill and Log out keep the first line
+     next to the brand, instead of everything squeezing and the page scrolling sideways. */
   .topbar-inner {
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 4px 12px;
   }
-  .user-name,
-  .env-pill {
+  .topnav {
+    order: 1;
+    width: 100%;
+  }
+  .topnav a {
+    white-space: nowrap;
+  }
+  /* The test-mode pill says no real money moves, so it stays on a phone; the user's
+     name is the less important thing to drop when space is tight. */
+  .user-name {
     display: none;
   }
 }
@@ -324,6 +340,22 @@ pre {
 .tabs a[aria-current="page"] {
   color: var(--text);
   border-bottom-color: var(--accent);
+}
+
+/* .tabs scrolls (overflow-x: auto), and a scroll box clips anything drawn outside it,
+   so the focus outline goes inside the tab instead of 2px around it. */
+.tabs a:focus-visible {
+  outline-offset: -2px;
+}
+
+/* On a phone the five tabs do not fit on one line. A hidden sideways scroll left
+   "Settlement" off-screen with nothing to say it was there, so they wrap to a second
+   line instead: every tab stays visible, no gesture to discover. */
+@media (max-width: 640px) {
+  .tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 
 .actions {
@@ -527,9 +559,7 @@ textarea {
   background: var(--surface);
   color: var(--text);
   min-width: 0;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+  transition: border-color 0.15s;
 }
 
 input:hover,
@@ -538,16 +568,22 @@ textarea:hover {
   border-color: var(--muted);
 }
 
+/* :focus, not :focus-visible, because a text field shows where you type whether you
+   reached it by mouse or keyboard. Same outline as everywhere else. */
 input:focus,
 select:focus,
 textarea:focus {
-  outline: none;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
   border-color: var(--accent);
-  box-shadow: var(--ring);
 }
 
-input::placeholder {
-  color: color-mix(in srgb, var(--muted) 70%, transparent);
+/* A placeholder is an example, not a value: muted (5.1:1 light, 6.6:1 dark, readable)
+   next to real values at 17:1 and 14:1, and italic, so "1250.00" does not pass for an
+   amount someone already typed even where the color difference is hard to see. */
+::placeholder {
+  color: var(--muted);
+  font-style: italic;
 }
 
 input[type="checkbox"] {
@@ -652,6 +688,10 @@ button:disabled {
 }
 
 fieldset {
+  /* A fieldset defaults to min-inline-size: min-content, so a wide table inside it
+     stretches the whole page on a phone. 0 lets it shrink, and the table scrolls inside
+     its .table-wrap frame instead. */
+  min-width: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
