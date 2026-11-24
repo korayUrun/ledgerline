@@ -1,6 +1,6 @@
 # Ledgerline — Feature List
 
-Each feature has an ID (used in `PROJECT_OVERVIEW.md` and `SYSTEM.md`), what it does, **why it exists**, and which part of the job posting it demonstrates.
+Each feature has an ID (used in `PROJECT_OVERVIEW.md` and `SYSTEM.md`), what it does, **why it exists**, and what it demonstrates.
 
 Priority: **MVP** = must ship · **Core+** = ship if MVP is solid · **Stretch** = only if time allows.
 
@@ -77,8 +77,8 @@ It runs in GitHub Actions on PRs that change prompts or schemas, and fails if ac
 
 | ID | Feature | Why |
 |----|---------|-----|
-| S1 | **Expo app** for snapping expense receipts on show night | Posting lists React Native / Expo as a nice-to-have |
-| S2 | Port the hand-written agent loop to the **Vercel AI SDK** and compare | Learn by contrast and hit another nice-to-have |
+| S1 | **Expo app** for snapping expense receipts on show night | Receipts are on paper, on show night, far from a desk |
+| S2 | Port the hand-written agent loop to the **Vercel AI SDK** and compare | Learn what a framework hides by comparing it with the hand-written loop |
 | S3 | Merch settlement (venue commission on soft goods) | Real settlements include it |
 | S4 | Streaming chat UI over settlements | A better UX for F6 |
 | S5 | Multi-currency | Touring artists |

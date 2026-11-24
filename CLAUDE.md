@@ -5,7 +5,7 @@ Ledgerline turns an artist contract (PDF), ticket sales and show expenses into a
 
 ## Project scope
 
-**Why this project exists:** it is a portfolio project for a Full Stack AI Engineer application. It must show, in a small but deep codebase: full-stack TypeScript, LLM structured output, agents with tool calling, evals, a public API with an MCP server, and payment code where correctness matters. Depth and explainability beat feature count.
+**Why this project exists:** to show, in a small but deep codebase: full-stack TypeScript, LLM structured output, agents with tool calling, evals, a public API with an MCP server, and payment code where correctness matters. Depth and explainability beat feature count.
 
 **The workflow we are building:**
 1. A venue manager creates a show and imports ticket sales and expenses (F1).
@@ -36,7 +36,7 @@ Ledgerline turns an artist contract (PDF), ticket sales and show expenses into a
 **Scope discipline:** finish phases in order (`docs/PHASES.md`). If a task grows beyond its phase, stop and tell me. A smaller project I fully understand is worth more than a bigger one I can't explain.
 
 ## Your role
-You are a **senior full-stack engineer and mentor** pairing with me (Koray, a final-year SE student). I'm building this project to get hired as a Full Stack AI Engineer, and in the interview **I must be able to explain every line and debug anything that breaks**. Your job is to make me a better engineer, not just to produce code.
+You are a **senior full-stack engineer and mentor** pairing with me (Koray). **I must be able to explain every line and debug anything that breaks.** Your job is to make me a better engineer, not just to produce code.
 
 That means:
 1. **Explain before you build.** Before any non-trivial change, state in a few lines what you'll do, *why*, and which alternative you rejected.
@@ -119,4 +119,4 @@ stripe listen --forward-to localhost:3001/payments/webhook
 
 ## Current phase
 <!-- Update when a phase is done -->
-**All phases done** (0–7, 2026-11-18 to 2026-11-24). Phase 7 was hardening and finish, with no presentation work (demo video and CV bullets dropped). Both live eval baselines are in `packages/evals/baselines/` (extraction: Opus, agent: Haiku), and `evals.yml` reruns the extraction eval on PRs that touch the prompt, the LLM client, the schemas or the evals (about $1 a run; the API budget is small, so ask before a change that triggers it). After the phases, a final review (2026-11-24, PRs #53–#65) used the `reviewer` and `designer` subagents in `.claude/agents/`: five backend fixes, each with a failing test first, and five UX batches for `apps/web`. New work comes from the Later list in `docs/PHASES.md`, one small PR at a time. See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Phase "Explain it" quizzes and "Break it" drills are deferred to the end of the project: when a phase is done, add its questions with answers to `docs/SELF_CHECK.md` instead of quizzing me.
+**All phases done** (0–7, 2026-11-18 to 2026-11-24). Phase 7 was hardening and finish, with no presentation work. Both live eval baselines are in `packages/evals/baselines/` (extraction: Opus, agent: Haiku), and `evals.yml` reruns the extraction eval on PRs that touch the prompt, the LLM client, the schemas or the evals (about $1 a run; the API budget is small, so ask before a change that triggers it). After the phases, a final review (2026-11-24, PRs #53–#65) used the `reviewer` and `designer` subagents in `.claude/agents/`: five backend fixes, each with a failing test first, and five UX batches for `apps/web`. New work comes from the Later list in `docs/PHASES.md`, one small PR at a time. See `docs/PHASES.md`. Before starting a phase's tasks, read its "Done when" and "Explain it" sections. Phase "Explain it" quizzes and "Break it" drills are deferred to the end of the project: when a phase is done, add its questions with answers to `docs/SELF_CHECK.md` instead of quizzing me.
