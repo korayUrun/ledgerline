@@ -2,6 +2,7 @@ import type { ShowDto } from "@ledgerline/schemas";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { api, ApiError } from "../../../lib/api";
+import { formatShowDate } from "../../../lib/format";
 import { StatusBadge } from "../../components";
 import { NavLink } from "../../nav-link";
 
@@ -30,7 +31,7 @@ export default async function ShowLayout({
         <nav className="breadcrumb" aria-label="Breadcrumb">
           <Link href="/shows">Shows</Link>
           <span aria-hidden="true">/</span>
-          <span>{show.showDate}</span>
+          <span>{formatShowDate(show.showDate)}</span>
         </nav>
         <div className="show-title">
           <h1>{show.name}</h1>

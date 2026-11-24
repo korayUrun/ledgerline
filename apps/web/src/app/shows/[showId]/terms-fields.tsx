@@ -109,26 +109,35 @@ export function TermsFields({
               </tr>
             </thead>
             <tbody>
-              {ExpenseCategorySchema.options.map((category) => (
-                <tr key={category}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      name={`allow_${category}`}
-                      defaultChecked={draft?.allowedCategories?.includes(category) ?? false}
-                    />
-                  </td>
-                  <td>{humanize(category)}</td>
-                  <td>
-                    <input
-                      name={`cap_${category}`}
-                      inputMode="decimal"
-                      defaultValue={centsToInput(capOf(category))}
-                    />
-                    {evidence?.[`cap_${category}`] && note(`cap_${category}`)}
-                  </td>
-                </tr>
-              ))}
+              {ExpenseCategorySchema.options.map((category) => {
+                // The column headers do not name an input for a screen reader, so each
+                // input gets its own: "Allow production", "Production cap ($)".
+                const name = humanize(category);
+                const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+                return (
+                  <tr key={category}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        name={`allow_${category}`}
+                        defaultChecked={draft?.allowedCategories?.includes(category) ?? false}
+                        aria-label={`Allow ${name}`}
+                      />
+                    </td>
+                    <td>{name}</td>
+                    <td>
+                      <input
+                        name={`cap_${category}`}
+                        inputMode="decimal"
+                        defaultValue={centsToInput(capOf(category))}
+                        className="amount"
+                        aria-label={`${capitalized} cap ($)`}
+                      />
+                      {evidence?.[`cap_${category}`] && note(`cap_${category}`)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -160,9 +169,11 @@ export function TermsFields({
         <div className="form-grid">
           <label>
             Bonus
+            {/* Short option labels: the select is one grid column wide, and a longer
+                label was cut off. The values are what termsFromForm reads. */}
             <select name="bonusMode" defaultValue={draft?.bonus?.mode ?? "none"}>
               <option value="none">No bonus clause</option>
-              <option value="cumulative">Cumulative (every tier reached pays)</option>
+              <option value="cumulative">Cumulative: all tiers reached</option>
               <option value="highest_only">Highest tier only</option>
             </select>
             {note("bonusMode")}

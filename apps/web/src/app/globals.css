@@ -586,6 +586,12 @@ textarea:focus {
   font-style: italic;
 }
 
+/* Dollar inputs in a table column line up like the amounts in every other table. */
+input.amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 input[type="checkbox"] {
   min-height: 0;
   width: 16px;
@@ -685,6 +691,20 @@ button:disabled {
 
 .card.row label {
   flex: 1;
+}
+
+/* Model, calls, tokens and cost of a contract extraction: one click away, quiet. */
+.usage-details {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.usage-details summary {
+  cursor: pointer;
+}
+
+.usage-details p {
+  margin: 6px 0 0;
 }
 
 fieldset {

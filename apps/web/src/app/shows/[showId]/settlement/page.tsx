@@ -213,7 +213,11 @@ export default async function SettlementPage({
                   <tr key={index} className={lineClass(line.kind)}>
                     <td>{line.label}</td>
                     <td className="num">{formatCents(line.amountCents)}</td>
-                    <td>{line.clauseRef ?? <span className="muted">data</span>}</td>
+                    <td>
+                      {line.clauseRef ?? (
+                        <span className="muted">{noClauseLabel(line.sourceRefs)}</span>
+                      )}
+                    </td>
                     <td>
                       {line.sourceRefs.length === 0 && <span className="muted">lines above</span>}
                       {line.sourceRefs.map((ref) => (
@@ -234,7 +238,11 @@ export default async function SettlementPage({
           {canAsk ? (
             <AssistantPanel settlementId={settlement.id} />
           ) : (
-            <p className="muted">Recompute the settlement to use the assistant.</p>
+            <p className="muted">
+              {locked
+                ? "The assistant is available before approval."
+                : "Recompute the settlement to use the assistant."}
+            </p>
           )}
           {flags.length > 0 && <FlagsTable showId={showId} flags={flags} />}
           {runs.length > 0 && <RunsList showId={showId} runs={runs} />}
@@ -282,6 +290,14 @@ function lineClass(kind: string): string {
   return "";
 }
 
+// A line with no contract clause comes straight from the input rows (sales or
+// expenses), or it adds up the lines above (the total), which has no source of its own.
+function noClauseLabel(sourceRefs: SourceRef[]): string {
+  const firstRef = sourceRefs[0];
+  if (firstRef === undefined) return "—";
+  return firstRef.type === "ticket_sale" ? "Sales data" : "Expense data";
+}
+
 function describeSource(ref: SourceRef, snapshot: SettlementInput | null): string {
   if (ref.type === "ticket_sale") {
     const sale = snapshot?.ticketSales.find((row) => row.id === ref.id);
@@ -291,8 +307,17 @@ function describeSource(ref: SourceRef, snapshot: SettlementInput | null): strin
   }
   const expense = snapshot?.expenses.find((row) => row.id === ref.id);
   return expense
-    ? `${humanize(expense.category)} ${formatCents(expense.amountCents)} (${expense.status})`
+    ? `${humanize(expense.category)} ${formatCents(expense.amountCents)} (${expenseDecision(expense.status)})`
     : `expense ${ref.id}`;
+}
+
+// The expense status is a person's decision on the expenses tab, not the contract's
+// rule. Plain "allowed" next to a line saying the contract does not allow the
+// category read as a contradiction, so say who decided.
+function expenseDecision(status: SettlementInput["expenses"][number]["status"]): string {
+  if (status === "allowed") return "approved by you";
+  if (status === "disallowed") return "disallowed by you";
+  return "pending";
 }
 
 function describeChange(entry: AuditEntryDto): string {
@@ -304,7 +329,7 @@ function describeChange(entry: AuditEntryDto): string {
   } | null;
   const parts: string[] = [];
   if (before?.status !== after?.status)
-    parts.push(`${before?.status ?? "—"} → ${after?.status ?? "—"}`);
+    parts.push(`${humanize(before?.status ?? "—")} → ${humanize(after?.status ?? "—")}`);
   if (
     after?.payoutCents !== undefined &&
     after.payoutCents !== null &&

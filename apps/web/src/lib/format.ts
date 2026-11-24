@@ -14,6 +14,13 @@ export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
 }
 
+// A show date is a calendar day ("2026-11-21"), not a moment in time. A date-only
+// ISO string is read as midnight UTC, so it is also formatted in UTC: in a time zone
+// behind UTC it would otherwise show as the day before.
+export function formatShowDate(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString("en-US", { dateStyle: "medium", timeZone: "UTC" });
+}
+
 export function humanize(value: string): string {
   return value.replaceAll("_", " ");
 }

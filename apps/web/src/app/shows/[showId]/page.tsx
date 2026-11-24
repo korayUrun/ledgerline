@@ -43,7 +43,6 @@ export default async function ShowDetailPage({
                 <th className="num">Paid</th>
                 <th className="num">Comps</th>
                 <th className="num">Price</th>
-                <th className="num">Gross</th>
                 <th className="num">Tax</th>
                 <th className="num">Fees</th>
               </tr>
@@ -55,7 +54,6 @@ export default async function ShowDetailPage({
                   <td className="num">{sale.qtySold}</td>
                   <td className="num">{sale.comps}</td>
                   <td className="num">{formatCents(sale.priceCents)}</td>
-                  <td className="num">{formatCents(sale.qtySold * sale.priceCents)}</td>
                   <td className="num">{formatCents(sale.taxCents)}</td>
                   <td className="num">{formatCents(sale.feeCents)}</td>
                 </tr>
@@ -87,11 +85,19 @@ export default async function ShowDetailPage({
               // A table row cannot contain a <form>, so the inputs point to a form
               // elsewhere in the row through the HTML `form` attribute.
               const formId = `expense-${expense.id}`;
+              // The column headers do not name an input for a screen reader, so each
+              // input gets a name that also says which row it is in.
+              const rowName = expense.description;
               return (
                 <tr key={expense.id}>
                   <td>{humanize(expense.category)}</td>
                   <td>
-                    <input form={formId} name="description" defaultValue={expense.description} />
+                    <input
+                      form={formId}
+                      name="description"
+                      defaultValue={expense.description}
+                      aria-label={`Description for ${rowName}`}
+                    />
                   </td>
                   <td className="num">
                     <input
@@ -100,10 +106,17 @@ export default async function ShowDetailPage({
                       defaultValue={centsToInput(expense.amountCents)}
                       size={10}
                       inputMode="decimal"
+                      className="amount"
+                      aria-label={`Amount for ${rowName}`}
                     />
                   </td>
                   <td>
-                    <select form={formId} name="status" defaultValue={expense.status}>
+                    <select
+                      form={formId}
+                      name="status"
+                      defaultValue={expense.status}
+                      aria-label={`Status for ${rowName}`}
+                    >
                       {ExpenseStatusSchema.options.map((status) => (
                         <option key={status} value={status}>
                           {status}
@@ -123,6 +136,7 @@ export default async function ShowDetailPage({
                         type="file"
                         name="file"
                         accept="application/pdf,image/png,image/jpeg"
+                        aria-label={`Receipt for ${rowName}`}
                       />
                       <button type="submit" className="secondary">
                         Upload
