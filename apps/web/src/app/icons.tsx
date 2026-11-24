@@ -1,7 +1,7 @@
 // Inline SVG icons for the app shell and the login page. Drawn with `currentColor`, so
 // they take the color of the text next to them and follow the light and dark tokens.
 // All decoration: each one sits next to a word that says the same thing, so screen
-// readers skip them (aria-hidden). No icon package: five shapes do not need one.
+// readers skip them (aria-hidden). No icon package: a handful of shapes do not need one.
 
 type IconProps = { size?: number };
 
@@ -69,6 +69,25 @@ export function CheckIcon(props: IconProps) {
   return (
     <Svg {...props}>
       <path d="m5 10.5 3 3 7-7" />
+    </Svg>
+  );
+}
+
+// A magnifying glass, inside the search box on the shows page.
+export function SearchIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="9" cy="9" r="5" />
+      <path d="m16 16-3.5-3.5" />
+    </Svg>
+  );
+}
+
+// A plus, on the "New show" action.
+export function PlusIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M10 4.5v11M4.5 10h11" />
     </Svg>
   );
 }

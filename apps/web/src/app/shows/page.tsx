@@ -1,148 +1,85 @@
 import type { ArtistDto, ShowDto, VenueDto } from "@ledgerline/schemas";
 import Link from "next/link";
 import { api } from "../../lib/api";
-import type { SearchParams } from "../../lib/flash";
-import { formatShowDate } from "../../lib/format";
-import { createArtist, createShow, createVenue } from "../actions";
-import { EmptyState, ErrorBanner, StatusBadge } from "../components";
+import { readError, type SearchParams } from "../../lib/flash";
+import {
+  countByFilter,
+  isFiltered,
+  matchesSearch,
+  matchesStatus,
+  readShowQuery,
+  showsHref,
+  sortShows,
+} from "../../lib/show-filters";
+import { EmptyState, ErrorBanner } from "../components";
+import { PlusIcon } from "../icons";
 import { PageHeader } from "../page-header";
-
-// The settlement status, or "Not started" while a show has none.
-function SettlementState({ show }: { show: ShowDto }) {
-  return show.settlementStatus ? (
-    <StatusBadge status={show.settlementStatus} />
-  ) : (
-    <span className="muted">Not started</span>
-  );
-}
+import { NewShowPanel, ResultLine, ShowsTable, ShowsToolbar, SummaryCards } from "./dashboard";
 
 export default async function ShowsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const params = await searchParams;
   const [shows, venues, artists] = await Promise.all([
     api.get<ShowDto[]>("/shows"),
     api.get<VenueDto[]>("/venues"),
     api.get<ArtistDto[]>("/artists"),
   ]);
 
+  // Everything below works on the list just loaded; no extra API calls. The cards count
+  // all shows; the chips count within the search, so each chip says what clicking it
+  // would show; the table is the search, then the status, then the sort.
+  const query = readShowQuery(params);
+  const summaryCounts = countByFilter(shows);
+  const searched = shows.filter((show) => matchesSearch(show, query.q));
+  const chipCounts = countByFilter(searched);
+  const visible = sortShows(
+    searched.filter((show) => matchesStatus(show, query.status)),
+    query.sort,
+  );
+  const filtered = isFiltered(query);
+
   return (
     <>
       <PageHeader
         title="Shows"
-        subtitle="Pick a show to import sales, enter deal terms and compute its settlement."
+        subtitle="What each show needs next. Pick one to import sales, enter deal terms and settle it."
         actions={
-          // Jumps to the form further down the page; nothing new is sent.
+          // Opens the panel below (CSS :target); nothing new is sent.
           <a href="#new-show" className="button-link">
+            <PlusIcon size={16} />
             New show
           </a>
         }
       />
-      <ErrorBanner searchParams={await searchParams} />
+      <ErrorBanner searchParams={params} />
+      <NewShowPanel venues={venues} artists={artists} open={readError(params) !== null} />
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Show</th>
-              <th>Artist</th>
-              <th>Venue</th>
-              <th className="wide-only">Settlement</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shows.map((show) => (
-              <tr key={show.id}>
-                <td>{formatShowDate(show.showDate)}</td>
-                <td>
-                  <Link href={`/shows/${show.id}`}>{show.name}</Link>
-                  {/* On a phone the last column is off-screen, so the status goes
-                      under the name, where it is read together with the show. */}
-                  <span className="narrow-only cell-below">
-                    <SettlementState show={show} />
-                  </span>
-                </td>
-                <td>{show.artist.name}</td>
-                <td>{show.venue.name}</td>
-                <td className="wide-only">
-                  <SettlementState show={show} />
-                </td>
-              </tr>
-            ))}
-            {shows.length === 0 && (
-              <tr>
-                <td colSpan={5} className="empty-cell">
-                  <EmptyState title="No shows yet">
-                    Create one with the form below, then import its ticket sales.
-                  </EmptyState>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <h2 id="new-show" className="anchor-target">
-        New show
-      </h2>
-      <form action={createShow} className="card form-grid">
-        <label>
-          Name
-          <input name="name" required placeholder="Artist — Tour name" />
-        </label>
-        <label>
-          Date
-          <input name="showDate" type="date" required />
-        </label>
-        {/* The link sits on the label's line, so the dropdowns stay level with the other
-            fields. It points at the forms further down; nothing new is sent. */}
-        <div className="field">
-          <div className="field-head">
-            <label htmlFor="new-show-venue">Venue</label>
-            <a href="#new-venue">Add venue</a>
-          </div>
-          <select id="new-show-venue" name="venueId" required>
-            {venues.map((venue) => (
-              <option key={venue.id} value={venue.id}>
-                {venue.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <div className="field-head">
-            <label htmlFor="new-show-artist">Artist</label>
-            <a href="#new-artist">Add artist</a>
-          </div>
-          <select id="new-show-artist" name="artistId" required>
-            {artists.map((artist) => (
-              <option key={artist.id} value={artist.id}>
-                {artist.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button type="submit">Create show</button>
-      </form>
-
-      <div className="form-grid">
-        <form action={createVenue} id="new-venue" className="card row anchor-target">
-          <label>
-            New venue
-            <input name="name" required />
-          </label>
-          <button type="submit" className="secondary">
-            Add venue
-          </button>
-        </form>
-        <form action={createArtist} id="new-artist" className="card row anchor-target">
-          <label>
-            New artist
-            <input name="name" required />
-          </label>
-          <button type="submit" className="secondary">
-            Add artist
-          </button>
-        </form>
-      </div>
+      {shows.length === 0 ? (
+        <EmptyState title="No shows yet">
+          <a href="#new-show">Create a show</a>, then import its ticket sales.
+        </EmptyState>
+      ) : (
+        <>
+          <SummaryCards counts={summaryCounts} query={query} />
+          {/* Keyed by the query: the inputs use defaultValue, which React only applies
+              when they mount, so a card or "Clear filters" link (a client-side
+              navigation) would otherwise leave the old search text in the box. */}
+          <ShowsToolbar key={JSON.stringify(query)} query={query} chipCounts={chipCounts} />
+          <ResultLine
+            query={query}
+            shown={visible.length}
+            total={shows.length}
+            filtered={filtered}
+          />
+          {visible.length > 0 ? (
+            <ShowsTable shows={visible} />
+          ) : (
+            <EmptyState title="No shows match">
+              Try another name, artist or venue, a different status, or{" "}
+              <Link href={showsHref({ sort: query.sort })}>clear the filters</Link>.
+            </EmptyState>
+          )}
+        </>
+      )}
     </>
   );
 }
