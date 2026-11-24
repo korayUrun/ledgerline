@@ -59,6 +59,9 @@
   /* A row under the pointer: one step darker than the surface. */
   --surface-hover: #f3f2ed;
 
+  /* Behind a dialog (the revoke confirmation): dims the page, keeps it recognizable. */
+  --backdrop: rgb(20 24 22 / 0.35);
+
   /* The login page's brand panel: a deep green with light text, in both themes. The
      contrast is checked at the worst spot: the mint aurora at its brightest over the
      lightest green. There text is still 5.8:1 and the quieter text 4.7:1 (7.2:1 and
@@ -121,6 +124,7 @@
     --success-bg: #17291f;
 
     --surface-hover: #202623;
+    --backdrop: rgb(0 0 0 / 0.6);
 
     --hero-bg: #0f1c17;
     --hero-bg-2: #183429;
@@ -354,15 +358,19 @@ pre {
   background: var(--accent);
 }
 
-/* A small heading that starts a group of links ("Help"). */
+/* A small heading that starts a group of links ("Workspace", "Developers", "Help"). */
 .sidenav-label {
-  margin: var(--space-4) 0 var(--space-1);
+  margin: var(--space-5) 0 var(--space-1);
   padding: 0 var(--space-3);
   font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.sidenav-label:first-child {
+  margin-top: 0;
 }
 
 /* Who is logged in, and Log out. */
@@ -2888,17 +2896,586 @@ legend {
   }
 }
 
-/* --- API keys -------------------------------------------------------------------------- */
+/* --- Artists and venues ----------------------------------------------------------------- */
 
-/* A new API key: long, unbroken text that must wrap rather than widen the page. */
-.new-key {
-  margin: 8px 0;
+/* The add panel (directory.tsx AddPanel): hidden until it is the URL's target
+   (#new-artist, #new-venue), like the New show panel. */
+.add-panel {
+  display: none;
+  margin-bottom: var(--space-6);
 }
 
-.new-key code {
-  font-size: 13px;
+.add-panel:target {
+  display: block;
+}
+
+.panel-note {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.directory-table td {
+  vertical-align: middle;
+}
+
+.directory-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/* break-word, not anywhere: "anywhere" also lets the column shrink to one letter
+   when a neighbour needs room. */
+.directory-name-text {
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+/* Places get a rounded square, people a circle, so the two lists never look alike. */
+.avatar.avatar-square {
+  border-radius: var(--radius-sm);
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.directory-table .count-cell {
+  width: 1%;
+  padding-right: var(--space-6);
+}
+
+/* "2 shows" on a phone, where the column header is hidden; "2" under "Shows" wider. */
+.count-unit {
+  display: none;
+}
+
+/* A cell's own label, for a phone's card layout where the header row is hidden. */
+.cell-label {
+  display: none;
+}
+
+.latest-show {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.latest-show-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Payouts: a symbol and words carry the state; the tone is a third cue. Success on
+   the surface: 6.4:1 light, 9.7:1 dark. */
+.payout-state {
+  display: block;
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.payout-state.is-connected {
+  color: var(--success);
+}
+
+.payout-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/* On a phone each row is a small card: the name and its count on top, the latest show
+   and the payout state under them. Nothing scrolls sideways. */
+@media (max-width: 640px) {
+  .table-wrap.directory-table table {
+    min-width: 0;
+  }
+
+  .directory-table thead {
+    display: none;
+  }
+
+  .directory-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name count"
+      "latest latest"
+      "payout payout";
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .directory-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .directory-table td {
+    display: block;
+    width: auto;
+    padding: 0;
+    border: 0;
+  }
+
+  .directory-table tbody tr:hover td {
+    background: none;
+  }
+
+  .directory-table .name-cell {
+    grid-area: name;
+  }
+
+  .directory-table .count-cell {
+    grid-area: count;
+    align-self: center;
+    padding: 0;
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+
+  .directory-table .latest-cell {
+    grid-area: latest;
+    padding-left: calc(32px + var(--space-3));
+  }
+
+  .directory-table .payout-cell {
+    grid-area: payout;
+    padding-left: calc(32px + var(--space-3));
+  }
+
+  .directory-table .count-unit,
+  .directory-table .cell-label {
+    display: inline;
+  }
+
+  .directory-table .cell-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+}
+
+/* --- API keys -------------------------------------------------------------------------- */
+
+/* What a key can and cannot do: two short lists side by side, one under the other on
+   a phone. Each line has a symbol and words; the tone is only a third cue. */
+.permissions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4) var(--space-8);
+}
+
+.permissions-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.permissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-md);
+}
+
+.permissions-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.permissions-list .icon {
+  margin-top: 3px;
+}
+
+.permissions-list.is-allowed .icon {
+  color: var(--success);
+}
+
+.permissions-list.is-denied .icon {
+  color: var(--danger);
+}
+
+.permissions-note {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/* Create a key: a titled card; the one-time callout opens inside it, under the form. */
+.create-key h2 {
+  margin: 0;
+}
+
+.create-key-hint {
+  margin: var(--space-1) 0 var(--space-4);
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+
+.create-key .add-form label {
+  max-width: 420px;
+}
+
+/* The one-time secret: the warning tone, a framed key that wraps instead of widening
+   the page, Copy next to it, and Done at the end. Body text on warn-bg is 15:1
+   light and 12:1 dark; the warn-toned heading 5.7:1 and 8.4:1. */
+.key-callout {
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--warn-bg);
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+  border-left: 3px solid var(--warn);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+.key-callout-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--warn);
+}
+
+.key-callout-head h3 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+/* Focus is moved here when the key appears; the heading is not a control, so the
+   outline is the only cue needed. */
+.key-callout-head h3:focus {
+  outline: none;
+}
+
+.key-callout-head h3:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.key-callout-text {
+  margin: var(--space-2) 0 var(--space-3);
+  font-size: var(--text-md);
+}
+
+.secret-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+code.secret {
+  flex: 1 1 280px;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   word-break: break-all;
   user-select: all;
+}
+
+.key-callout-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-4);
+}
+
+/* Copy and what happened, in words. */
+.copy {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+button.copy-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 12px;
+}
+
+.copy-status {
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.copy-status:empty {
+  display: none;
+}
+
+/* "Your keys" with its counts on the right. */
+.section-count {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.section-intro {
+  margin: 0 0 var(--space-4);
+  max-width: 72ch;
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+
+.key-table td {
+  vertical-align: middle;
+}
+
+.key-name {
+  min-width: 120px;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+.key-mask code {
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.key-created,
+.key-used {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.key-by {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.key-never {
+  color: var(--muted);
+}
+
+/* When a key was revoked, under its badge. */
+.key-revoked-at {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.key-status {
+  white-space: nowrap;
+}
+
+.key-action {
+  text-align: right;
+}
+
+/* A revoked key stays for the record but steps back: muted text, a quieter key. The
+   muted text keeps 4.5:1 or more, so it is still readable. */
+.key-table tr.is-revoked td {
+  color: var(--muted);
+}
+
+.key-table tr.is-revoked .key-name {
+  font-weight: 500;
+}
+
+.key-table tr.is-revoked code {
+  background: transparent;
+  color: var(--muted);
+}
+
+button.revoke-button {
+  min-height: 32px;
+  padding: 4px 12px;
+}
+
+/* The revoke confirmation: a native popover, centered over a dimmed page (the browser
+   puts it in the top layer). Same surface, border and radius as a card. */
+.revoke-dialog {
+  width: min(400px, calc(100vw - 2 * var(--space-4)));
+  margin: auto;
+  padding: var(--space-5);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  text-align: left;
+  white-space: normal;
+}
+
+.revoke-dialog::backdrop {
+  background: var(--backdrop);
+}
+
+.revoke-dialog h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-base);
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+.revoke-dialog p {
+  margin: 0 0 var(--space-5);
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+
+.revoke-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* On a phone each key is a small card: name and status on top, the masked key, then
+   created and last used side by side, and the action last. */
+@media (max-width: 640px) {
+  .table-wrap.key-table table {
+    min-width: 0;
+  }
+
+  .key-table thead {
+    display: none;
+  }
+
+  .key-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "name status"
+      "mask mask"
+      "created used"
+      "action action";
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .key-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .key-table td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+
+  .key-table tbody tr:hover td {
+    background: none;
+  }
+
+  .key-table .key-name {
+    grid-area: name;
+  }
+
+  .key-table .key-status {
+    grid-area: status;
+    justify-self: end;
+  }
+
+  .key-table .key-mask {
+    grid-area: mask;
+  }
+
+  .key-table .key-created {
+    grid-area: created;
+    white-space: normal;
+  }
+
+  .key-table .key-used {
+    grid-area: used;
+  }
+
+  .key-table .key-action {
+    grid-area: action;
+    text-align: left;
+  }
+
+  .key-table .key-action:empty {
+    display: none;
+  }
+
+  .key-table .cell-label {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+}
+
+/* Use your key: titled cards with a Copy button on the title line, and the example in
+   a block that scrolls sideways inside its frame on a phone. */
+.snippets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.snippet {
+  margin-bottom: 0;
+}
+
+.snippet-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.snippet-head > div {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.snippet-head h3 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.snippet-head p {
+  margin: var(--space-1) 0 0;
+  max-width: 72ch;
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+
+.snippet pre {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.snippet pre code {
+  padding: 0;
+  font-size: inherit;
+  background: none;
+  border: 0;
 }
 
 /* Form tables (allowed categories and caps): checkbox, text and input on one line. */

@@ -101,3 +101,53 @@ export function GuideIcon(props: IconProps) {
     </Svg>
   );
 }
+
+// Artists: a microphone on a stand.
+export function ArtistsIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="7.5" y="3" width="5" height="8.5" rx="2.5" />
+      <path d="M5 9.5a5 5 0 0 0 10 0M10 14.5V17M7 17h6" />
+    </Svg>
+  );
+}
+
+// Venues: a hall with a pitched roof and a wide door.
+export function VenuesIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3 8.5 10 4l7 4.5" />
+      <path d="M4.5 8v8.5h11V8" />
+      <path d="M8 16.5v-4.5h4v4.5" />
+    </Svg>
+  );
+}
+
+// Copy: two overlapping sheets.
+export function CopyIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="7" y="7" width="9.5" height="9.5" rx="1.75" />
+      <path d="M13 7V5.25A1.75 1.75 0 0 0 11.25 3.5h-6A1.75 1.75 0 0 0 3.5 5.25v6A1.75 1.75 0 0 0 5.25 13H7" />
+    </Svg>
+  );
+}
+
+// A cross, for "A key cannot" on the API keys page (next to the words, never instead).
+export function CrossIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m6 6 8 8M14 6l-8 8" />
+    </Svg>
+  );
+}
+
+// A warning triangle, for the one-time key callout.
+export function WarningIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M10 3.5 2.75 16h14.5Z" />
+      <path d="M10 8.5v3.5M10 14.25v.01" />
+    </Svg>
+  );
+}
