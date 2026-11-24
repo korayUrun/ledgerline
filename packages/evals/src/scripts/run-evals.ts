@@ -1,17 +1,20 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { AnthropicLlmClient, EXTRACTION_PROMPT_VERSION, formatNanoUsd } from "@ledgerline/api";
 import { listCaseIds, loadCase } from "../dataset.js";
+import { compareWithBaseline, gateMarkdown } from "../runner/compare.js";
 import { oracleClient } from "../runner/oracle.js";
-import { percent, summarize, toMarkdown } from "../runner/report.js";
+import { percent, summarize, toMarkdown, type EvalSummary } from "../runner/report.js";
 import { runEval } from "../runner/run-eval.js";
 
 // pnpm evals                       live run on all 25 contracts (needs ANTHROPIC_API_KEY)
 // pnpm evals --cases c01,c08       only these cases
 // pnpm evals --oracle              no API calls: checks the eval pipeline itself
 // pnpm evals --save-baseline       also overwrite the committed baseline
+// pnpm evals --compare-baseline    exit 1 if below the baseline (the CI gate, evals.yml)
+//   --summary-file <path>          write the gate's markdown there (the PR comment)
 //
 // Reports go to evals/reports/ (gitignored). The baseline in
 // packages/evals/baselines/ is committed: later runs are compared with it.
@@ -34,6 +37,8 @@ const { values: args } = parseArgs({
     cases: { type: "string" },
     concurrency: { type: "string", default: "4" },
     "save-baseline": { type: "boolean", default: false },
+    "compare-baseline": { type: "boolean", default: false },
+    "summary-file": { type: "string" },
   },
 });
 
@@ -42,6 +47,11 @@ const model = args.oracle ? "oracle" : (process.env["EXTRACTION_MODEL"] ?? "clau
 const apiKey = process.env["ANTHROPIC_API_KEY"] || null;
 if (mode === "live" && apiKey === null) {
   console.error("ANTHROPIC_API_KEY is not set. Add it to .env, or run with --oracle.");
+  process.exit(1);
+}
+if (args["compare-baseline"] && args["save-baseline"]) {
+  // Saving first would compare the run with itself and always pass.
+  console.error("Use --compare-baseline or --save-baseline, not both.");
   process.exit(1);
 }
 if (mode === "oracle" && args["save-baseline"]) {
@@ -106,3 +116,19 @@ console.log(
   `\nField accuracy ${percent(summary.fieldAccuracy.correct, summary.fieldAccuracy.total)} · payout exactness ${percent(summary.payoutExactness.exact, summary.payoutExactness.total)} · failures ${summary.extractionFailures} · cost ${formatNanoUsd(summary.costNanoUsd)}`,
 );
 console.log(`Report: ${path.relative(REPO_ROOT, reportPath)}`);
+
+if (args["compare-baseline"]) {
+  // The committed baseline (saving a new one in the same run is refused above).
+  const baseline = JSON.parse(
+    await readFile(path.join(BASELINE_DIR, "extraction.json"), "utf8"),
+  ) as EvalSummary;
+  const gate = compareWithBaseline(summary, baseline);
+  const comment = gateMarkdown(gate, summary, baseline);
+  if (args["summary-file"]) {
+    await writeFile(args["summary-file"], comment);
+  }
+  console.log(`\n${comment}`);
+  if (!gate.passed) {
+    process.exitCode = 1;
+  }
+}

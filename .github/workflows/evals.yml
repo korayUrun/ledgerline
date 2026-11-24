@@ -1,0 +1,59 @@
+name: Evals
+
+# The eval gate (docs/SYSTEM.md §11): when a PR changes what the extraction sees or how
+# it is scored, run the live extraction eval and compare it with the committed
+# baseline. It calls Claude (about $1 per run), so it runs only for these paths.
+on:
+  pull_request:
+    paths:
+      - "apps/api/src/modules/contracts/extraction/**" # the prompt and the call
+      - "apps/api/src/modules/llm/**" # the client: model, retries, structured output
+      - "packages/schemas/**" # the extraction schema and the terms it must fill
+      - "packages/evals/**" # dataset, scoring and this gate
+      - "!packages/evals/src/agent/**" # the agent eval does not change extraction
+      - "!packages/evals/baselines/agent.*"
+      - ".github/workflows/evals.yml"
+
+# A new push to the same PR cancels the run that is now out of date (and its cost).
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write # the results comment
+
+jobs:
+  extraction:
+    # GitHub gives no secrets to PRs from forks; without the key the run cannot happen.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Exits 1 below the baseline (or without ANTHROPIC_API_KEY), after writing the
+      # comment, so the next step can still post it.
+      - name: Extraction eval against the baseline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: pnpm evals --compare-baseline --summary-file "$RUNNER_TEMP/evals-comment.md"
+
+      # One comment per PR, edited on every run instead of piling up.
+      - name: Post the results table on the PR
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ ! -f "$RUNNER_TEMP/evals-comment.md" ]; then
+            echo "No results to post (the eval did not finish)."
+            exit 0
+          fi
+          gh pr comment "$PR_NUMBER" --body-file "$RUNNER_TEMP/evals-comment.md" --edit-last --create-if-none

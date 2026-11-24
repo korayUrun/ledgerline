@@ -202,7 +202,7 @@ Estimated total: ~4 weeks part-time.
 **Goal:** the project is in its final state: clean, current and runnable from a fresh clone. No presentation work (scope cut 2026-11-24).
 
 **Tasks**
-- [ ] `evals.yml`: runs on PRs touching prompts/schemas/llm, comments a results table, fails below baseline
+- [x] `evals.yml`: runs on PRs touching prompts/schemas/llm, comments a results table, fails below baseline
 - [x] Structured logging (pino) with `requestId` / `jobId` / `settlementId`
 - [ ] ~~Go through `DEBUGGING.md`~~ Dropped: the log was removed. Bugs and their fixes are in the PR descriptions and the "as built" notes in `SYSTEM.md`; the Break it drills with what to look for are in `SELF_CHECK.md`.
 - [x] README: problem, architecture diagram, key decisions (link SYSTEM.md), eval results table, how to run, MCP setup (the agent eval row and the eval badge follow the live runs)
